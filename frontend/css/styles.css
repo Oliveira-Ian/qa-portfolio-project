@@ -72,7 +72,7 @@ body {
 .login-left {
     flex: 0 0 60%;
     position: relative;
-    background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+    background-image: url('../assets/images/banner.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -90,6 +90,55 @@ body {
         rgba(17, 24, 39, 0.7) 0%,
         rgba(37, 99, 235, 0.3) 100%
     );
+}
+
+/* Login Logo - Material Design (Google UX/UI) */
+.login-logo {
+    display: block;
+    margin: 0 auto var(--spacing-xl); /* 32px - escala 8dp Material Design */
+    max-height: 56px; /* Entre 48px e 64px - proporção ícone MD */
+    width: auto;
+    object-fit: contain;
+    /* Fusão perfeita com fundo branco do card */
+    mix-blend-mode: multiply;
+    /* Melhora a nitidez */
+    image-rendering: -webkit-optimize-contrast;
+    /* Responsivo */
+    max-width: 100%;
+}
+
+/* Banner Content */
+.banner-content {
+    position: absolute;
+    left: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    max-width: 500px;
+    padding-right: 40px;
+}
+
+.banner-title {
+    color: #FFFFFF;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+}
+
+.banner-divider {
+    width: 60px;
+    height: 3px;
+    background-color: #3B82F6;
+    margin-bottom: 24px;
+}
+
+.banner-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
 /* Right Side (40%) */
@@ -272,6 +321,11 @@ body {
     .login-card {
         padding: var(--spacing-lg);
         border-radius: var(--radius-md);
+    }
+
+    .login-logo {
+        max-height: 48px; /* Tamanho menor em mobile */
+        margin-bottom: var(--spacing-lg); /* 24px em mobile */
     }
 
     .card-title {
