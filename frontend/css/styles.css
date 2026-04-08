@@ -1,0 +1,291 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Colors - Light Professional Theme */
+    --bg-page: #F5F7FA;
+    --bg-card: #FFFFFF;
+    --bg-input: #FFFFFF;
+
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --primary-light: rgba(37, 99, 235, 0.1);
+
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+
+    --border: #D1D5DB;
+    --border-focus: #2563EB;
+    --border-hover: #9CA3AF;
+
+    --error: #EF4444;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+
+    /* Typography */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+
+    /* Border Radius - Increased for softer look */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-card: 0 4px 20px var(--shadow-color);
+    --shadow-input: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-button: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Login Container - Split Screen */
+.login-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Left Side (60%) - Banner Image */
+.login-left {
+    flex: 0 0 60%;
+    position: relative;
+    background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Dark overlay for better contrast */
+.left-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(17, 24, 39, 0.7) 0%,
+        rgba(37, 99, 235, 0.3) 100%
+    );
+}
+
+/* Right Side (40%) */
+.login-right {
+    flex: 0 0 40%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-page);
+    padding: var(--spacing-xl);
+}
+
+/* Login Card */
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--spacing-2xl);
+}
+
+.card-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xl);
+    color: var(--text-primary);
+    text-align: center;
+    letter-spacing: -0.025em;
+}
+
+/* Form Styles */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.form-input {
+    width: 100%;
+    padding: 14px var(--spacing-md);
+    background-color: var(--bg-input);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: var(--font-family);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-input);
+}
+
+.form-input:hover {
+    border-color: var(--border-hover);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-input:invalid:not(:placeholder-shown) {
+    border-color: var(--error);
+}
+
+/* Form Options */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-xs);
+}
+
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+}
+
+.checkbox-input {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-input);
+    cursor: pointer;
+    accent-color: var(--primary);
+    transition: all 0.2s ease;
+}
+
+.checkbox-input:hover {
+    border-color: var(--primary);
+}
+
+.checkbox-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.forgot-link {
+    font-size: 0.875rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+/* Submit Button */
+.submit-button {
+    width: 100%;
+    padding: 14px var(--spacing-md);
+    background-color: var(--primary);
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: var(--font-family);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: var(--spacing-sm);
+    box-shadow: var(--shadow-button);
+}
+
+.submit-button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.submit-button:active {
+    transform: translateY(0);
+}
+
+.submit-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-light), var(--shadow-button);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    .login-left {
+        display: none;
+    }
+
+    .login-right {
+        flex: 0 0 100%;
+        padding: var(--spacing-lg);
+    }
+
+    .login-card {
+        max-width: 100%;
+        padding: var(--spacing-xl);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-md);
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+    }
+
+    .form-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .form-input,
+    .submit-button {
+        padding: 12px var(--spacing-md);
+    }
+}
