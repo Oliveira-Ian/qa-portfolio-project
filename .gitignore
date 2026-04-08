@@ -23,3 +23,7 @@ Thumbs.db
 # Cypress
 cypress/videos/
 cypress/screenshots/
+
+# Prisma
+src/generated/prisma
+prisma/generated/
