@@ -8,6 +8,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
   - Tokens: `docs/design/tokens.md`
   - Auth layout (login): `docs/design/layouts/auth.md`
   - Base components: `docs/design/components/`
+- **API responses**:
+  - HTTP response standardization: `docs/api/http_responses.md`
 - **QA selectors (`data-testid`)**:
   - Single source of truth: `docs/qa/testids.md`
 - **System rules / domain**:
