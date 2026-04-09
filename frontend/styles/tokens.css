@@ -1,0 +1,50 @@
+:root {
+  /* Colors - Light Professional Theme */
+  --bg-page: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: rgba(37, 99, 235, 0.1);
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  --border: #d1d5db;
+  --border-focus: #2563eb;
+  --border-hover: #9ca3af;
+
+  --error: #ef4444;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+
+  /* Auth banner */
+  --auth-banner-overlay-dark: rgba(17, 24, 39, 0.7);
+  --auth-banner-overlay-primary: rgba(37, 99, 235, 0.3);
+  --auth-banner-text: #ffffff;
+  --auth-banner-text-muted: rgba(255, 255, 255, 0.85);
+
+  /* Typography */
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px var(--shadow-color);
+  --shadow-input: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 4px 12px rgba(37, 99, 235, 0.25);
+  --shadow-button-hover: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+

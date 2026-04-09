@@ -1,15 +1,16 @@
 {
-  "name": "backend",
+  "name": "qa-portfolio-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Simple backend for authentication and database",
+  "type": "module",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +18,10 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
     "prisma": "^5.22.0"
   }
 }

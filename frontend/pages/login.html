@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Oliveira ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <div class="login-container">
+        <!-- Left Side - Banner Image -->
+        <div class="login-left">
+            <div class="left-overlay"></div>
+            <div class="banner-content">
+                <h1 class="banner-title">Building with purpose, quality, and resilience</h1>
+                <div class="banner-divider"></div>
+                <p class="banner-subtitle">Solutions that turn ideas into reality</p>
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="login-right">
+            <div class="login-card" data-testid="auth-login-card">
+                <img src="../assets/images/logo-ian2.png" alt="Oliveira ERP logo" class="login-logo">
+                <h2 class="card-title" data-testid="auth-login-title">Sign In</h2>
+
+                <form class="login-form" data-testid="auth-login-form" novalidate>
+                    <div class="form-group">
+                        <label for="email" class="form-label" data-testid="auth-login-label-email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-input"
+                            data-testid="auth-login-input-email"
+                            autocomplete="email"
+                            required
+                        >
+                        <p class="form-text" data-testid="auth-login-error-email" data-error aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label" data-testid="auth-login-label-password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            data-testid="auth-login-input-password"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <p class="form-text" data-testid="auth-login-error-password" data-error aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-wrapper">
+                            <input
+                                type="checkbox"
+                                id="remember"
+                                name="remember"
+                                class="checkbox-input"
+                                data-testid="auth-login-checkbox-remember"
+                            >
+                            <span class="checkbox-text">Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-link" data-testid="auth-login-link-forgot">Forgot password</a>
+                    </div>
+
+                    <div class="form-options">
+                        <span class="form-text">Don't have an account? <a href="register.html" class="forgot-link" data-testid="auth-login-link-register">Sign up</a></span>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="submit-button"
+                        data-testid="auth-login-button-submit"
+                    >
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../scripts/shared/auth.js"></script>
+    <script src="../scripts/pages/login.js"></script>
+</body>
+</html>
+

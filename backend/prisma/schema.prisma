@@ -8,27 +8,12 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Client {
-  id            Int      @id @default(autoincrement())
-  name          String
-  email         String?
-  phone         String?
-  document      String
-  documentType  String
-  street        String?
-  number        String?
-  city          String?
-  state         String?
-  zipCode       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  role      String    @default("user")
+  birthDate DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

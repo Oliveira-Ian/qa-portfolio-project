@@ -1,0 +1,123 @@
+.login-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.login-left {
+  flex: 0 0 60%;
+  position: relative;
+  background-image: url("../../assets/images/banner.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.left-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    var(--auth-banner-overlay-dark) 0%,
+    var(--auth-banner-overlay-primary) 100%
+  );
+}
+
+.banner-content {
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  max-width: 500px;
+  padding-right: 40px;
+}
+
+.banner-title {
+  color: var(--auth-banner-text);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+.banner-divider {
+  width: 60px;
+  height: 3px;
+  background-color: var(--primary);
+  margin-bottom: 24px;
+}
+
+.banner-subtitle {
+  color: var(--auth-banner-text-muted);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.login-right {
+  flex: 0 0 40%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--bg-page);
+  padding: var(--spacing-xl);
+}
+
+.login-logo {
+  display: block;
+  margin: 0 auto var(--spacing-xl);
+  max-height: 56px;
+  width: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  image-rendering: -webkit-optimize-contrast;
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    flex: 0 0 100%;
+    padding: var(--spacing-lg);
+  }
+
+  .login-card {
+    max-width: 100%;
+    padding: var(--spacing-xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+  }
+
+  .login-logo {
+    max-height: 48px;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+  }
+
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .form-input,
+  .submit-button {
+    padding: 12px var(--spacing-md);
+  }
+}
+

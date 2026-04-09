@@ -1,11 +1,11 @@
 // Authentication routes
-// Handles login, logout, and related auth endpoints
 
 import { Router } from 'express';
+import { login, register } from '../controllers/authController.js';
 
 const router = Router();
 
-// Placeholder: POST /api/auth/login - will call authController.login
-// Placeholder: POST /api/auth/logout - will call authController.logout
+router.post('/login', login);
+router.post('/register', register);
 
 export default router;

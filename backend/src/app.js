@@ -1,16 +1,17 @@
 // Express application setup
-// Configure middleware and routes here
+// Configure middleware and routes
 
+import cors from 'cors';
 import express from 'express';
-import { authRoutes } from './routes/index.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 
-// Parse JSON request bodies (so we can read email/password)
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Mount auth routes at /api/auth
-// This means POST /api/auth/login will work
+// Routes
 app.use('/api/auth', authRoutes);
 
 export default app;

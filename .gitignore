@@ -1,29 +1,87 @@
-# Node
-node_modules/
-npm-debug.log
-package-lock.json
-
-# Environment
+# =========================
+# Security / Secrets (CRITICAL)
+# =========================
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets.*
+credentials.*
+**/config.local.*
+**/*.local.*
 
-# Database
-*.sqlite
+# =========================
+# Node / JavaScript
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
+# Lockfiles (keep committed by default)
+# (Intentionally NOT ignoring package-lock.json / yarn.lock / pnpm-lock.yaml)
+
+# =========================
+# Builds / Bundlers / Coverage
+# =========================
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+.eslintcache
+.vite/
+.next/
+.nuxt/
+.cache/
+
+# =========================
 # Logs
+# =========================
 logs/
 *.log
 
-# OS
+# =========================
+# Databases / Local state
+# =========================
+*.sqlite
+*.sqlite-journal
+*.db
+
+# =========================
+# OS junk
+# =========================
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# VS Code
+# =========================
+# IDEs / Editors
+# =========================
 .vscode/
+.idea/
+*.code-workspace
 
-# Cypress
+# =========================
+# Cypress artifacts (if used)
+# =========================
 cypress/videos/
 cypress/screenshots/
 
-# Prisma
-src/generated/prisma
+# =========================
+# Prisma generated (optional)
+# =========================
 prisma/generated/
+src/generated/prisma/
+
+# =========================
+# Cursor / AI tooling caches
+# =========================
+.cursor/
+.cursor-cache/
+.cursor-tmp/
