@@ -17,6 +17,14 @@
   --border-hover: #9ca3af;
 
   --error: #ef4444;
+  --error-light: #fca5a5;
+  
+  /* Toast feedback colors - Modern Material Design */
+  --toast-success: #10b981;
+  --toast-error: #ef4444;
+  --toast-warning: #f59e0b;
+  --toast-info: #3b82f6;
+  
   --shadow-color: rgba(0, 0, 0, 0.08);
 
   /* Auth banner */

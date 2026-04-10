@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const result = await response.json();
 
       if (response.ok) {
-        authHelper.redirect('/login');
+        authHelper.showToast('Registration successful', 'success');
+        setTimeout(() => authHelper.redirect('/login'), 5000);
         return;
       }
 

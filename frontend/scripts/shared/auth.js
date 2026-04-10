@@ -24,31 +24,71 @@
       document.body.appendChild(container);
     }
 
+    // Define colors and icons based on toast type
+    const toastVariants = {
+      success: {
+        bg: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+        text: '#065f46',
+        icon: '✓'
+      },
+      error: {
+        bg: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+        text: '#7f1d1d',
+        icon: '✕'
+      },
+      warning: {
+        bg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+        text: '#78350f',
+        icon: '⚠'
+      }
+    };
+
+    const variant = toastVariants[type] || toastVariants.error;
+
     const toast = document.createElement('div');
     toast.setAttribute('role', 'status');
     toast.setAttribute('aria-live', 'polite');
-    toast.textContent = message;
-    toast.style.minWidth = '260px';
-    toast.style.padding = '14px 18px';
-    toast.style.borderRadius = '12px';
+    toast.style.minWidth = '280px';
+    toast.style.padding = '12px 16px';
+    toast.style.borderRadius = '8px';
     toast.style.fontSize = '0.95rem';
-    toast.style.boxShadow = '0 14px 44px rgba(15, 23, 42, 0.12)';
-    toast.style.color = '#ffffff';
-    toast.style.backgroundColor = type === 'success' ? '#0f766e' : '#dc2626';
+    toast.style.fontWeight = '500';
+    toast.style.lineHeight = '1.5';
+    toast.style.color = variant.text;
+    toast.style.backgroundColor = variant.bg;
+    toast.style.background = variant.bg;
+    toast.style.boxShadow = '0 10px 35px rgba(0, 0, 0, 0.12)';
     toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-    toast.style.transform = 'translateY(-8px)';
+    toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+    toast.style.transform = 'translateX(400px)';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '10px';
+    toast.style.backdropFilter = 'blur(10px)';
 
+    // Add icon and message
+    const icon = document.createElement('span');
+    icon.textContent = variant.icon;
+    icon.style.fontSize = '1.2rem';
+    icon.style.fontWeight = 'bold';
+    
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+
+    toast.appendChild(icon);
+    toast.appendChild(messageSpan);
     container.appendChild(toast);
 
+    // Animate in
     requestAnimationFrame(() => {
       toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
+      toast.style.transform = 'translateX(0)';
     });
 
+    // Animate out and remove
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateY(-8px)';
+      toast.style.transform = 'translateX(400px)';
       toast.addEventListener('transitionend', () => {
         toast.remove();
       }, { once: true });
