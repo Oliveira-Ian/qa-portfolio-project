@@ -33,6 +33,17 @@
   --auth-banner-text: #ffffff;
   --auth-banner-text-muted: rgba(255, 255, 255, 0.85);
 
+  /* Dashboard dark surfaces */
+  --bg-header: #111827;
+  --bg-sidebar: #1f2937;
+  --text-header: #ffffff;
+  --text-header-muted: rgba(255, 255, 255, 0.7);
+  --text-sidebar: rgba(255, 255, 255, 0.7);
+  --border-header: rgba(255, 255, 255, 0.1);
+  --border-sidebar: rgba(255, 255, 255, 0.08);
+  --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --text-section: rgba(255, 255, 255, 0.4);
+
   /* Typography */
   --font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 

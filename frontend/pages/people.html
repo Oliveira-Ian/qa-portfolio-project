@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People | Oliveira ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <button class="sidebar-toggle" data-sidebar-toggle aria-label="Toggle sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <img src="../assets/images/logo-ian2.png" alt="Oliveira ERP" class="header-logo" onclick="window.location.href='../home.html'">
+        </div>
+        <div class="header-right user-menu" data-testid="header-user-menu">
+            <div class="user-avatar" data-testid="header-user-avatar" onclick="toggleUserDropdown()">U</div>
+            <div class="user-dropdown" data-testid="header-user-dropdown" id="userDropdown">
+                <button class="dropdown-item" data-testid="header-dropdown-about" onclick="showAbout()">About</button>
+                <button class="dropdown-item" data-testid="header-dropdown-signout" onclick="authHelper.redirect('/login')">SignOut</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <nav class="dashboard-sidebar" data-sidebar>
+            <div class="sidebar-nav">
+                <div class="nav-section">Settings</div>
+                <a class="nav-item" data-nav-item data-href="users.html" onclick="window.location.href='users.html'">Users</a>
+                <div class="nav-section">Records</div>
+                <a class="nav-item" data-nav-item data-href="people.html" onclick="window.location.href='people.html'">People</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main" data-main>
+            <div class="content-card" data-testid="person-list-container">
+                <div class="table-toolbar">
+                    <h1 class="content-title" data-testid="person-list-title">People</h1>
+                    <div class="toolbar-right">
+                        <button class="submit-button" style="width: auto; padding: var(--spacing-sm) var(--spacing-lg); margin: 0;" data-testid="person-button-add" onclick="window.location.href='person-form.html'">Add</button>
+                        <button class="submit-button" style="width: auto; padding: var(--spacing-sm) var(--spacing-lg); margin: 0;" data-testid="person-button-edit" onclick="editSelected()" disabled>Edit</button>
+                        <button class="submit-button" style="width: auto; padding: var(--spacing-sm) var(--spacing-lg); margin: 0; background-color: var(--error);" data-testid="person-button-delete" onclick="deleteSelected()" disabled>Delete</button>
+                    </div>
+                </div>
+
+                <div class="table-container" data-testid="person-list-table-container">
+                    <table class="data-table" data-testid="person-list-table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell">
+                                    <input type="checkbox" class="checkbox-input" data-testid="person-checkbox-select-all" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Document</th>
+                                <th>Active</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody data-testid="person-list-tbody">
+                            <!-- Rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" data-testid="person-list-pagination">
+                    <button data-testid="person-pagination-prev" disabled>&lt; Prev</button>
+                    <span class="page-info" data-testid="person-pagination-info">Page 1 of 1</span>
+                    <button data-testid="person-pagination-next" disabled>Next &gt;</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../scripts/shared/auth.js"></script>
+    <script src="../scripts/shared/navigation.js"></script>
+    <script src="../scripts/pages/person-list.js"></script>
+</body>
+</html>

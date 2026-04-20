@@ -6,6 +6,8 @@
 @import url("./components/links.css");
 @import url("./components/checkbox.css");
 @import url("./components/cards.css");
+@import url("./components/tables.css");
 
 @import url("./layouts/auth.css");
+@import url("./layouts/dashboard.css");
 

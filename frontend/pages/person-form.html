@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person | Oliveira ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <button class="sidebar-toggle" data-sidebar-toggle aria-label="Toggle sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <img src="../assets/images/logo-ian2.png" alt="Oliveira ERP" class="header-logo" onclick="window.location.href='../home.html'">
+        </div>
+        <div class="header-right user-menu" data-testid="header-user-menu">
+            <div class="user-avatar" data-testid="header-user-avatar" onclick="toggleUserDropdown()">U</div>
+            <div class="user-dropdown" data-testid="header-user-dropdown" id="userDropdown">
+                <button class="dropdown-item" data-testid="header-dropdown-about" onclick="showAbout()">About</button>
+                <button class="dropdown-item" data-testid="header-dropdown-signout" onclick="authHelper.redirect('/login')">SignOut</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <nav class="dashboard-sidebar" data-sidebar>
+            <div class="sidebar-nav">
+                <div class="nav-section">Settings</div>
+                <a class="nav-item" data-nav-item data-href="users.html" onclick="window.location.href='users.html'">Users</a>
+                <div class="nav-section">Records</div>
+                <a class="nav-item" data-nav-item data-href="people.html" onclick="window.location.href='people.html'">People</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main" data-main>
+            <div class="content-card" data-testid="person-form-container">
+                <h1 class="content-title" data-testid="person-form-title">New Person</h1>
+
+                <form class="login-form" data-testid="person-form" novalidate>
+                    <input type="hidden" id="personId" name="personId">
+
+                    <div class="form-group">
+                        <label for="name" class="form-label" data-testid="person-form-label-name">Name *</label>
+                        <input type="text" id="name" name="name" class="form-input" data-testid="person-form-input-name" required>
+                        <p class="form-text" data-testid="person-form-error-name" data-error aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type" class="form-label" data-testid="person-form-label-type">Type *</label>
+                        <select id="type" name="type" class="form-input" data-testid="person-form-input-type" required style="cursor: pointer;">
+                            <option value="CLIENT">Client</option>
+                            <option value="SUPPLIER">Supplier</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="documentType" class="form-label" data-testid="person-form-label-document-type">Document Type *</label>
+                        <select id="documentType" name="documentType" class="form-input" data-testid="person-form-input-document-type" required style="cursor: pointer;">
+                            <option value="CPF">CPF</option>
+                            <option value="CNPJ">CNPJ</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="document" class="form-label" data-testid="person-form-label-document">Document *</label>
+                        <input type="text" id="document" name="document" class="form-input" data-testid="person-form-input-document" required>
+                        <p class="form-text" data-testid="person-form-error-document" data-error aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label" data-testid="person-form-label-email">Email</label>
+                        <input type="email" id="email" name="email" class="form-input" data-testid="person-form-input-email">
+                        <p class="form-text" data-testid="person-form-error-email" data-error aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label" data-testid="person-form-label-phone">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-input" data-testid="person-form-input-phone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="birthdate" class="form-label" data-testid="person-form-label-birthdate">Birthdate</label>
+                        <input type="date" id="birthdate" name="birthdate" class="form-input" data-testid="person-form-input-birthdate">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="active" name="active" class="checkbox-input" data-testid="person-form-checkbox-active" checked>
+                            <span class="checkbox-text">Active</span>
+                        </label>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: var(--spacing-lg) 0;">
+
+                    <div class="form-group">
+                        <label for="street" class="form-label" data-testid="person-form-label-street">Street</label>
+                        <input type="text" id="street" name="street" class="form-input" data-testid="person-form-input-street">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city" class="form-label" data-testid="person-form-label-city">City</label>
+                        <input type="text" id="city" name="city" class="form-input" data-testid="person-form-input-city">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="state" class="form-label" data-testid="person-form-label-state">State</label>
+                        <input type="text" id="state" name="state" class="form-input" data-testid="person-form-input-state">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="zipCode" class="form-label" data-testid="person-form-label-zipcode">Zip Code</label>
+                        <input type="text" id="zipCode" name="zipCode" class="form-input" data-testid="person-form-input-zipcode">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes" class="form-label" data-testid="person-form-label-notes">Notes</label>
+                        <textarea id="notes" name="notes" class="form-input" data-testid="person-form-input-notes" rows="3" style="resize: vertical;"></textarea>
+                    </div>
+
+                    <div class="form-options" style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+                        <button type="submit" class="submit-button" data-testid="person-form-button-save">Save</button>
+                        <button type="button" class="header-button" style="width: auto; padding: 14px var(--spacing-lg);" data-testid="person-form-button-cancel" onclick="window.location.href='people.html'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="../scripts/shared/auth.js"></script>
+    <script src="../scripts/shared/navigation.js"></script>
+    <script src="../scripts/pages/person-form.js"></script>
+</body>
+</html>

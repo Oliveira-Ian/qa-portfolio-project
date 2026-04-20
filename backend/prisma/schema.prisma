@@ -17,3 +17,25 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
+
+model Person {
+  id           String   @id @default(uuid())
+  name         String
+  email        String?
+  phone        String?
+  birthdate    DateTime?
+  documentType String   // CPF | CNPJ
+  document     String
+  type         String   // CLIENT | SUPPLIER
+  active       Boolean  @default(true)
+  street       String?
+  city         String?
+  state        String?
+  zipCode      String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([type])
+  @@index([active])
+}

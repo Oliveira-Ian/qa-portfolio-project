@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home | Oliveira ERP</title>
+    <title>Users | Oliveira ERP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="../styles/main.css">
 </head>
 <body>
     <!-- Header -->
@@ -18,7 +18,7 @@
                 <span></span>
                 <span></span>
             </button>
-            <img src="./assets/images/logo-ian2.png" alt="Oliveira ERP" class="header-logo" onclick="window.location.href='home.html'">
+            <img src="../assets/images/logo-ian2.png" alt="Oliveira ERP" class="header-logo" onclick="window.location.href='../home.html'">
         </div>
         <div class="header-right user-menu" data-testid="header-user-menu">
             <div class="user-avatar" data-testid="header-user-avatar" onclick="toggleUserDropdown()">U</div>
@@ -34,22 +34,22 @@
         <nav class="dashboard-sidebar" data-sidebar>
             <div class="sidebar-nav">
                 <div class="nav-section">Settings</div>
-                <a class="nav-item" data-nav-item data-href="users.html" onclick="window.location.href='./pages/users.html'">Users</a>
+                <a class="nav-item" data-nav-item data-href="users.html" onclick="window.location.href='users.html'">Users</a>
                 <div class="nav-section">Records</div>
-                <a class="nav-item" data-nav-item data-href="people.html" onclick="window.location.href='./pages/people.html'">People</a>
+                <a class="nav-item" data-nav-item data-href="people.html" onclick="window.location.href='people.html'">People</a>
             </div>
         </nav>
 
         <!-- Main Content -->
         <main class="dashboard-main" data-main>
             <div class="content-card">
-                <h1 class="content-title">Home</h1>
-                <p class="form-text">Welcome to Oliveira ERP. Select an option from the sidebar to get started.</p>
+                <h1 class="content-title">Users</h1>
+                <p class="form-text">User management page.</p>
             </div>
         </main>
     </div>
 
-    <script src="./scripts/shared/auth.js"></script>
-    <script src="./scripts/shared/navigation.js"></script>
+    <script src="../scripts/shared/auth.js"></script>
+    <script src="../scripts/shared/navigation.js"></script>
 </body>
 </html>

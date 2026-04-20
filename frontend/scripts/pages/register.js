@@ -3,6 +3,22 @@
  * Connects the register page with backend authentication.
  */
 
+// Password visibility toggle
+function togglePasswordVisibility() {
+  const passwordInput = document.querySelector('[data-testid="auth-register-input-password"]');
+  const toggleButton = document.querySelector('[data-testid="auth-register-button-toggle-password"]');
+
+  if (!passwordInput || !toggleButton) return;
+
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    toggleButton.textContent = 'Hide';
+  } else {
+    passwordInput.type = 'password';
+    toggleButton.textContent = 'Show';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const registerForm = document.querySelector('[data-testid="auth-register-form"]');
   const fullnameInput = document.querySelector('[data-testid="auth-register-input-fullname"]');
