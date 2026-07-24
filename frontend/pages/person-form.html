@@ -45,7 +45,7 @@
             <div class="content-card" data-testid="person-form-container">
                 <h1 class="content-title" data-testid="person-form-title">New Person</h1>
 
-                <form class="login-form" data-testid="person-form" novalidate>
+                <form class="login-form" data-testid="person-form" novalidate style="position: relative;">
                     <input type="hidden" id="personId" name="personId">
 
                     <div class="form-group">
@@ -92,7 +92,7 @@
                         <input type="date" id="birthdate" name="birthdate" class="form-input" data-testid="person-form-input-birthdate">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" style="position: absolute; top: 0; right: 0; margin: 0;">
                         <label class="checkbox-wrapper">
                             <input type="checkbox" id="active" name="active" class="checkbox-input" data-testid="person-form-checkbox-active" checked>
                             <span class="checkbox-text">Active</span>

@@ -68,6 +68,33 @@
     });
   }
 
+  function validateDocument() {
+    const documentType = document.getElementById('documentType').value;
+    const document = document.getElementById('document').value.replace(/\D/g, '');
+    if (documentType === 'CPF' && document.length !== 11) return false;
+    if (documentType === 'CNPJ' && document.length !== 14) return false;
+    return true;
+  }
+
+  function applyDocumentMask() {
+    const documentType = document.getElementById('documentType').value;
+    const documentInput = document.getElementById('document');
+    let value = documentInput.value.replace(/\D/g, '');
+    if (documentType === 'CPF') {
+      value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (documentType === 'CNPJ') {
+      value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    documentInput.value = value;
+  }
+
+  function applyPhoneMask() {
+    const phoneInput = document.getElementById('phone');
+    let value = phoneInput.value.replace(/\D/g, '');
+    value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    phoneInput.value = value;
+  }
+
   function validateForm() {
     clearErrors();
     let hasError = false;
@@ -86,6 +113,10 @@
       const errorNode = document.querySelector('[data-testid="person-form-error-document"]');
       if (errorNode) errorNode.textContent = 'Document is required';
       hasError = true;
+    } else if (!validateDocument()) {
+      const errorNode = document.querySelector('[data-testid="person-form-error-document"]');
+      if (errorNode) errorNode.textContent = 'Invalid document format';
+      hasError = true;
     }
 
     if (email && !authHelper.isValidEmail(email)) {
@@ -100,7 +131,10 @@
   async function savePerson(event) {
     event.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      authHelper.showToast('Please fix the errors above');
+      return;
+    }
 
     const data = {
       name: document.getElementById('name').value.trim(),
@@ -167,5 +201,10 @@
     if (form) {
       form.addEventListener('submit', savePerson);
     }
+
+    // Add masks
+    document.getElementById('document').addEventListener('input', applyDocumentMask);
+    document.getElementById('documentType').addEventListener('change', applyDocumentMask);
+    document.getElementById('phone').addEventListener('input', applyPhoneMask);
   });
 })();

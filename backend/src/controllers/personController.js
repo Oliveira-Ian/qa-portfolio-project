@@ -30,7 +30,7 @@ export const personController = {
   async create(req, res) {
     try {
       const person = await personService.create(req.body);
-      res.status(201).json({ success: true, data: person });
+      res.status(201).json({ success: true, data: { message: 'Person created successfully' } });
     } catch (error) {
       console.error('Error creating person:', error);
       res.status(500).json({ success: false, error: 'Failed to create person' });
@@ -41,7 +41,7 @@ export const personController = {
     try {
       const { id } = req.params;
       const person = await personService.update(id, req.body);
-      res.json({ success: true, data: person });
+      res.json({ success: true, data: { message: 'Person updated successfully' } });
     } catch (error) {
       console.error('Error updating person:', error);
       res.status(500).json({ success: false, error: 'Failed to update person' });
@@ -52,7 +52,7 @@ export const personController = {
     try {
       const { id } = req.params;
       await personService.delete(id);
-      res.json({ success: true, data: { message: 'Person deleted' } });
+      res.json({ success: true, data: { message: 'Person deleted successfully' } });
     } catch (error) {
       console.error('Error deleting person:', error);
       res.status(500).json({ success: false, error: 'Failed to delete person' });
