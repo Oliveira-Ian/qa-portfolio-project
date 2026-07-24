@@ -17,12 +17,13 @@ Project rules that must be followed to keep the system consistent, “real”, a
 
 ## Data and persistence
 
-- Real database (SQLite first; future migration to PostgreSQL)
+- Real database — PostgreSQL (`prisma/schema.prisma`, single source of truth, used by `apps/api`)
 - Migrations via Prisma
 
 ## QA focus
 
-- API tests with a real database
-- E2E flows (login, CRUD)
+- API tests with a real database (`tests/api`, Playwright, against a real PostgreSQL instance — see `docs/index.md` Quick Start)
+- Unit tests for pure logic (`tests/unit`, Vitest)
+- E2E flows (login, CRUD) — `tests/e2e`, Playwright
 - Predictable/resettable data; simple setup/teardown
 

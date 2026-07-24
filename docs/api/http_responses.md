@@ -152,6 +152,70 @@ Controllers:
 }
 ```
 
+### GET /api/persons
+Query params (all optional): `type` (`CLIENT`|`SUPPLIER`), `active` (`true`|`false`), `search` (matches name or document).
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": [ /* array of Person */ ]
+}
+```
+
+### GET /api/persons/:id
+**Success Response (200):** `{ "success": true, "data": { /* Person */ } }`
+
+**Error Responses:**
+- **404**: `{ "success": false, "error": "Person not found" }`
+
+### POST /api/persons
+**Request Body:**
+```json
+{
+  "name": "string",
+  "type": "CLIENT | SUPPLIER",
+  "documentType": "CPF | CNPJ",
+  "document": "string",
+  "email": "string | null",
+  "phone": "string | null",
+  "birthdate": "YYYY-MM-DD | null",
+  "active": "boolean (default true)",
+  "street": "string | null",
+  "city": "string | null",
+  "state": "string | null",
+  "zipCode": "string | null",
+  "notes": "string | null"
+}
+```
+
+**Success Response (201):** `{ "success": true, "data": { "message": "Person created successfully" } }`
+
+**Error Responses (400):** first validation issue found, e.g. `"Name is required"`, `"Document is required"`, `"Invalid document format"` (CPF must have 11 digits, CNPJ 14), `"Invalid email"`.
+
+> Person validation did not exist in the legacy Express API (only the frontend validated it). It was added during the Fastify migration as a single Zod schema shared with the frontend (`packages/schemas`) — see `docs/index.md`.
+
+### PUT /api/persons/:id
+Same body and validation as `POST /api/persons`.
+
+**Success Response (200):** `{ "success": true, "data": { "message": "Person updated successfully" } }`
+
+### DELETE /api/persons/:id
+**Success Response (200):** `{ "success": true, "data": { "message": "Person deleted successfully" } }`
+
+## Validation mechanism
+
+Request validation is implemented with [Zod](https://zod.dev) schemas from `packages/schemas`, shared between `apps/api` (Fastify) and `apps/web` (Next.js) so client and server never validate differently:
+
+- `/api/auth/*`: field checks and messages are hand-written in the controller to guarantee an exact, stable match with the messages documented above.
+- `/api/persons/*`: validated by `personCreateSchema`/`personUpdateSchema`; the response `error` is the first Zod issue message.
+
+This replaces the legacy manual `if (!field)` checks — the response envelope, status codes and auth messages are unchanged.
+
+## CORS
+
+`apps/api` explicitly allows `GET, HEAD, POST, PUT, DELETE, OPTIONS` (`apps/api/src/app.ts`). `@fastify/cors`'s own default only allows `GET`/`HEAD`/`POST` — the person endpoints' `PUT`/`DELETE` calls were silently blocked by the browser's preflight check until this was set explicitly. This only surfaces with a real browser `fetch` (curl and Playwright's API request context don't enforce CORS), which is why it wasn't caught until `apps/web`'s Person edit/delete flows were tested end-to-end in a browser.
+
 ## Notes
 - All error messages should be clear and actionable for users
 - Frontend applications can rely on `success` boolean to handle responses

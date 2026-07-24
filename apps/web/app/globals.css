@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens — mirrors docs/design/tokens.md exactly (same values, no
+ * dark theme: the current design system is light-only). Standard shadcn/ui
+ * slot names (background, card, primary, muted, border, input, ring,
+ * sidebar-*, ...) are used so shadcn components work unmodified; everything
+ * else is a project-specific extension. Full old-name -> new-key mapping is
+ * documented in docs/design/tokens.md.
+ */
+:root {
+  --radius: 10px;
+
+  --background: #f5f7fa;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: rgba(37, 99, 235, 0.1);
+  --primary-foreground: #ffffff;
+
+  --secondary: #f5f7fa;
+  --secondary-foreground: #111827;
+
+  --muted: #f5f7fa;
+  --muted-foreground: #6b7280;
+  /* Lighter than --muted-foreground — placeholders, disabled text */
+  --text-muted: #9ca3af;
+
+  --accent: rgba(37, 99, 235, 0.1);
+  --accent-foreground: #111827;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #d1d5db;
+  --border-hover: #9ca3af;
+  --border-focus: #2563eb;
+  --input: #d1d5db;
+  --input-background: #ffffff;
+  --ring: #2563eb;
+
+  --toast-success: #10b981;
+  --toast-error: #ef4444;
+  --toast-warning: #f59e0b;
+  --toast-info: #3b82f6;
+
+  --auth-banner-overlay-dark: rgba(17, 24, 39, 0.7);
+  --auth-banner-overlay-primary: rgba(37, 99, 235, 0.3);
+  --auth-banner-text: #ffffff;
+  --auth-banner-text-muted: rgba(255, 255, 255, 0.85);
+
+  --header: #111827;
+  --header-foreground: #ffffff;
+  --header-foreground-muted: rgba(255, 255, 255, 0.7);
+  --header-border: rgba(255, 255, 255, 0.1);
+
+  --sidebar: #1f2937;
+  --sidebar-foreground: rgba(255, 255, 255, 0.7);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  /* 0.4 read as ~3.6:1 against --sidebar (fails WCAG AA 4.5:1 for text) */
+  --sidebar-section: rgba(255, 255, 255, 0.5);
+
+  /*
+   * NOT part of the Tailwind theme on purpose: Tailwind v4 resolves named
+   * max-width and width sizes through the same --spacing-{name} namespace,
+   * so putting xs/sm/md/lg/xl/2xl there clobbers max-w-md and friends.
+   * These are plain CSS variables instead — use them via var(--spacing-md)
+   * or arbitrary values (p-[var(--spacing-md)]), same as legacy tokens.css.
+   */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+}
+
+@theme inline {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-border-focus: var(--border-focus);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+
+  --color-toast-success: var(--toast-success);
+  --color-toast-error: var(--toast-error);
+  --color-toast-warning: var(--toast-warning);
+  --color-toast-info: var(--toast-info);
+
+  --color-auth-banner-overlay-dark: var(--auth-banner-overlay-dark);
+  --color-auth-banner-overlay-primary: var(--auth-banner-overlay-primary);
+  --color-auth-banner-text: var(--auth-banner-text);
+  --color-auth-banner-text-muted: var(--auth-banner-text-muted);
+
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-header-foreground-muted: var(--header-foreground-muted);
+  --color-header-border: var(--header-border);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-section: var(--sidebar-section);
+
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-input: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 4px 12px rgba(37, 99, 235, 0.25);
+  --shadow-button-hover: 0 6px 16px rgba(37, 99, 235, 0.35);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}

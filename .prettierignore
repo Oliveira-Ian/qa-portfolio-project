@@ -1,0 +1,10 @@
+# Legacy trees stay out of scope until their own migration phase
+frontend/
+backend/
+docs/
+
+node_modules/
+package-lock.json
+LICENSE
+*.sqlite
+*.sqlite-journal
