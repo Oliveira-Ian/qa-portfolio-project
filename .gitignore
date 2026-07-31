@@ -33,12 +33,16 @@ dist/
 build/
 out/
 coverage/
+*.tsbuildinfo
 .nyc_output/
 .eslintcache
 .vite/
 .next/
 .nuxt/
 .cache/
+test-results/
+playwright-report/
+blob-report/
 
 # =========================
 # Logs
@@ -85,3 +89,4 @@ src/generated/prisma/
 .cursor/
 .cursor-cache/
 .cursor-tmp/
+.playwright-mcp/

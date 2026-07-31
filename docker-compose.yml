@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: oliveira_erp
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oliveira_erp?schema=public
+      PORT: 3000
+      # Passed through from the host shell if set (`ADMIN_EMAIL=... docker
+      # compose up`) so the entrypoint's `db:seed` step can bootstrap an
+      # admin. Left unset otherwise — seeding the permission catalog and
+      # default profiles doesn't require them.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # apps/api's env.ts refuses to boot with NODE_ENV=production (set by
+      # apps/api/Dockerfile) unless a real secret is provided — this
+      # container-only default satisfies that for `docker compose up`
+      # locally/in CI. It is not a production secret: override with a real
+      # `JWT_SECRET` in the host shell before deploying this compose file
+      # anywhere it needs to be trusted.
+      JWT_SECRET: ${JWT_SECRET:-local-compose-only-not-a-real-secret}
+    ports:
+      - '3001:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      # In-network service name — the API is called from the Next server
+      # (inside this container), not from the browser, so this doesn't need
+      # to be host-reachable the way a NEXT_PUBLIC_* value would.
+      API_URL: http://api:3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:

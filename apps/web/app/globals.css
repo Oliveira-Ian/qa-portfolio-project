@@ -1,0 +1,335 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens — "Olival". Mirrors docs/design/tokens.md exactly.
+ *
+ * The palette is taken from the product's own assets rather than picked in the
+ * abstract: the mark is an olive tree (Oliveira — the company's name), and the
+ * banner is a construction site at golden hour. So: olive for the primary,
+ * ink for the chrome, amber as the signal colour of a site vest, and a warm
+ * limestone ground instead of a cool grey one.
+ *
+ * Slot names are shadcn/ui's (background, card, primary, muted, sidebar-*, …)
+ * so its components work unmodified; the rest are project extensions.
+ * Every pairing used for text meets WCAG AA — see docs/design/accessibility.md.
+ */
+:root {
+  color-scheme: light;
+
+  --radius: 8px;
+
+  /* Ground and ink */
+  --background: #f4f1ec;
+  --foreground: #16201c;
+
+  --card: #ffffff;
+  --card-foreground: #16201c;
+
+  --popover: #ffffff;
+  --popover-foreground: #16201c;
+
+  /* Olive — the foliage of the mark */
+  --primary: #4f6b3a;
+  --primary-hover: #35492a;
+  --primary-light: rgba(79, 107, 58, 0.1);
+  --primary-foreground: #ffffff;
+
+  --secondary: #eae6de;
+  --secondary-foreground: #16201c;
+
+  --muted: #ede9e2;
+  --muted-foreground: #5a6560;
+  /* Lighter than --muted-foreground — placeholders and disabled text only,
+     never load-bearing copy. */
+  --text-muted: #8a938d;
+
+  --accent: rgba(79, 107, 58, 0.1);
+  --accent-foreground: #16201c;
+
+  /* Amber — golden hour on the site, and the colour of a safety vest.
+     `--signal` fails AA as text on a light ground, so anything that has to be
+     read uses --signal-strong; --signal is for fills, rules and marks. */
+  --signal: #c8791f;
+  --signal-strong: #8a5210;
+  --signal-light: rgba(200, 121, 31, 0.12);
+
+  /* Clay */
+  --destructive: #b4442e;
+  --destructive-foreground: #ffffff;
+  --destructive-light: rgba(180, 68, 46, 0.1);
+
+  --border: #dcd6cb;
+  --border-hover: #b9b1a2;
+  --border-focus: #4f6b3a;
+  --input: #dcd6cb;
+  --input-background: #ffffff;
+  --ring: #4f6b3a;
+
+  /* Tint of each toast color, same technique as --primary-light/--signal-light
+     (the color's own hex at ~10-12% opacity, not a shared/blind opacity value)
+     — for a soft fill behind a badge or a status pill, not just the outline. */
+  --toast-success: #3e7d4e;
+  --toast-success-light: rgba(62, 125, 78, 0.1);
+  --toast-error: #b4442e;
+  --toast-error-light: rgba(180, 68, 46, 0.1);
+  --toast-warning: #c8791f;
+  --toast-warning-light: rgba(200, 121, 31, 0.12);
+  --toast-info: #3e6b7d;
+  --toast-info-light: rgba(62, 107, 125, 0.1);
+
+  --auth-banner-overlay-dark: rgba(22, 32, 28, 0.72);
+  --auth-banner-overlay-primary: rgba(79, 107, 58, 0.34);
+  --auth-banner-text: #ffffff;
+  --auth-banner-text-muted: rgba(255, 255, 255, 0.86);
+
+  --header: #16201c;
+  --header-foreground: #f4f1ec;
+  --header-foreground-muted: rgba(244, 241, 236, 0.72);
+  --header-border: rgba(244, 241, 236, 0.12);
+
+  --sidebar: #1b2621;
+  --sidebar-foreground: rgba(244, 241, 236, 0.72);
+  --sidebar-border: rgba(244, 241, 236, 0.1);
+  --sidebar-accent: rgba(244, 241, 236, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  /* 0.58 reads ~5.5:1 against --sidebar; anything below 0.5 fails AA. */
+  --sidebar-section: rgba(244, 241, 236, 0.58);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0e1512;
+  --foreground: #e8e4dc;
+
+  --card: #16201c;
+  --card-foreground: #e8e4dc;
+
+  --popover: #16201c;
+  --popover-foreground: #e8e4dc;
+
+  /* Olive lifted out of the shadows so it still carries 7:1 on the dark ground */
+  --primary: #8fb06a;
+  --primary-hover: #a3c182;
+  --primary-light: rgba(143, 176, 106, 0.14);
+  --primary-foreground: #0e1512;
+
+  --secondary: #1e2a24;
+  --secondary-foreground: #e8e4dc;
+
+  --muted: #1e2a24;
+  --muted-foreground: #a0a89f;
+  --text-muted: #77807a;
+
+  --accent: rgba(143, 176, 106, 0.14);
+  --accent-foreground: #e8e4dc;
+
+  --signal: #e8a54a;
+  --signal-strong: #e8a54a;
+  --signal-light: rgba(232, 165, 74, 0.16);
+
+  --destructive: #d96a52;
+  --destructive-foreground: #0e1512;
+  --destructive-light: rgba(217, 106, 82, 0.14);
+
+  --border: #2a362f;
+  --border-hover: #3d4c43;
+  --border-focus: #8fb06a;
+  --input: #2a362f;
+  --input-background: #16201c;
+  --ring: #8fb06a;
+
+  --toast-success: #7bbf8a;
+  --toast-success-light: rgba(123, 191, 138, 0.14);
+  --toast-error: #d96a52;
+  --toast-error-light: rgba(217, 106, 82, 0.14);
+  --toast-warning: #e8a54a;
+  --toast-warning-light: rgba(232, 165, 74, 0.16);
+  --toast-info: #7aaec4;
+  --toast-info-light: rgba(122, 174, 196, 0.14);
+
+  --header: #0b120f;
+  --header-foreground: #e8e4dc;
+  --header-foreground-muted: rgba(232, 228, 220, 0.72);
+  --header-border: rgba(232, 228, 220, 0.1);
+
+  --sidebar: #121a16;
+  --sidebar-foreground: rgba(232, 228, 220, 0.72);
+  --sidebar-border: rgba(232, 228, 220, 0.08);
+  --sidebar-accent: rgba(232, 228, 220, 0.07);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-section: rgba(232, 228, 220, 0.58);
+}
+
+@theme inline {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-signal: var(--signal);
+  --color-signal-strong: var(--signal-strong);
+  --color-signal-light: var(--signal-light);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-light: var(--destructive-light);
+
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-border-focus: var(--border-focus);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+
+  --color-toast-success: var(--toast-success);
+  --color-toast-success-light: var(--toast-success-light);
+  --color-toast-error: var(--toast-error);
+  --color-toast-error-light: var(--toast-error-light);
+  --color-toast-warning: var(--toast-warning);
+  --color-toast-warning-light: var(--toast-warning-light);
+  --color-toast-info: var(--toast-info);
+  --color-toast-info-light: var(--toast-info-light);
+
+  --color-auth-banner-overlay-dark: var(--auth-banner-overlay-dark);
+  --color-auth-banner-overlay-primary: var(--auth-banner-overlay-primary);
+  --color-auth-banner-text: var(--auth-banner-text);
+  --color-auth-banner-text-muted: var(--auth-banner-text-muted);
+
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-header-foreground-muted: var(--header-foreground-muted);
+  --color-header-border: var(--header-border);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-section: var(--sidebar-section);
+
+  --shadow-card: 0 1px 2px rgba(22, 32, 28, 0.04), 0 8px 24px -12px rgba(22, 32, 28, 0.18);
+  --shadow-input: inset 0 1px 2px rgba(22, 32, 28, 0.04);
+  --shadow-button: 0 1px 2px rgba(22, 32, 28, 0.12);
+  --shadow-button-hover: 0 4px 12px -4px rgba(79, 107, 58, 0.4);
+
+  /* Archivo carries the headings — a grotesque with the flat, wide bones of
+     site signage. Inter runs the interface. Plex Mono is reserved for data a
+     reader compares digit by digit: documents, phones, ids, dates. */
+  --font-display: var(--font-archivo), 'Archivo', system-ui, sans-serif;
+  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    /* Kills the 300ms double-tap delay without disabling pinch zoom. */
+    touch-action: manipulation;
+  }
+
+  /* Headings are display type by default; balance keeps a lone word off the
+     last line. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background-color: var(--primary-light);
+  }
+
+  /* Anchored headings shouldn't land under the fixed header. */
+  :target {
+    scroll-margin-top: 5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * The measured rule — the one structural device this interface repeats.
+   *
+   * A hairline with a tick at its head, borrowed from the title block of a
+   * technical drawing. It only ever marks a real section boundary; it is never
+   * used as ornament.
+   */
+  .measured-rule {
+    position: relative;
+    height: 1px;
+    background-color: var(--border);
+  }
+
+  .measured-rule::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 0;
+    width: 2px;
+    height: 7px;
+    background-color: var(--primary);
+  }
+
+  /* Eyebrow labels: small, wide, upper-case — the register of a stamped
+     drawing label. */
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* Any column of figures a reader scans vertically. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}

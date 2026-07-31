@@ -3,6 +3,12 @@
 ## Goal
 Provide a realistic, testable authentication flow.
 
+> The exact message strings below are documented here for the functional flow; the actual source of
+> truth for every one of them is `authMessages` in `packages/schemas/src/auth.ts` — both `apps/api`
+> and `apps/web` import from there, and `docs/api/http_responses.md` quotes the same object. If a
+> string here ever looks stale, update `authMessages` and let both docs follow it, rather than
+> editing the string in three places.
+
 ---
 
 ## References
