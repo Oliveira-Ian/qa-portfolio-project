@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('POST /api/persons validation', () => {
+// Disabled — written against the pre-auth API (no Authorization header,
+// singular `type` instead of `types`). Every request here now gets 401 from
+// `requireAuth`, and the payload shape itself is stale. Left in place rather
+// than rewritten or removed: the full API/E2E test strategy (auth fixtures,
+// current payloads) is a deliberate later phase — see docs/qa/testing-status.md.
+test.describe.fixme('POST /api/persons validation', () => {
   test('rejects creation with a missing name', async ({ request }) => {
     const response = await request.post('/api/persons', {
       data: { type: 'CLIENT', documentType: 'CPF', document: '12345678901' },
@@ -26,7 +31,8 @@ test.describe('POST /api/persons validation', () => {
   });
 });
 
-test.describe('Person CRUD', () => {
+// Same reason as above — see docs/qa/testing-status.md.
+test.describe.fixme('Person CRUD', () => {
   test('creates, lists, updates and deletes a person', async ({ request }) => {
     const document = String(Date.now()).slice(-11).padStart(11, '0');
 

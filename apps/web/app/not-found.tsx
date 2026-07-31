@@ -3,17 +3,20 @@ import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-8 text-center">
-      <h1 className="text-2xl font-semibold text-foreground" data-testid="not-found-title">
-        Page not found
-      </h1>
-      <p className="text-muted-foreground">The page you&apos;re looking for doesn&apos;t exist.</p>
-      <Button
-        asChild
-        className="rounded-md bg-primary text-primary-foreground hover:bg-primary-hover"
-        data-testid="not-found-button-home"
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-16 text-center">
+      <p className="eyebrow text-primary">404</p>
+      <h1
+        className="mt-3 font-display text-2xl font-semibold text-foreground"
+        data-testid="not-found-title"
       >
-        <Link href="/home">Go home</Link>
+        There&rsquo;s nothing at this address
+      </h1>
+      <p className="mt-3 max-w-md text-sm text-muted-foreground">
+        The page may have been renamed, or the record it pointed at was deleted.
+      </p>
+
+      <Button asChild className="mt-6" data-testid="not-found-button-home">
+        <Link href="/home">Back to Home</Link>
       </Button>
     </div>
   );

@@ -33,6 +33,7 @@ dist/
 build/
 out/
 coverage/
+*.tsbuildinfo
 .nyc_output/
 .eslintcache
 .vite/

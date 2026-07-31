@@ -7,35 +7,163 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  role      String    @default("user")
-  birthDate DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+/// Kept as database enums rather than free text so an invalid value is
+/// rejected by Postgres, not only by the Zod schema in packages/schemas —
+/// anything writing to this table directly used to be able to store "BANANA".
+enum DocumentType {
+  CPF
+  CNPJ
+}
+
+/// Renamed from PersonType, with USER/EMPLOYEE added — see migration
+/// 2 for why this is a separate step from the Person.types column change.
+enum PersonTypeValue {
+  CLIENT
+  SUPPLIER
+  USER
+  EMPLOYEE
+}
+
+/// Technical role — controls access to system administration (accounts,
+/// profiles, permission catalog), not what the person does in the business.
+/// That's what AccessProfile is for (added in a later phase). SYSTEM is
+/// reserved for integrations/jobs and cannot sign in interactively.
+enum AccountRole {
+  ADMIN
+  USER
+  SYSTEM
 }
 
 model Person {
-  id           String    @id @default(uuid())
+  id           String            @id @default(uuid())
   name         String
+  /// Contact e-mail — deliberately separate from AccessAccount.email (the
+  /// login credential); the two can legitimately diverge.
   email        String?
   phone        String?
   birthdate    DateTime?
-  documentType String // CPF | CNPJ
-  document     String
-  type         String // CLIENT | SUPPLIER
-  active       Boolean   @default(true)
+  /// Multiple roles at once (a company can be both a client and a supplier).
+  /// USER marks a person that has an AccessAccount.
+  types        PersonTypeValue[]
+  /// Required only when `types` contains CLIENT or SUPPLIER — enforced by
+  /// personCreateSchema/personFormSchema in packages/schemas, not by the DB.
+  documentType DocumentType?
+  document     String?
+  active       Boolean           @default(true)
   street       String?
   city         String?
   state        String?
   zipCode      String?
   notes        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
-  @@index([type])
+  account AccessAccount?
+
+  @@index([types])
   @@index([active])
+  // GET /api/persons?search= matches name (case-insensitive) or document.
+  @@index([name])
+}
+
+/// Credentials only — no cadastral data lives here, that's Person's job.
+/// Deactivating access (or deleting the account once that's supported)
+/// never touches the person's history.
+model AccessAccount {
+  id       Int      @id @default(autoincrement())
+  personId String   @unique
+  person   Person   @relation(fields: [personId], references: [id])
+  /// The login credential. Kept separate from Person.email on purpose.
+  email    String   @unique
+  /// Reserved for ERP-style login by username — not used for authentication
+  /// yet; e-mail is the credential today (see docs/product/access_control.md).
+  login    String?  @unique
+  password String
+  active   Boolean  @default(true)
+  role     AccountRole @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profiles        AccountProfile[]
+  gridPreferences GridColumnPreference[]
+}
+
+/// Business permissions, not technical role — "what does this account holder
+/// do", as opposed to AccountRole's "is this a system administrator". A
+/// company defines its own profiles (Administrator, Manager, Finance,
+/// Cashier…); AccountRole.ADMIN bypasses this check entirely (see
+/// docs/product/access_control.md), so a profile named "Administrator" is a
+/// *business* role, not the same thing as an ADMIN account.
+model AccessProfile {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  /// System-seeded profiles (Administrator, Default User) can't be deleted
+  /// — deleting the only profile a login flow depends on would break it.
+  isSystem    Boolean  @default(false)
+  /// The profile self-registration links a new account to. Exactly one
+  /// profile should have this set — enforced by the seed script, not the DB.
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions ProfilePermission[]
+  accounts    AccountProfile[]
+}
+
+/// The permission catalog is sealed — rows here only ever come from the
+/// system's own catalog (packages/schemas/src/permissions.ts), seeded by
+/// prisma/seed.ts. Nothing in the product ever lets a user create one; they
+/// only attach existing permissions to a profile.
+model Permission {
+  id       Int     @id @default(autoincrement())
+  resource String
+  action   String
+  label    String?
+
+  profiles ProfilePermission[]
+
+  @@unique([resource, action])
+}
+
+model ProfilePermission {
+  profileId    Int
+  permissionId Int
+  profile      AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  permission   Permission    @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, permissionId])
+}
+
+/// The account↔profile link kept as its own entity ("Access Control")
+/// rather than an implicit many-to-many — the extension point for scoping
+/// access later (per company/branch/department) without touching Person or
+/// AccessProfile at all, just adding a column here.
+model AccountProfile {
+  id         Int           @id @default(autoincrement())
+  accountId  Int
+  profileId  Int
+  account    AccessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  profile    AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  assignedAt DateTime      @default(now())
+
+  @@unique([accountId, profileId])
+}
+
+/// A listing screen's column show/hide + order, saved per account. `gridKey`
+/// is a stable identifier the screen chooses (e.g. "person-list") — the same
+/// table serves every future listing without a new model per screen.
+/// `columns` is the ordered array itself (`{ key, visible }[]`); the shape is
+/// validated by `gridColumnPreferenceSaveSchema` in packages/schemas, not by
+/// the database.
+model GridColumnPreference {
+  id        Int           @id @default(autoincrement())
+  accountId Int
+  account   AccessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  gridKey   String
+  columns   Json
+  updatedAt DateTime      @updatedAt
+
+  @@unique([accountId, gridKey])
 }

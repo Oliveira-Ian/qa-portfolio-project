@@ -1,17 +1,24 @@
 # Design — Components — Forms
 
-## Inputs (`.form-input`)
+## Inputs
 
 - Use tokens from `docs/design/tokens.md`
 - States: default/hover/focus/error
 
-## Labels (`.form-label`)
+## Labels
 
 - Always above the input (do not use placeholders as labels)
 
 ## apps/web (Next.js)
 
-Use shadcn/ui's `Input`, `Label` and `Checkbox` (`apps/web/components/ui/`, added via `npx shadcn add input label checkbox`). All three spread `...props` onto the real DOM element (`Checkbox` onto Radix's `Root`, which renders a real `button[role=checkbox]`), so `data-testid` always lands on the actual interactive element, never a wrapper — the QA rule in `docs/qa/testids.md` applies unchanged.
+Forms are built with **React Hook Form + `@hookform/resolvers/zod`**, validated against the schemas in `packages/schemas` (`loginFormSchema`, `registerFormSchema`, `personFormSchema`) — not manual `useState` + hand-rolled checks. `apps/web/components/ui/form.tsx` is shadcn's `Form` primitive (`FormField`/`FormItem`/`FormLabel`/`FormControl`/`FormMessage`), which wires a field's label, control and error message together via generated ids (`aria-describedby`, `aria-invalid`) so a screen reader announces the error the moment focus lands on an invalid field.
 
-`Input`'s default radius (`rounded-lg`) doesn't match this doc's `--radius-md`; apply `rounded-md shadow-input` at the call site, same pattern as buttons/cards.
+`FormMessage` renders nothing until a field actually fails, with `aria-live="polite"` on the element itself so newly-appearing errors are announced without moving focus. `Input`/`Label`/`Checkbox`/`Select`/`Textarea` (`apps/web/components/ui/`) all spread `...props` onto the real DOM element, so `data-testid` always lands on the actual interactive element, never a wrapper — the QA rule in `docs/qa/testids.md` applies unchanged.
 
+### Shared field layout: `person-form-fields.tsx`
+
+The 12 fields of a Person record are defined once in `apps/web/components/people/person-form-fields.tsx` and reused by all three modes (create, edit, view — the latter via a `disabled` prop, not a separate read-only markup). This replaced ~230 lines of near-duplicated label/input/error blocks in the legacy single-file form, and is what made it possible for every field to show a validation error, not only the three the legacy form wired up.
+
+### Masking and locale
+
+`document` and `phone` are masked live via `apps/web/lib/masks.ts` (pure functions, covered by `tests/unit/masks.test.ts`). Dates, currency and any other locale-sensitive display go through `apps/web/lib/format.ts` (`Intl.DateTimeFormat`/`Intl.NumberFormat`), not hand-built string templates.

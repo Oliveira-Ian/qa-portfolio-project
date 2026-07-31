@@ -10,11 +10,6 @@ RUN npm ci
 
 FROM deps AS build
 WORKDIR /repo
-# NEXT_PUBLIC_* vars are inlined at build time and read by the browser, so
-# this must be the host-reachable URL (http://localhost:3001), not the
-# in-network service name apps/api actually runs at.
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY . .
 RUN npm run build -w packages/schemas
 RUN npm run build -w apps/web
@@ -24,6 +19,11 @@ WORKDIR /repo
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+# The API is called from the Next *server*, never the browser, so this is a
+# plain runtime env var (not NEXT_PUBLIC_*, not a build ARG) — it can point at
+# the in-network service name (http://api:3000) instead of a host-reachable
+# URL, and changing it doesn't require a rebuild.
+ENV API_URL=http://api:3000
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /repo/apps/web/public ./apps/web/public

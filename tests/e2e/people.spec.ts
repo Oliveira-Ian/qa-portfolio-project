@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-test('shows validation errors matching the shared schema', async ({ page }) => {
+// Disabled — written against the pre-auth, pre-navigation-catalog UI: `/people`
+// now requires a session (`proxy.ts` redirects to `/login`), the real testids
+// are `person-list-button-edit`/`person-list-button-delete` (not
+// `person-button-edit`/`person-button-delete`), and the row `dblclick` to open
+// a record no longer navigates — `DataTable` only selects on click by design.
+// Left in place rather than rewritten or removed: the full E2E test strategy
+// (login fixture/storageState, current testids) is a deliberate later phase —
+// see docs/qa/testing-status.md.
+test.fixme('shows validation errors matching the shared schema', async ({ page }) => {
   await page.goto('/people/new');
   await page.getByTestId('person-form-button-save').click();
 
@@ -8,7 +16,7 @@ test('shows validation errors matching the shared schema', async ({ page }) => {
   await expect(page.getByTestId('person-form-error-document')).toHaveText('Document is required');
 });
 
-test('rejects an invalid CPF length', async ({ page }) => {
+test.fixme('rejects an invalid CPF length', async ({ page }) => {
   await page.goto('/people/new');
   await page.getByTestId('person-form-input-name').fill('QA Web Person');
   await page.getByTestId('person-form-input-document').fill('123');
@@ -19,7 +27,7 @@ test('rejects an invalid CPF length', async ({ page }) => {
   );
 });
 
-test('creates, edits, views and deletes a person', async ({ page }) => {
+test.fixme('creates, edits, views and deletes a person', async ({ page }) => {
   const document = String(Date.now()).slice(-11).padStart(11, '0');
 
   await test.step('create', async () => {

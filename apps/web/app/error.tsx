@@ -1,9 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function GlobalError({
+/**
+ * An error screen should say what to do next, not just that something broke.
+ * The most common cause here by far is the API not running, so that is the
+ * first thing it names.
+ */
+export default function ErrorBoundary({
   error,
   reset,
 }: {
@@ -15,18 +21,27 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-8 text-center">
-      <h1 className="text-2xl font-semibold text-foreground" data-testid="error-boundary-title">
-        Something went wrong
-      </h1>
-      <p className="text-muted-foreground">An unexpected error occurred. Please try again.</p>
-      <Button
-        onClick={() => reset()}
-        className="rounded-md bg-primary text-primary-foreground hover:bg-primary-hover"
-        data-testid="error-boundary-button-retry"
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-16 text-center">
+      <p className="eyebrow text-destructive">Something broke</p>
+      <h1
+        className="mt-3 font-display text-2xl font-semibold text-foreground"
+        data-testid="error-boundary-title"
       >
+        This page couldn&rsquo;t load
+      </h1>
+      <p className="mt-3 max-w-md text-sm text-muted-foreground">
+        {error.message ||
+          'The request didn’t come back. Check that the API is running, then try again.'}
+      </p>
+
+      <Button className="mt-6" onClick={() => reset()} data-testid="error-boundary-button-retry">
+        <RotateCcw aria-hidden="true" />
         Try again
       </Button>
+
+      {error.digest ? (
+        <p className="tabular mt-6 text-xs text-text-muted">Reference {error.digest}</p>
+      ) : null}
     </div>
   );
 }

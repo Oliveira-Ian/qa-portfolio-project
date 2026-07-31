@@ -1,62 +1,91 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Wordmark } from '@/components/brand/wordmark';
 
-export default function Home() {
+/**
+ * The public front door.
+ *
+ * Everything past this page needs a session, so the one job here is to say what
+ * the product is and hand over to sign-in. The photograph is the whole hero —
+ * the subject is a construction site, and no abstract illustration would say it
+ * better.
+ */
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col gap-8 p-12" data-testid="styleguide-page">
-      <h1 className="text-2xl font-bold text-foreground">Oliveira ERP — Design System Preview</h1>
+    <main className="relative flex min-h-dvh flex-col" data-testid="landing-page">
+      <Image
+        src="/images/banner.jpg"
+        alt=""
+        aria-hidden="true"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div
+        className="absolute inset-0 bg-linear-to-b from-auth-banner-overlay-dark via-auth-banner-overlay-dark to-auth-banner-overlay-primary"
+        aria-hidden="true"
+      />
 
-      <Card className="max-w-md rounded-lg shadow-card" data-testid="styleguide-card">
-        <CardHeader>
-          <CardTitle>Sign In</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className="rounded-md shadow-input"
-              data-testid="styleguide-input-email"
-            />
-          </div>
+      <div className="relative z-10 flex flex-1 flex-col px-6 py-8 sm:px-10">
+        <header className="flex items-center justify-between gap-4">
+          <Wordmark tone="light" className="text-auth-banner-text" />
+          <Button
+            asChild
+            variant="outline"
+            className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            <Link href="/login" data-testid="landing-button-signin">
+              Sign in
+            </Link>
+          </Button>
+        </header>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox id="remember" data-testid="styleguide-checkbox-remember" />
-              <Label htmlFor="remember" className="text-sm text-muted-foreground">
-                Remember me
-              </Label>
+        <div className="flex flex-1 items-center">
+          <div className="max-w-3xl py-16">
+            <p className="eyebrow text-auth-banner-text-muted">Construction back office</p>
+            <h1 className="mt-5 font-display text-[clamp(2.25rem,6vw,4.25rem)] leading-[1.05] font-semibold tracking-tight text-auth-banner-text">
+              The register every site runs on.
+            </h1>
+            <div className="mt-8 h-px w-20 bg-auth-banner-text/50" aria-hidden="true" />
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-auth-banner-text-muted sm:text-lg">
+              Clients, suppliers and the documents that tie them to a project — kept in one place,
+              on a real database, behind a real API.
+            </p>
+
+            <div className="mt-10 flex flex-wrap gap-3">
+              <Button asChild size="lg" data-testid="landing-button-start">
+                <Link href="/login">
+                  Open the registry
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+              >
+                <Link href="/register" data-testid="landing-button-register">
+                  Create an account
+                </Link>
+              </Button>
             </div>
           </div>
+        </div>
 
-          <Button
-            className="rounded-md bg-primary text-primary-foreground shadow-button hover:bg-primary-hover"
-            data-testid="styleguide-button-submit"
+        <footer className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-auth-banner-text-muted">
+          <span>Built as a QA automation portfolio.</span>
+          <Link
+            href="/styleguide"
+            className="rounded-sm underline underline-offset-4 hover:text-auth-banner-text focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            data-testid="landing-link-styleguide"
           >
-            Sign In
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-wrap gap-3">
-        <Button variant="default">Default</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="outline">Outline</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="destructive">Destructive</Button>
-        <Button variant="link">Link</Button>
-      </div>
-
-      <div className="flex gap-3">
-        <span className="rounded-md bg-toast-success px-3 py-1 text-sm text-white">success</span>
-        <span className="rounded-md bg-toast-error px-3 py-1 text-sm text-white">error</span>
-        <span className="rounded-md bg-toast-warning px-3 py-1 text-sm text-white">warning</span>
-        <span className="rounded-md bg-toast-info px-3 py-1 text-sm text-white">info</span>
+            Design system
+          </Link>
+        </footer>
       </div>
     </main>
   );

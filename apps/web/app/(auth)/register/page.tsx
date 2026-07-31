@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { RegisterForm } from '@/components/auth/register-form';
+import { RegisterForm } from './_components/register-form';
 
 export const metadata: Metadata = {
-  title: 'Sign Up | Oliveira ERP',
+  title: 'Create account',
 };
 
 export default function RegisterPage() {

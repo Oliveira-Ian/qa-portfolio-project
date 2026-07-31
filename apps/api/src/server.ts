@@ -1,18 +1,27 @@
-import 'dotenv/config';
 import { buildApp } from './app.js';
-
-const PORT = Number(process.env.PORT) || 3000;
-// 0.0.0.0, not the Fastify default of localhost — otherwise the server is
-// unreachable from outside a Docker container even with the port published.
-const HOST = process.env.HOST || '0.0.0.0';
+import { env } from './config/env.js';
 
 const app = buildApp();
 
-app.listen({ port: PORT, host: HOST }, (err) => {
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    // Closing the app drains in-flight requests and runs the onClose hook that
+    // disconnects Prisma — without it a container restart leaves sessions open.
+    app.close().then(
+      () => process.exit(0),
+      (error: unknown) => {
+        app.log.error(error);
+        process.exit(1);
+      },
+    );
+  });
+}
+
+app.listen({ port: env.PORT, host: env.HOST }, (err) => {
   if (err) {
     app.log.error(err);
     process.exit(1);
   }
 
-  console.log(`Server running on http://localhost:${PORT}`);
+  app.log.info(`API listening on http://localhost:${env.PORT}`);
 });

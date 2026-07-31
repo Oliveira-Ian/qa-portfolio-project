@@ -3,5 +3,11 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["vitest.config.ts", "tests/unit/**/*.ts", "tests/api/**/*.ts", "tests/e2e/**/*.ts"]
+  "include": [
+    "vitest.config.ts",
+    "tests/unit/**/*.ts",
+    "tests/api/**/*.ts",
+    "tests/e2e/**/*.ts",
+    "prisma/seed.ts"
+  ]
 }
