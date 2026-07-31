@@ -1,12 +1,19 @@
 import 'server-only';
 
-import type { ProfileDto, ProfileWriteInput } from '@oliveira/schemas';
+import type { PaginatedResult, ProfileDto, ProfileWriteInput } from '@oliveira/schemas';
+import { serializeListQuery, type ListQueryState } from '@/lib/list-query';
 import { apiRequest, type ApiResult } from './client';
 
 const BASE = '/api/profiles';
 
-export function requestProfileList(token: string): Promise<ApiResult<ProfileDto[]>> {
-  return apiRequest<ProfileDto[]>(BASE, { token });
+export function requestProfileList(
+  token: string,
+  query: ListQueryState,
+): Promise<ApiResult<PaginatedResult<ProfileDto>>> {
+  return apiRequest<PaginatedResult<ProfileDto>>(BASE, {
+    token,
+    query: Object.fromEntries(new URLSearchParams(serializeListQuery(query))),
+  });
 }
 
 export function requestProfile(token: string, id: number): Promise<ApiResult<ProfileDto>> {

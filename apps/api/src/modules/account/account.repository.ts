@@ -63,15 +63,31 @@ export const accountRepository = {
     });
   },
 
-  findMany(filter?: { personId?: string }): Promise<AccountWithProfiles[]> {
+  /**
+   * `skip`/`take` are optional — `account.service.ts`'s `profileCount`
+   * fallback path fetches every `where`-matched row (no `take`) to
+   * filter/sort on that computed value in memory.
+   */
+  findMany(
+    where: Prisma.AccessAccountWhereInput,
+    orderBy: Prisma.AccessAccountOrderByWithRelationInput[],
+    skip?: number,
+    take?: number,
+  ): Promise<AccountWithProfiles[]> {
     return prisma.accessAccount.findMany({
-      where: filter?.personId === undefined ? {} : { personId: filter.personId },
+      where,
+      orderBy,
       include: {
         person: true,
         profiles: { include: { profile: { select: { id: true, name: true } } } },
       },
-      orderBy: { createdAt: 'desc' },
+      ...(skip === undefined ? {} : { skip }),
+      ...(take === undefined ? {} : { take }),
     });
+  },
+
+  count(where: Prisma.AccessAccountWhereInput): Promise<number> {
+    return prisma.accessAccount.count({ where });
   },
 
   /** Active ADMIN accounts, optionally excluding one — see `account-guards.ts`. */

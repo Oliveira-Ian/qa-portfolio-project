@@ -9,9 +9,9 @@ import type {
   AccountDto,
   AccountRole,
   GridColumnPreferenceDto,
-  GridColumnPreferenceItem,
   ProfileDto,
 } from '@oliveira/schemas';
+import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -20,22 +20,25 @@ import { Pagination } from '@/components/data-table/pagination';
 import { RowActionsMenu, type RowAction } from '@/components/data-table/row-actions-menu';
 import { ToolbarList } from '@/components/data-table/toolbar-list';
 import { useDataTable } from '@/components/data-table/use-data-table';
+import { useListingScreen } from '@/components/data-table/use-listing-screen';
+import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { updateAccountAction } from '../_actions/update-account';
 import { saveAccountGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
   ACCOUNT_CUSTOMIZABLE_COLUMNS,
-  ACCOUNT_DEFAULT_VISIBLE_KEYS,
   ACCOUNT_EXPORT_COLUMNS,
   buildAccountColumns,
 } from './account-columns';
-import { ACCOUNT_FILTER_FIELDS } from './account-filter-fields';
+import { ACCOUNT_FILTER_FIELDS, ACCOUNT_FILTERABLE_COLUMNS } from './account-filter-fields';
 import { ManageProfilesDialog } from './manage-profiles-dialog';
 
 const TESTID_PREFIX = 'account-list';
 
 interface AccountListProps {
   accounts: AccountDto[];
+  /** Total rows across every page — `accounts.length` is just the current page's. */
+  total: number;
   profiles: ProfileDto[];
   gridPreference: GridColumnPreferenceDto | null;
 }
@@ -51,37 +54,30 @@ interface AccountListProps {
  * values, which is why those columns are built by a function taking
  * callbacks rather than declared as a static array.
  */
-export function AccountList({ accounts, profiles, gridPreference }: AccountListProps) {
+export function AccountList({ accounts, total, profiles, gridPreference }: AccountListProps) {
   const router = useRouter();
+  const { query, setQuery } = useListNavigation(ACCOUNT_FILTERABLE_COLUMNS);
   const [isPending, startTransition] = useTransition();
   const [managingAccountId, setManagingAccountId] = useState<number | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportNonce, setExportNonce] = useState(0);
+  const {
+    initialColumnVisibility,
+    initialColumnOrder,
+    filtersOpen,
+    setFiltersOpen,
+    customizeOpen,
+    setCustomizeOpen,
+    exportOpen,
+    setExportOpen,
+    exportNonce,
+    openExport,
+    handleSaveGridPreference,
+  } = useListingScreen({
+    gridPreference,
+    customizableColumns: ACCOUNT_CUSTOMIZABLE_COLUMNS,
+    saveGridPreferenceAction: saveAccountGridPreferenceAction,
+  });
 
   const managingAccount = accounts.find((account) => account.id === managingAccountId) ?? null;
-
-  const initialColumnVisibility = useMemo(() => {
-    if (gridPreference) {
-      return Object.fromEntries(
-        gridPreference.columns.map((column) => [column.key, column.visible]),
-      );
-    }
-
-    return Object.fromEntries(
-      ACCOUNT_CUSTOMIZABLE_COLUMNS.map((column) => [
-        column.key,
-        ACCOUNT_DEFAULT_VISIBLE_KEYS.has(column.key),
-      ]),
-    );
-  }, [gridPreference]);
-
-  const initialColumnOrder = useMemo(() => {
-    const savedOrder = gridPreference?.columns.map((column) => column.key);
-    const dataColumnOrder = savedOrder ?? ACCOUNT_CUSTOMIZABLE_COLUMNS.map((column) => column.key);
-    return [...dataColumnOrder, 'actions'];
-  }, [gridPreference]);
 
   const handleRoleChange = useCallback(
     (account: AccountDto, role: AccountRole) => {
@@ -169,20 +165,12 @@ export function AccountList({ accounts, profiles, gridPreference }: AccountListP
     data: accounts,
     columns,
     getRowId: (account) => String(account.id),
+    rowCount: total,
+    query,
+    onQueryChange: setQuery,
     initialColumnVisibility,
     initialColumnOrder,
   });
-
-  async function handleSaveGridPreference(preferenceColumns: GridColumnPreferenceItem[]) {
-    const result = await saveAccountGridPreferenceAction(preferenceColumns);
-
-    if (!result.success) {
-      toast.error(result.message ?? 'Could not save your column preferences');
-      return;
-    }
-
-    toast.success('Column preferences saved');
-  }
 
   return (
     <div data-testid="users-page-container">
@@ -197,18 +185,17 @@ export function AccountList({ accounts, profiles, gridPreference }: AccountListP
         <ToolbarList
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          onExport={() => {
-            setExportNonce((nonce) => nonce + 1);
-            setExportOpen(true);
-          }}
+          onExport={openExport}
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
         />
       </div>
 
+      <ActiveFilters table={table} fields={ACCOUNT_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
+
       <div
-        className="overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable

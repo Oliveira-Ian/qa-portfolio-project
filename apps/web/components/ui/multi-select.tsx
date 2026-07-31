@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronsUpDown, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -14,9 +14,22 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
+/** A discreet tint, reusing the same token pairs `PersonTypeBadge` already uses — no new colors. */
+export type MultiSelectTone = 'neutral' | 'primary' | 'signal' | 'success' | 'destructive';
+
+const TONE_CLASSES: Record<MultiSelectTone, string> = {
+  neutral: 'border-transparent bg-muted text-foreground',
+  primary: 'border-primary/40 bg-primary-light text-primary',
+  signal: 'border-signal/40 bg-signal-light text-signal-strong',
+  success: 'border-toast-success/40 bg-toast-success-light text-toast-success',
+  destructive: 'border-destructive/40 bg-destructive-light text-destructive',
+};
+
 export interface MultiSelectOption {
   value: string;
   label: string;
+  /** Defaults to `'neutral'` — a soft category color for the selected tag, not the dropdown row. */
+  tone?: MultiSelectTone;
 }
 
 interface MultiSelectProps extends Omit<
@@ -30,8 +43,13 @@ interface MultiSelectProps extends Omit<
   searchPlaceholder?: string;
   emptyText?: string;
   disabled?: boolean;
-  /** Custom chip renderer for a selected option — falls back to a plain `Badge`. */
-  renderTag?: (option: MultiSelectOption) => React.ReactNode;
+  /**
+   * Custom chip renderer for a selected option — falls back to a plain tinted
+   * `Badge`. Receives the remove callback so a custom tag can merge its own
+   * remove control the same way the default one does, rather than getting a
+   * second, separately-drawn `X` button next to it.
+   */
+  renderTag?: (option: MultiSelectOption, onRemove: () => void) => React.ReactNode;
 }
 
 /**
@@ -109,33 +127,32 @@ export function MultiSelect({
           {selected.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
-            selected.map((option) => (
-              <span key={option.value} className="inline-flex items-center gap-1">
-                {renderTag ? (
-                  renderTag(option)
-                ) : (
-                  <Badge variant="outline" className="border-border text-foreground">
-                    {option.label}
-                  </Badge>
-                )}
-                {!disabled && (
-                  <button
-                    type="button"
-                    aria-label={`Remove ${option.label}`}
-                    className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      remove(option.value);
-                    }}
-                    onMouseDown={(event) => event.stopPropagation()}
-                  >
-                    <X className="size-3" aria-hidden="true" />
-                  </button>
-                )}
-              </span>
-            ))
+            selected.map((option) => {
+              const handleRemove = () => remove(option.value);
+
+              return (
+                // `display: contents` — this span exists only to give the
+                // mapped element a stable key; the tag itself becomes a
+                // direct flex item of the trigger, same as if there were no
+                // wrapper at all.
+                <span key={option.value} className="contents">
+                  {renderTag ? (
+                    renderTag(option, handleRemove)
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className={cn('rounded-sm', TONE_CLASSES[option.tone ?? 'neutral'])}
+                      removeLabel={`Remove ${option.label}`}
+                      {...(disabled ? {} : { onRemove: handleRemove })}
+                    >
+                      {option.label}
+                    </Badge>
+                  )}
+                </span>
+              );
+            })
           )}
-          <ChevronsUpDown
+          <ChevronDown
             className="ml-auto size-4 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />

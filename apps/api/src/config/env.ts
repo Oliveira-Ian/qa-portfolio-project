@@ -22,6 +22,16 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1).default(DEV_JWT_SECRET),
   /** Anything `jose` accepts: `30m`, `8h`, `7d`. */
   JWT_EXPIRES_IN: z.string().min(1).default('8h'),
+  /**
+   * Comma-separated allowlist for `@fastify/cors` — `apps/web` never calls
+   * this API from the browser (it's a server-side-only client, see
+   * `docs/adr/`), so this only matters for a browser hitting the API
+   * directly: Swagger UI's own "Try it out", or a developer's own fetch
+   * from the web app's origin during debugging. Defaults to that origin
+   * rather than reflecting any `Origin` header, which is what having no
+   * `origin` option configured at all used to do.
+   */
+  CORS_ORIGINS: z.string().min(1).default('http://localhost:3000'),
 });
 
 function loadEnv() {
@@ -44,3 +54,8 @@ function loadEnv() {
 export const env = loadEnv();
 
 export type Env = typeof env;
+
+/** `CORS_ORIGINS` split and trimmed — what `app.ts` hands `@fastify/cors`'s `origin` option. */
+export const corsOrigins = env.CORS_ORIGINS.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);

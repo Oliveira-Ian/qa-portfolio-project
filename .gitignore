@@ -89,3 +89,4 @@ src/generated/prisma/
 .cursor/
 .cursor-cache/
 .cursor-tmp/
+.playwright-mcp/

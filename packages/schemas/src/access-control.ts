@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { accountRoleSchema, type AccountRole } from './auth.js';
+import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
 
 /* -------------------------------------------------------------------------- */
 /* Permissions (read-only from the API's point of view)                        */
@@ -38,6 +39,13 @@ export interface ProfileDto {
   isDefault: boolean;
   permissions: PermissionDto[];
 }
+
+/** `GET /api/profiles`'s query contract — pagination, sort and a global `search` (name/description contains). */
+export const profileListQuerySchema = paginationQuerySchema.extend(sortQuerySchema.shape).extend({
+  search: z.string().trim().optional(),
+});
+
+export type ProfileListQuery = z.infer<typeof profileListQuerySchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
@@ -83,3 +91,16 @@ export interface AccountDto {
   createdAt: string;
   profiles: { id: number; name: string }[];
 }
+
+/**
+ * `GET /api/accounts`'s query contract — pagination, sort, a global `search`
+ * (person name/email contains), plus the existing `personId` scoping filter
+ * (Person's edit page uses this alone, without pagination, to check whether
+ * a person already has an account).
+ */
+export const accountListQuerySchema = paginationQuerySchema.extend(sortQuerySchema.shape).extend({
+  search: z.string().trim().optional(),
+  personId: z.string().trim().optional(),
+});
+
+export type AccountListQuery = z.infer<typeof accountListQuerySchema>;

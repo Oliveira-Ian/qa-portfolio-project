@@ -7,9 +7,10 @@ interface EmptyStateProps {
 }
 
 /**
- * The message a `DataTable` renders in place of its rows when there's
- * nothing to show — no illustration, just a title, a short description and
- * an optional primary action (usually "Add the first …").
+ * The message shown in place of rows when there's nothing to display — no
+ * illustration, just a title, a short description and an optional primary
+ * action (usually "Add the first …"). Generic enough for any empty list or
+ * empty search result, not just a `DataTable`.
  */
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (

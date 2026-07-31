@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { X } from 'lucide-react';
 import { Slot } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
@@ -28,17 +29,47 @@ function Badge({
   className,
   variant = 'default',
   asChild = false,
+  onRemove,
+  removeLabel = 'Remove',
+  children,
   ...props
-}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+}: React.ComponentProps<'span'> &
+  VariantProps<typeof badgeVariants> & {
+    asChild?: boolean;
+    /**
+     * Renders a remove control merged inside the badge's own rounded edge —
+     * `bg-current/10` tints the hover state from whatever text color the
+     * active variant/tone already uses, so one class works across all of them
+     * without a per-variant hover color.
+     */
+    onRemove?: () => void;
+    removeLabel?: string;
+  }) {
   const Comp = asChild ? Slot.Root : 'span';
 
   return (
     <Comp
       data-slot="badge"
       data-variant={variant}
-      className={cn(badgeVariants({ variant }), className)}
+      className={cn(badgeVariants({ variant }), onRemove && 'pr-1', className)}
       {...props}
-    />
+    >
+      {children}
+      {onRemove ? (
+        <button
+          type="button"
+          aria-label={removeLabel}
+          className="-mr-0.5 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-current/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <X className="size-3" aria-hidden="true" />
+        </button>
+      ) : null}
+    </Comp>
   );
 }
 

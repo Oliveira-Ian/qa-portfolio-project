@@ -4,10 +4,12 @@ import { ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { PersonTypeBadges } from '@/components/people/person-badges';
 import { Button } from '@/components/ui/button';
-import { formatCount, formatDate } from '@/lib/format';
+import { StatCard } from '@/components/ui/stat-card';
+import { formatDate } from '@/lib/format';
 import { ROUTES } from '@/lib/navigation/routes';
 import { getSessionAccount } from '@/lib/session';
 import { getRegistrySummary } from './_data-access/get-registry-summary';
+import { PersonTypeBreakdownChart } from './_components/person-type-breakdown-chart';
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -45,14 +47,23 @@ export default async function HomePage() {
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border shadow-card lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-card px-5 py-6">
-            <dt className="eyebrow text-muted-foreground">{stat.label}</dt>
-            <dd className="tabular mt-2 text-3xl leading-none font-medium text-foreground">
-              {formatCount(stat.value)}
-            </dd>
-          </div>
+          <StatCard key={stat.label} label={stat.label} value={stat.value} />
         ))}
       </dl>
+
+      <section className="mt-8" aria-labelledby="breakdown-heading">
+        <h2 id="breakdown-heading" className="text-lg font-semibold text-foreground">
+          By type
+        </h2>
+        <div className="measured-rule mt-4" aria-hidden="true" />
+        <div className="mt-4 rounded-lg border border-border bg-card p-5 shadow-card">
+          <PersonTypeBreakdownChart
+            clients={summary.clients}
+            suppliers={summary.suppliers}
+            inactive={summary.inactive}
+          />
+        </div>
+      </section>
 
       <section className="mt-8" aria-labelledby="recent-records-heading">
         <div className="flex items-end justify-between gap-4">

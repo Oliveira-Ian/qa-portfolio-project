@@ -392,6 +392,16 @@ Every route also attaches its Zod schema to Fastify purely as **OpenAPI document
 
 `apps/api` explicitly allows `GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS` (`apps/api/src/app.ts`). `@fastify/cors`'s own default only allows `GET`/`HEAD`/`POST` — the person endpoints' `PUT`/`DELETE` calls (and later, `/api/accounts/:id`'s `PATCH`) were silently blocked by the browser's preflight check until this was set explicitly. This only surfaces with a real browser `fetch` (curl and Playwright's API request context don't enforce CORS), which is why it wasn't caught until `apps/web`'s Person edit/delete flows were tested end-to-end in a browser. In practice `apps/web` never triggers this at all — it calls the API server-side, and CORS is a browser-only mechanism — but the header list should still match what the API actually exposes for any client that does call it from a browser.
 
+`origin` is an explicit allowlist (`CORS_ORIGINS`, `apps/api/src/config/env.ts` — defaults to `http://localhost:3000`, `apps/web`'s own origin), not left unset. An unset `origin` makes `@fastify/cors` reflect whatever `Origin` header the request sends, which accepts a cross-origin browser request from anywhere; since nothing here actually needs that (see above), there was no reason to allow it.
+
+## Rate limiting
+
+`@fastify/rate-limit` (`apps/api/src/app.ts`) caps every route at 100 requests/minute per IP by default. `POST /api/auth/login` and `POST /api/auth/register` override that to 5/minute — bcrypt makes each login attempt costly enough on its own (`apps/api/src/modules/auth/password.ts`) that this is as much a CPU-exhaustion guard as a brute-force one. `GET /health` opts out entirely (`config: { rateLimit: false }`), since a liveness probe hitting it every few seconds shouldn't share a bucket with real traffic from the same IP. A request over the limit answers **429** with `@fastify/rate-limit`'s own body, outside the `{ success, error }` envelope — same category of infrastructure-level response as CORS, not a domain error `error-handler.ts` decides.
+
+## Security headers
+
+`@fastify/helmet` (`apps/api/src/app.ts`) sets the standard set (`X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, …) with `contentSecurityPolicy` turned off — Swagger UI (`/docs`) serves its own inline scripts/styles a default policy would block, and this API has no HTML surface of its own for a CSP to protect.
+
 ## Notes
 - All error messages should be clear and actionable for users
 - Frontend applications can rely on `success` boolean to handle responses

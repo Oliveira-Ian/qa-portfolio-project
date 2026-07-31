@@ -1,5 +1,10 @@
 # Design — Components — Forms
 
+> This file covers the rules behind the components. For a live, always-current view of every form
+> control — Input, Select, Combobox, MaskedInput, DatePicker, FileUpload, and the rest — rendered
+> from the real component, not a screenshot, see
+> [`/styleguide`](/styleguide)`#form-controls`.
+
 ## Inputs
 
 - Use tokens from `docs/design/tokens.md`

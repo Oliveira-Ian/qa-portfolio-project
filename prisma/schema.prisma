@@ -1,10 +1,15 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  // Backs the two `gin_trgm_ops` indexes on Person below — makes
+  // `GET /api/persons?search=`'s `contains` (Prisma's ILIKE) hit an index
+  // instead of a sequential scan as the table grows past a few hundred rows.
+  extensions = [pg_trgm]
 }
 
 /// Kept as database enums rather than free text so an invalid value is
@@ -60,10 +65,22 @@ model Person {
 
   account AccessAccount?
 
+  @@unique([document, documentType])
   @@index([types])
   @@index([active])
-  // GET /api/persons?search= matches name (case-insensitive) or document.
+  // The default `findMany` order (`person.service.ts`) and every other
+  // sort column already round out with `id` as a tie-breaker, but
+  // `createdAt` itself is what most listings actually sort/page by.
+  @@index([createdAt])
+  // The plain B-tree still earns its keep for `ORDER BY name` (sorting the
+  // People grid by name) and exact/prefix lookups — a GIN index doesn't
+  // accelerate sorting at all, only WHERE-clause matching.
   @@index([name])
+  // `gin_trgm_ops`: makes `GET /api/persons?search=`'s `contains` (Prisma's
+  // ILIKE `'%term%'`) use an index instead of a sequential table scan — a
+  // B-tree can't accelerate a leading-wildcard match.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Person_name_trgm_idx")
+  @@index([document(ops: raw("gin_trgm_ops"))], type: Gin, map: "Person_document_trgm_idx")
 }
 
 /// Credentials only — no cadastral data lives here, that's Person's job.

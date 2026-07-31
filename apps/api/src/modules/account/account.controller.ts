@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   accountCreateSchema,
+  accountListQuerySchema,
   accountProfileLinkSchema,
   accountUpdateSchema,
 } from '@oliveira/schemas';
@@ -13,12 +14,10 @@ export type WithProfileLink = WithParams<'id' | 'profileId'>;
 
 export const accountController = {
   async list(request: FastifyRequest, reply: FastifyReply) {
-    const { personId } = request.query as { personId?: string };
-    return sendSuccess(
-      reply,
-      200,
-      await accountService.list(personId === undefined ? {} : { personId }),
-    );
+    const query = parseOrThrow(accountListQuerySchema, request.query);
+    const result = await accountService.list(query, request.query as Record<string, unknown>);
+
+    return sendSuccess(reply, 200, result);
   },
 
   async getById(request: FastifyRequest<WithId>, reply: FastifyReply) {

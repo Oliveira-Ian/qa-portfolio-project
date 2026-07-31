@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   accountCreateSchema,
+  accountListQuerySchema,
   accountProfileLinkSchema,
   accountUpdateSchema,
 } from '@oliveira/schemas';
@@ -21,7 +22,12 @@ export async function accountRoutes(app: FastifyInstance) {
   app.get(
     '/',
     {
-      schema: { tags: ['accounts'], security: [{ bearerAuth: [] }] },
+      validatorCompiler: docsOnlyValidatorCompiler,
+      schema: {
+        tags: ['accounts'],
+        querystring: accountListQuerySchema,
+        security: [{ bearerAuth: [] }],
+      },
       config: { errorMessage: 'Failed to list accounts' },
     },
     accountController.list,

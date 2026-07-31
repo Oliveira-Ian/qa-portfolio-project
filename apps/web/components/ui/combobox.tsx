@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -78,7 +78,7 @@ export function Combobox({
           <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
             {selected ? selected.label : placeholder}
           </span>
-          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </button>
       </PopoverTrigger>
 

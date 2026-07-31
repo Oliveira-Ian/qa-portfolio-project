@@ -60,6 +60,7 @@
   /* Clay */
   --destructive: #b4442e;
   --destructive-foreground: #ffffff;
+  --destructive-light: rgba(180, 68, 46, 0.1);
 
   --border: #dcd6cb;
   --border-hover: #b9b1a2;
@@ -68,10 +69,17 @@
   --input-background: #ffffff;
   --ring: #4f6b3a;
 
+  /* Tint of each toast color, same technique as --primary-light/--signal-light
+     (the color's own hex at ~10-12% opacity, not a shared/blind opacity value)
+     — for a soft fill behind a badge or a status pill, not just the outline. */
   --toast-success: #3e7d4e;
+  --toast-success-light: rgba(62, 125, 78, 0.1);
   --toast-error: #b4442e;
+  --toast-error-light: rgba(180, 68, 46, 0.1);
   --toast-warning: #c8791f;
+  --toast-warning-light: rgba(200, 121, 31, 0.12);
   --toast-info: #3e6b7d;
+  --toast-info-light: rgba(62, 107, 125, 0.1);
 
   --auth-banner-overlay-dark: rgba(22, 32, 28, 0.72);
   --auth-banner-overlay-primary: rgba(79, 107, 58, 0.34);
@@ -126,6 +134,7 @@
 
   --destructive: #d96a52;
   --destructive-foreground: #0e1512;
+  --destructive-light: rgba(217, 106, 82, 0.14);
 
   --border: #2a362f;
   --border-hover: #3d4c43;
@@ -135,9 +144,13 @@
   --ring: #8fb06a;
 
   --toast-success: #7bbf8a;
+  --toast-success-light: rgba(123, 191, 138, 0.14);
   --toast-error: #d96a52;
+  --toast-error-light: rgba(217, 106, 82, 0.14);
   --toast-warning: #e8a54a;
+  --toast-warning-light: rgba(232, 165, 74, 0.16);
   --toast-info: #7aaec4;
+  --toast-info-light: rgba(122, 174, 196, 0.14);
 
   --header: #0b120f;
   --header-foreground: #e8e4dc;
@@ -188,6 +201,7 @@
 
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-light: var(--destructive-light);
 
   --color-border: var(--border);
   --color-border-hover: var(--border-hover);
@@ -197,9 +211,13 @@
   --color-ring: var(--ring);
 
   --color-toast-success: var(--toast-success);
+  --color-toast-success-light: var(--toast-success-light);
   --color-toast-error: var(--toast-error);
+  --color-toast-error-light: var(--toast-error-light);
   --color-toast-warning: var(--toast-warning);
+  --color-toast-warning-light: var(--toast-warning-light);
   --color-toast-info: var(--toast-info);
+  --color-toast-info-light: var(--toast-info-light);
 
   --color-auth-banner-overlay-dark: var(--auth-banner-overlay-dark);
   --color-auth-banner-overlay-primary: var(--auth-banner-overlay-primary);

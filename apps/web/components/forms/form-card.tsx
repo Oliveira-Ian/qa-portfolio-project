@@ -88,7 +88,7 @@ export function FormCardHeader({
         <div className="min-w-0">
           <p className="eyebrow text-primary">{eyebrow}</p>
           <h1
-            className="mt-1.5 truncate font-display text-2xl font-semibold tracking-tight text-foreground"
+            className="mt-1.5 truncate font-display text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
             data-testid={titleTestId}
           >
             {title}

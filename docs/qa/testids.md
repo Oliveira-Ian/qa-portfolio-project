@@ -72,7 +72,7 @@ never a generic one. People's instance (`testIdPrefix="person-list"`) is the ref
 - `person-list-column-filter-{columnId}`, `person-list-column-filter-{columnId}-input`
 - `person-list-row-actions-trigger` (the "⋮" button — static, repeated per row; right-click opens the same menu with no id of its own)
 - `person-list-row-action-view`, `person-list-row-action-edit`, `person-list-row-action-delete` (also static/repeated — scope by row)
-- `person-list-pagination`, `person-list-pagination-prev`, `person-list-pagination-info`, `person-list-pagination-next`
+- `person-list-pagination`, `person-list-pagination-first`, `person-list-pagination-prev`, `person-list-pagination-info`, `person-list-pagination-next`, `person-list-pagination-last`, `person-list-pagination-page-size`, `person-list-pagination-range` (the "Showing X–Y of Z" text), `person-list-pagination-selection`/`person-list-pagination-clear-selection` (replaces `-range` once at least one row is selected)
 - `person-list-filter-drawer`, `person-list-filter-drawer-{fieldKey}`, `person-list-filter-drawer-clear`, `person-list-filter-drawer-close`
 - `person-list-customize-modal`, `person-list-customize-checkbox-{key}`, `person-list-customize-move-up-{key}`, `person-list-customize-move-down-{key}`, `person-list-customize-restore`, `person-list-customize-save`
 - `person-list-export-modal`, `person-list-export-checkbox-{key}`, `person-list-export-move-up-{key}`, `person-list-export-move-down-{key}`, `person-list-export-confirm`

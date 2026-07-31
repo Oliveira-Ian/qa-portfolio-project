@@ -5,7 +5,7 @@ import type { Table } from '@tanstack/react-table';
 import { Download, Filter, RefreshCw, Settings2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { SearchInput } from './search-input';
+import { SearchInput } from '@/components/ui/search-input';
 
 interface ToolbarListProps<TData> {
   table: Table<TData>;

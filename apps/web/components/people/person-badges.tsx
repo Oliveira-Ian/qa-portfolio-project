@@ -24,14 +24,21 @@ const TYPE_TONE: Record<PersonTypeValue, string> = {
 export function PersonTypeBadge({
   type,
   className,
+  onRemove,
+  removeLabel,
 }: {
   type: PersonTypeValue;
   className?: string;
+  /** Set only when this badge doubles as a removable tag — e.g. inside a MultiSelect. */
+  onRemove?: () => void;
+  removeLabel?: string;
 }) {
   return (
     <Badge
       variant="outline"
       className={cn('eyebrow rounded-sm border px-2 py-0.5', TYPE_TONE[type], className)}
+      removeLabel={removeLabel ?? `Remove ${TYPE_LABEL[type]}`}
+      {...(onRemove ? { onRemove } : {})}
     >
       {TYPE_LABEL[type]}
     </Badge>
@@ -55,17 +62,29 @@ export function PersonTypeBadges({
   );
 }
 
-export function PersonStatusBadge({ active, className }: { active: boolean; className?: string }) {
+export function PersonStatusBadge({
+  active,
+  className,
+  onRemove,
+  removeLabel,
+}: {
+  active: boolean;
+  className?: string;
+  onRemove?: () => void;
+  removeLabel?: string;
+}) {
   return (
     <Badge
       variant="outline"
       className={cn(
         'eyebrow rounded-sm border px-2 py-0.5',
         active
-          ? 'border-toast-success/40 bg-toast-success/10 text-toast-success'
+          ? 'border-toast-success/40 bg-toast-success-light text-toast-success'
           : 'border-border bg-muted text-muted-foreground',
         className,
       )}
+      removeLabel={removeLabel ?? `Remove ${active ? 'Active' : 'Inactive'}`}
+      {...(onRemove ? { onRemove } : {})}
     >
       {active ? 'Active' : 'Inactive'}
     </Badge>

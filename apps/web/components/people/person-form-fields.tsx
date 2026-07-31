@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
   requiresDocument,
@@ -9,16 +10,13 @@ import {
 } from '@oliveira/schemas';
 import { PersonTypeBadge } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MaskedInput } from '@/components/ui/masked-input';
 import { MultiSelect } from '@/components/ui/multi-select';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { maskDocument, maskPhone } from '@/lib/masks';
 
@@ -35,14 +33,8 @@ interface PersonFormFieldsProps {
   disabled?: boolean;
 }
 
-function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <fieldset className="min-w-0">
-      <legend className="eyebrow text-muted-foreground">{title}</legend>
-      <div className="measured-rule mt-2 mb-5" aria-hidden="true" />
-      <div className="grid gap-5 sm:grid-cols-2">{children}</div>
-    </fieldset>
-  );
+function FieldGrid({ children }: { children: React.ReactNode }) {
+  return <div className="grid gap-5 pt-1 sm:grid-cols-2">{children}</div>;
 }
 
 const PERSON_TYPE_OPTIONS: { value: PersonTypeValue; label: string }[] = [
@@ -51,6 +43,54 @@ const PERSON_TYPE_OPTIONS: { value: PersonTypeValue; label: string }[] = [
   { value: 'USER', label: 'User' },
   { value: 'EMPLOYEE', label: 'Employee' },
 ];
+
+const DOCUMENT_TYPE_OPTIONS: ComboboxOption[] = [
+  { value: 'CPF', label: 'CPF' },
+  { value: 'CNPJ', label: 'CNPJ' },
+];
+
+/** The 26 states plus the Federal District, by their standard two-letter code. */
+const BRAZILIAN_STATES: ComboboxOption[] = [
+  { value: 'AC', label: 'Acre' },
+  { value: 'AL', label: 'Alagoas' },
+  { value: 'AP', label: 'Amapá' },
+  { value: 'AM', label: 'Amazonas' },
+  { value: 'BA', label: 'Bahia' },
+  { value: 'CE', label: 'Ceará' },
+  { value: 'DF', label: 'Distrito Federal' },
+  { value: 'ES', label: 'Espírito Santo' },
+  { value: 'GO', label: 'Goiás' },
+  { value: 'MA', label: 'Maranhão' },
+  { value: 'MT', label: 'Mato Grosso' },
+  { value: 'MS', label: 'Mato Grosso do Sul' },
+  { value: 'MG', label: 'Minas Gerais' },
+  { value: 'PA', label: 'Pará' },
+  { value: 'PB', label: 'Paraíba' },
+  { value: 'PR', label: 'Paraná' },
+  { value: 'PE', label: 'Pernambuco' },
+  { value: 'PI', label: 'Piauí' },
+  { value: 'RJ', label: 'Rio de Janeiro' },
+  { value: 'RN', label: 'Rio Grande do Norte' },
+  { value: 'RS', label: 'Rio Grande do Sul' },
+  { value: 'RO', label: 'Rondônia' },
+  { value: 'RR', label: 'Roraima' },
+  { value: 'SC', label: 'Santa Catarina' },
+  { value: 'SP', label: 'São Paulo' },
+  { value: 'SE', label: 'Sergipe' },
+  { value: 'TO', label: 'Tocantins' },
+];
+
+type PersonFormTab = 'identification' | 'contact' | 'address' | 'notes';
+
+/** Which tab each field lives on — used to jump to the first invalid tab on a failed submit. */
+const TAB_FIELDS: Record<PersonFormTab, (keyof PersonFormValues)[]> = {
+  identification: ['name', 'types', 'documentType', 'document'],
+  contact: ['email', 'phone', 'birthdate', 'active'],
+  address: ['street', 'city', 'state', 'zipCode'],
+  notes: ['notes'],
+};
+
+const TAB_ORDER: PersonFormTab[] = ['identification', 'contact', 'address', 'notes'];
 
 /**
  * A person can hold more than one role at once, so this is a multi-select
@@ -74,7 +114,9 @@ function TypesField({ disabled }: { disabled: boolean }) {
               onChange={field.onChange}
               disabled={disabled}
               placeholder="Select…"
-              renderTag={(option) => <PersonTypeBadge type={option.value as PersonTypeValue} />}
+              renderTag={(option, onRemove) => (
+                <PersonTypeBadge type={option.value as PersonTypeValue} onRemove={onRemove} />
+              )}
               data-testid="person-form-multiselect-types"
             />
           </FormControl>
@@ -108,28 +150,24 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel data-testid="person-form-label-document-type">Document type</FormLabel>
-            <Select
-              value={field.value ?? ''}
-              disabled={disabled}
-              onValueChange={(value: DocumentType) => {
-                field.onChange(value);
-                // CPF and CNPJ mask differently, so switching type has to
-                // reformat whatever is already typed.
-                form.setValue('document', maskDocument(form.getValues('document'), value), {
-                  shouldValidate: form.formState.isSubmitted,
-                });
-              }}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full" data-testid="person-form-input-document-type">
-                  <SelectValue placeholder="Select…" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="CPF">CPF</SelectItem>
-                <SelectItem value="CNPJ">CNPJ</SelectItem>
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <Combobox
+                options={DOCUMENT_TYPE_OPTIONS}
+                value={field.value}
+                disabled={disabled}
+                placeholder="Select…"
+                onChange={(rawValue: string) => {
+                  const value = rawValue as DocumentType;
+                  field.onChange(value);
+                  // CPF and CNPJ mask differently, so switching type has to
+                  // reformat whatever is already typed.
+                  form.setValue('document', maskDocument(form.getValues('document'), value), {
+                    shouldValidate: form.formState.isSubmitted,
+                  });
+                }}
+                data-testid="person-form-input-document-type"
+              />
+            </FormControl>
             <FormMessage data-testid="person-form-error-document-type" />
           </FormItem>
         )}
@@ -142,8 +180,9 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
           <FormItem className="sm:col-span-2">
             <FormLabel data-testid="person-form-label-document">Document</FormLabel>
             <FormControl>
-              <Input
+              <MaskedInput
                 {...field}
+                mask={(rawValue) => maskDocument(rawValue, documentType ?? 'CPF')}
                 disabled={disabled}
                 inputMode="numeric"
                 spellCheck={false}
@@ -151,9 +190,6 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
                 className="tabular"
                 placeholder={documentType === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
                 data-testid="person-form-input-document"
-                onChange={(event) =>
-                  field.onChange(maskDocument(event.target.value, documentType ?? 'CPF'))
-                }
               />
             </FormControl>
             <FormMessage data-testid="person-form-error-document" />
@@ -166,217 +202,260 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
 
 export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
   const form = useFormContext<PersonFormValues>();
+  const [activeTab, setActiveTab] = useState<PersonFormTab>('identification');
+
+  // Jump to the first tab holding an invalid field, once per submit attempt —
+  // adjusted during render (React's documented alternative to an effect for
+  // "derive state from a value that just changed") rather than in a
+  // `useEffect`, so fixing one field doesn't yank the user back on every
+  // keystroke afterward.
+  const [handledSubmitCount, setHandledSubmitCount] = useState(0);
+  const { submitCount, errors } = form.formState;
+
+  if (submitCount !== handledSubmitCount) {
+    setHandledSubmitCount(submitCount);
+
+    const erroredTab = TAB_ORDER.find((tab) => TAB_FIELDS[tab].some((field) => errors[field]));
+
+    if (erroredTab) {
+      setActiveTab(erroredTab);
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      <FieldGroup title="Identification">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem className="sm:col-span-2">
-              <FormLabel data-testid="person-form-label-name">Name</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={disabled}
-                  autoComplete="organization"
-                  placeholder="Construtora Vale Verde"
-                  data-testid="person-form-input-name"
-                />
-              </FormControl>
-              <FormMessage data-testid="person-form-error-name" />
-            </FormItem>
-          )}
-        />
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as PersonFormTab)}>
+      <TabsList>
+        <TabsTrigger value="identification" data-testid="person-form-tab-identification">
+          Identification
+        </TabsTrigger>
+        <TabsTrigger value="contact" data-testid="person-form-tab-contact">
+          Contact
+        </TabsTrigger>
+        <TabsTrigger value="address" data-testid="person-form-tab-address">
+          Address
+        </TabsTrigger>
+        <TabsTrigger value="notes" data-testid="person-form-tab-notes">
+          Notes
+        </TabsTrigger>
+      </TabsList>
 
-        <TypesField disabled={disabled} />
-        <DocumentFields disabled={disabled} />
-      </FieldGroup>
+      <TabsContent value="identification" className="mt-5">
+        <FieldGrid>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2">
+                <FormLabel data-testid="person-form-label-name">Name</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    disabled={disabled}
+                    autoComplete="organization"
+                    placeholder="Construtora Vale Verde"
+                    data-testid="person-form-input-name"
+                  />
+                </FormControl>
+                <FormMessage data-testid="person-form-error-name" />
+              </FormItem>
+            )}
+          />
 
-      <FieldGroup title="Contact">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-email">Email</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="email"
-                  disabled={disabled}
-                  autoComplete="email"
-                  inputMode="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder="contact@example.com"
-                  data-testid="person-form-input-email"
-                />
-              </FormControl>
-              <FormMessage data-testid="person-form-error-email" />
-            </FormItem>
-          )}
-        />
+          <TypesField disabled={disabled} />
+          <DocumentFields disabled={disabled} />
+        </FieldGrid>
+      </TabsContent>
 
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-phone">Phone</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="tel"
-                  disabled={disabled}
-                  autoComplete="tel"
-                  inputMode="tel"
-                  className="tabular"
-                  placeholder="(11) 98765-4321"
-                  data-testid="person-form-input-phone"
-                  onChange={(event) => field.onChange(maskPhone(event.target.value))}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+      <TabsContent value="contact" className="mt-5">
+        <FieldGrid>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-email">Email</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="email"
+                    disabled={disabled}
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="contact@example.com"
+                    data-testid="person-form-input-email"
+                  />
+                </FormControl>
+                <FormMessage data-testid="person-form-error-email" />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="birthdate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-birthdate">Birthdate</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="date"
-                  disabled={disabled}
-                  autoComplete="bday"
-                  className="tabular"
-                  data-testid="person-form-input-birthdate"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-phone">Phone</FormLabel>
+                <FormControl>
+                  <MaskedInput
+                    {...field}
+                    mask={maskPhone}
+                    type="tel"
+                    disabled={disabled}
+                    autoComplete="tel"
+                    inputMode="tel"
+                    className="tabular"
+                    placeholder="(11) 98765-4321"
+                    data-testid="person-form-input-phone"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="active"
-          render={({ field }) => (
-            <FormItem className="justify-end">
-              <label className="flex w-fit cursor-pointer items-center gap-2.5 py-2 text-sm text-foreground">
-                <Checkbox
-                  checked={field.value}
-                  disabled={disabled}
-                  data-testid="person-form-checkbox-active"
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-                Active record
-              </label>
-            </FormItem>
-          )}
-        />
-      </FieldGroup>
+          <FormField
+            control={form.control}
+            name="birthdate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-birthdate">Birthdate</FormLabel>
+                <FormControl>
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={disabled}
+                    placeholder="Select a date…"
+                    data-testid="person-form-input-birthdate"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-      <FieldGroup title="Address">
-        <FormField
-          control={form.control}
-          name="street"
-          render={({ field }) => (
-            <FormItem className="sm:col-span-2">
-              <FormLabel data-testid="person-form-label-street">Street</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={disabled}
-                  autoComplete="street-address"
-                  data-testid="person-form-input-street"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="active"
+            render={({ field }) => (
+              <FormItem className="justify-end">
+                <label className="flex w-fit cursor-pointer items-center gap-2.5 py-2 text-sm text-foreground">
+                  <Checkbox
+                    checked={field.value}
+                    disabled={disabled}
+                    data-testid="person-form-checkbox-active"
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                  />
+                  Active record
+                </label>
+              </FormItem>
+            )}
+          />
+        </FieldGrid>
+      </TabsContent>
 
-        <FormField
-          control={form.control}
-          name="city"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-city">City</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={disabled}
-                  autoComplete="address-level2"
-                  data-testid="person-form-input-city"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+      <TabsContent value="address" className="mt-5">
+        <FieldGrid>
+          <FormField
+            control={form.control}
+            name="street"
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2">
+                <FormLabel data-testid="person-form-label-street">Street</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    disabled={disabled}
+                    autoComplete="street-address"
+                    data-testid="person-form-input-street"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="state"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-state">State</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={disabled}
-                  autoComplete="address-level1"
-                  data-testid="person-form-input-state"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-city">City</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    disabled={disabled}
+                    autoComplete="address-level2"
+                    data-testid="person-form-input-city"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="zipCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel data-testid="person-form-label-zipcode">Zip code</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={disabled}
-                  autoComplete="postal-code"
-                  inputMode="numeric"
-                  className="tabular"
-                  data-testid="person-form-input-zipcode"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-      </FieldGroup>
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-state">State</FormLabel>
+                <FormControl>
+                  <Combobox
+                    options={BRAZILIAN_STATES}
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={disabled}
+                    placeholder="Select…"
+                    data-testid="person-form-input-state"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-      <FieldGroup title="Notes">
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem className="sm:col-span-2">
-              <FormLabel data-testid="person-form-label-notes">Notes</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  rows={3}
-                  disabled={disabled}
-                  placeholder="Anything the team should know about this record…"
-                  data-testid="person-form-input-notes"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-      </FieldGroup>
-    </div>
+          <FormField
+            control={form.control}
+            name="zipCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel data-testid="person-form-label-zipcode">Zip code</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    disabled={disabled}
+                    autoComplete="postal-code"
+                    inputMode="numeric"
+                    className="tabular"
+                    data-testid="person-form-input-zipcode"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </FieldGrid>
+      </TabsContent>
+
+      <TabsContent value="notes" className="mt-5">
+        <FieldGrid>
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2">
+                <FormLabel data-testid="person-form-label-notes">Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    rows={3}
+                    disabled={disabled}
+                    placeholder="Anything the team should know about this record…"
+                    data-testid="person-form-input-notes"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </FieldGrid>
+      </TabsContent>
+    </Tabs>
   );
 }

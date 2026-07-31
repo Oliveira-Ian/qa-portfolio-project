@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError } from '../../shared/errors.js';
 import { RECORD_NOT_FOUND, isPrismaCode } from '../../shared/prisma-errors.js';
@@ -13,10 +14,29 @@ export interface ProfileWriteData {
 /**
  * The boundary where Prisma stops — its error codes are translated into
  * domain errors here, same pattern as `person.repository.ts`.
+ *
+ * `skip`/`take` are optional — `profile.service.ts`'s `permissionCount`
+ * fallback path fetches every `where`-matched row (no `take`) to filter/sort
+ * on that computed value in memory, rather than slicing at the database.
  */
 export const profileRepository = {
-  findMany() {
-    return prisma.accessProfile.findMany({ include: includePermissions, orderBy: { name: 'asc' } });
+  findMany(
+    where: Prisma.AccessProfileWhereInput,
+    orderBy: Prisma.AccessProfileOrderByWithRelationInput[],
+    skip?: number,
+    take?: number,
+  ) {
+    return prisma.accessProfile.findMany({
+      where,
+      orderBy,
+      include: includePermissions,
+      ...(skip === undefined ? {} : { skip }),
+      ...(take === undefined ? {} : { take }),
+    });
+  },
+
+  count(where: Prisma.AccessProfileWhereInput): Promise<number> {
+    return prisma.accessProfile.count({ where });
   },
 
   findById(id: number) {

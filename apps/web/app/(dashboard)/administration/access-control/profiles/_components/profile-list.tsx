@@ -6,11 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type {
-  GridColumnPreferenceDto,
-  GridColumnPreferenceItem,
-  ProfileDto,
-} from '@oliveira/schemas';
+import type { GridColumnPreferenceDto, ProfileDto } from '@oliveira/schemas';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -30,6 +27,8 @@ import { Pagination } from '@/components/data-table/pagination';
 import { RowActionsMenu, type RowAction } from '@/components/data-table/row-actions-menu';
 import { ToolbarList } from '@/components/data-table/toolbar-list';
 import { useDataTable } from '@/components/data-table/use-data-table';
+import { useListingScreen } from '@/components/data-table/use-listing-screen';
+import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { formatCount } from '@/lib/format';
 import { ROUTES } from '@/lib/navigation/routes';
@@ -37,16 +36,17 @@ import { deleteProfileAction } from '../_actions/delete-profile';
 import { saveProfileGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
   PROFILE_CUSTOMIZABLE_COLUMNS,
-  PROFILE_DEFAULT_VISIBLE_KEYS,
   PROFILE_EXPORT_COLUMNS,
   profileColumns,
 } from './profile-columns';
-import { PROFILE_FILTER_FIELDS } from './profile-filter-fields';
+import { PROFILE_FILTER_FIELDS, PROFILE_FILTERABLE_COLUMNS } from './profile-filter-fields';
 
 const TESTID_PREFIX = 'profile-list';
 
 interface ProfileListProps {
   profiles: ProfileDto[];
+  /** Total rows across every page — `profiles.length` is just the current page's. */
+  total: number;
   gridPreference: GridColumnPreferenceDto | null;
 }
 
@@ -61,35 +61,28 @@ interface ProfileListProps {
  * profile (Administrator, Default User): the API itself rejects deleting
  * one with a 409, this just avoids the round trip.
  */
-export function ProfileList({ profiles, gridPreference }: ProfileListProps) {
+export function ProfileList({ profiles, total, gridPreference }: ProfileListProps) {
   const router = useRouter();
+  const { query, setQuery } = useListNavigation(PROFILE_FILTERABLE_COLUMNS);
   const [isDeleting, startDeleting] = useTransition();
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[] | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportNonce, setExportNonce] = useState(0);
-
-  const initialColumnVisibility = useMemo(() => {
-    if (gridPreference) {
-      return Object.fromEntries(
-        gridPreference.columns.map((column) => [column.key, column.visible]),
-      );
-    }
-
-    return Object.fromEntries(
-      PROFILE_CUSTOMIZABLE_COLUMNS.map((column) => [
-        column.key,
-        PROFILE_DEFAULT_VISIBLE_KEYS.has(column.key),
-      ]),
-    );
-  }, [gridPreference]);
-
-  const initialColumnOrder = useMemo(() => {
-    const savedOrder = gridPreference?.columns.map((column) => column.key);
-    const dataColumnOrder = savedOrder ?? PROFILE_CUSTOMIZABLE_COLUMNS.map((column) => column.key);
-    return [...dataColumnOrder, 'actions'];
-  }, [gridPreference]);
+  const {
+    initialColumnVisibility,
+    initialColumnOrder,
+    filtersOpen,
+    setFiltersOpen,
+    customizeOpen,
+    setCustomizeOpen,
+    exportOpen,
+    setExportOpen,
+    exportNonce,
+    openExport,
+    handleSaveGridPreference,
+  } = useListingScreen({
+    gridPreference,
+    customizableColumns: PROFILE_CUSTOMIZABLE_COLUMNS,
+    saveGridPreferenceAction: saveProfileGridPreferenceAction,
+  });
 
   // Shared by the "⋮" column cell and `DataTable`'s `rowActions` (right-click
   // menu) — declared once so both paths always show the identical list.
@@ -138,6 +131,9 @@ export function ProfileList({ profiles, gridPreference }: ProfileListProps) {
     data: profiles,
     columns,
     getRowId: (profile) => String(profile.id),
+    rowCount: total,
+    query,
+    onQueryChange: setQuery,
     initialColumnVisibility,
     initialColumnOrder,
   });
@@ -173,17 +169,6 @@ export function ProfileList({ profiles, gridPreference }: ProfileListProps) {
     });
   }
 
-  async function handleSaveGridPreference(preferenceColumns: GridColumnPreferenceItem[]) {
-    const result = await saveProfileGridPreferenceAction(preferenceColumns);
-
-    if (!result.success) {
-      toast.error(result.message ?? 'Could not save your column preferences');
-      return;
-    }
-
-    toast.success('Column preferences saved');
-  }
-
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
@@ -192,8 +177,8 @@ export function ProfileList({ profiles, gridPreference }: ProfileListProps) {
         titleTestId={`${TESTID_PREFIX}-title`}
         meta={
           <p className="eyebrow mt-3 text-muted-foreground">
-            <span className="tabular">{formatCount(profiles.length)}</span>{' '}
-            {profiles.length === 1 ? 'profile' : 'profiles'}
+            <span className="tabular">{formatCount(total)}</span>{' '}
+            {total === 1 ? 'profile' : 'profiles'}
           </p>
         }
         actions={
@@ -231,24 +216,24 @@ export function ProfileList({ profiles, gridPreference }: ProfileListProps) {
         <ToolbarList
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          onExport={() => {
-            setExportNonce((nonce) => nonce + 1);
-            setExportOpen(true);
-          }}
+          onExport={openExport}
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
         />
       </div>
 
+      <ActiveFilters table={table} fields={PROFILE_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
+
       <div
-        className="overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable
           table={table}
           testIdPrefix={TESTID_PREFIX}
           rowActions={getRowActions}
+          getRowLabel={(profile) => profile.name}
           emptyState={{
             title: 'No profiles yet',
             description: 'Profiles group permissions — create one and link it to an account.',

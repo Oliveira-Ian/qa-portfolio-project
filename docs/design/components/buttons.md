@@ -1,5 +1,9 @@
 # Design — Components — Buttons
 
+> This file covers the rules behind the component. For a live, always-current view of every
+> variant/size/state — rendered from the real component, not a screenshot — see
+> [`/styleguide`](/styleguide)`#buttons-actions-button`.
+
 ## Primary button
 
 Rule: consistent visuals, visible focus, and an appropriate touch target — `h-10` (40px) default, up from shadcn's stock `h-8`, since this is a back-office UI people click through for hours rather than a marketing page.

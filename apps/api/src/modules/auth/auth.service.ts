@@ -8,7 +8,7 @@ import {
 import { UnauthorizedError, BadRequestError } from '../../shared/errors.js';
 import { accountRepository } from '../account/account.repository.js';
 import { getEffectivePermissions } from './permissions.service.js';
-import { hashPassword, verifyPassword } from './password.js';
+import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from './password.js';
 import { signSessionToken } from './token.js';
 
 export interface LoginResult {
@@ -37,16 +37,23 @@ export const authService = {
   async login({ email, password }: LoginInput): Promise<LoginResult> {
     const account = await accountRepository.findByEmail(email);
 
+    // `verifyPassword` always runs — against the real hash when the account
+    // exists, against `DUMMY_PASSWORD_HASH` otherwise — so an unknown e-mail
+    // takes the same one `bcrypt.compare()` as a wrong password rather than
+    // returning early on `!account` and finishing measurably faster. A
+    // response-time difference between "no such account" and "wrong
+    // password" is exactly the kind of side channel the single shared error
+    // message below is already trying to close.
+    const passwordMatches = await verifyPassword(
+      password,
+      account?.password ?? DUMMY_PASSWORD_HASH,
+    );
+
     // One message covers every failure reason — unknown e-mail, wrong
     // password, deactivated account, or a SYSTEM account (reserved for
     // integrations/jobs, never interactive login) — so the response can't be
     // used to enumerate which addresses are registered or which are admins.
-    if (
-      !account ||
-      !(await verifyPassword(password, account.password)) ||
-      !account.active ||
-      account.role === 'SYSTEM'
-    ) {
+    if (!account || !passwordMatches || !account.active || account.role === 'SYSTEM') {
       throw new UnauthorizedError(authMessages.login.invalidCredentials);
     }
 

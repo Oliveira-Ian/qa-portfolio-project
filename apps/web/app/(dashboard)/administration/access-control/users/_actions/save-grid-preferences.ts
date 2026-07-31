@@ -1,20 +1,14 @@
 'use server';
 
 import type { GridColumnPreferenceItem } from '@oliveira/schemas';
-import { requestGridPreferenceSave } from '@/lib/api/grid-preferences';
 import type { ActionResult } from '@/lib/actions';
-import { requireSession } from '@/lib/session';
+import { createGridPreferenceAccess } from '@/lib/grid-preferences';
 import { ACCOUNT_GRID_KEY } from '../_data-access/get-grid-preferences';
+
+const { savePreference } = createGridPreferenceAccess(ACCOUNT_GRID_KEY);
 
 export async function saveAccountGridPreferenceAction(
   columns: GridColumnPreferenceItem[],
 ): Promise<ActionResult> {
-  const { token } = await requireSession();
-  const result = await requestGridPreferenceSave(token, ACCOUNT_GRID_KEY, { columns });
-
-  if (!result.success) {
-    return { success: false, message: result.error };
-  }
-
-  return { success: true };
+  return savePreference(columns);
 }

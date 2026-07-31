@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { profileWriteSchema } from '@oliveira/schemas';
+import { profileListQuerySchema, profileWriteSchema } from '@oliveira/schemas';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import type { WithId } from '../../shared/params.js';
 import { requireAuth } from '../auth/require-auth.js';
@@ -20,7 +20,12 @@ export async function profileRoutes(app: FastifyInstance) {
   app.get(
     '/',
     {
-      schema: { tags: ['profiles'], security: [{ bearerAuth: [] }] },
+      validatorCompiler: docsOnlyValidatorCompiler,
+      schema: {
+        tags: ['profiles'],
+        querystring: profileListQuerySchema,
+        security: [{ bearerAuth: [] }],
+      },
       config: { errorMessage: 'Failed to list profiles' },
     },
     profileController.list,

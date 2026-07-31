@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { personCreateSchema, personQuerySchema, personUpdateSchema } from '@oliveira/schemas';
+import {
+  personCreateSchema,
+  personDeleteManySchema,
+  personListQuerySchema,
+  personUpdateSchema,
+} from '@oliveira/schemas';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import type { WithId } from '../../shared/params.js';
 import { requireAuth } from '../auth/require-auth.js';
@@ -26,10 +31,26 @@ export async function personRoutes(app: FastifyInstance) {
     {
       preHandler: requirePermission('person:view'),
       validatorCompiler: docsOnlyValidatorCompiler,
-      schema: { tags: ['persons'], querystring: personQuerySchema, security: [{ bearerAuth: [] }] },
+      schema: {
+        tags: ['persons'],
+        querystring: personListQuerySchema,
+        security: [{ bearerAuth: [] }],
+      },
       config: { errorMessage: 'Failed to list persons' },
     },
     personController.list,
+  );
+  // A static route ahead of `/:id` — Fastify's router already prioritizes
+  // static segments over parametric ones regardless of registration order,
+  // but the ordering here still reads as "the more specific route first".
+  app.get(
+    '/summary',
+    {
+      preHandler: requirePermission('person:view'),
+      schema: { tags: ['persons'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to load registry summary' },
+    },
+    personController.summary,
   );
   app.get<WithId>(
     '/:id',
@@ -68,5 +89,17 @@ export async function personRoutes(app: FastifyInstance) {
       config: { errorMessage: 'Failed to delete person' },
     },
     personController.remove,
+  );
+  // A separate route rather than accepting `ids` on `/:id` — the two request
+  // shapes (path param vs body) aren't worth conflating into one handler.
+  app.delete(
+    '/',
+    {
+      preHandler: requirePermission('person:delete'),
+      validatorCompiler: docsOnlyValidatorCompiler,
+      schema: { tags: ['persons'], body: personDeleteManySchema, security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to delete people' },
+    },
+    personController.removeMany,
   );
 }

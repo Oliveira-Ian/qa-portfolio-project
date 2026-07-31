@@ -44,9 +44,12 @@ export function FilterDrawer<TData>({
   testIdPrefix,
 }: FilterDrawerProps<TData>) {
   function clearAll() {
-    for (const field of fields) {
-      table.getColumn(field.key)?.setFilterValue(undefined);
-    }
+    // `table.resetColumnFilters()`, not a loop over `fields` — `fields` is
+    // only the curated subset this drawer shows; a filter set from a
+    // column's own quick `ColumnFilter` on a column outside that subset
+    // (e.g. `city`) needs clearing too, or "Clear all" doesn't actually
+    // mean all.
+    table.resetColumnFilters();
   }
 
   return (

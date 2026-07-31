@@ -1,15 +1,32 @@
 import 'server-only';
 
-import type { AccountCreateInput, AccountDto, AccountUpdateInput } from '@oliveira/schemas';
+import type {
+  AccountCreateInput,
+  AccountDto,
+  AccountUpdateInput,
+  PaginatedResult,
+} from '@oliveira/schemas';
+import { serializeListQuery, type ListQueryState } from '@/lib/list-query';
 import { apiRequest, type ApiResult } from './client';
 
 const BASE = '/api/accounts';
 
+/** `personId` scopes to the one account belonging to that person (0 or 1 result) — used by the Person edit page, independent of the Users listing screen's own paginated `query`. */
 export function requestAccountList(
   token: string,
-  query: { personId?: string } = {},
-): Promise<ApiResult<AccountDto[]>> {
-  return apiRequest<AccountDto[]>(BASE, { token, query });
+  query: ListQueryState,
+  personId?: string,
+): Promise<ApiResult<PaginatedResult<AccountDto>>> {
+  const params = new URLSearchParams(serializeListQuery(query));
+
+  if (personId) {
+    params.set('personId', personId);
+  }
+
+  return apiRequest<PaginatedResult<AccountDto>>(BASE, {
+    token,
+    query: Object.fromEntries(params),
+  });
 }
 
 export function requestAccountCreate(

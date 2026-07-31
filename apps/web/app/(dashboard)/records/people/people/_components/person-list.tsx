@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { GridColumnPreferenceDto, GridColumnPreferenceItem, Person } from '@oliveira/schemas';
+import type { GridColumnPreferenceDto, Person } from '@oliveira/schemas';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -26,6 +27,8 @@ import { Pagination } from '@/components/data-table/pagination';
 import { RowActionsMenu, type RowAction } from '@/components/data-table/row-actions-menu';
 import { ToolbarList } from '@/components/data-table/toolbar-list';
 import { useDataTable } from '@/components/data-table/use-data-table';
+import { useListingScreen } from '@/components/data-table/use-listing-screen';
+import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { formatCount } from '@/lib/format';
 import { ROUTES } from '@/lib/navigation/routes';
@@ -33,16 +36,17 @@ import { deletePersonsAction } from '../_actions/delete-persons';
 import { savePersonGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
   PERSON_CUSTOMIZABLE_COLUMNS,
-  PERSON_DEFAULT_VISIBLE_KEYS,
   PERSON_EXPORT_COLUMNS,
   personColumns,
 } from './person-columns';
-import { PERSON_FILTER_FIELDS } from './person-filter-fields';
+import { PERSON_FILTER_FIELDS, PERSON_FILTERABLE_COLUMNS } from './person-filter-fields';
 
 const TESTID_PREFIX = 'person-list';
 
 interface PersonListProps {
   people: Person[];
+  /** Total rows across every page — `people.length` is just the current page's. */
+  total: number;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -63,39 +67,33 @@ interface PersonListProps {
  */
 export function PersonList({
   people,
+  total,
   canCreate,
   canEdit,
   canDelete,
   gridPreference,
 }: PersonListProps) {
   const router = useRouter();
+  const { query, setQuery } = useListNavigation(PERSON_FILTERABLE_COLUMNS);
   const [isDeleting, startDeleting] = useTransition();
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportNonce, setExportNonce] = useState(0);
-
-  const initialColumnVisibility = useMemo(() => {
-    if (gridPreference) {
-      return Object.fromEntries(
-        gridPreference.columns.map((column) => [column.key, column.visible]),
-      );
-    }
-
-    return Object.fromEntries(
-      PERSON_CUSTOMIZABLE_COLUMNS.map((column) => [
-        column.key,
-        PERSON_DEFAULT_VISIBLE_KEYS.has(column.key),
-      ]),
-    );
-  }, [gridPreference]);
-
-  const initialColumnOrder = useMemo(() => {
-    const savedOrder = gridPreference?.columns.map((column) => column.key);
-    const dataColumnOrder = savedOrder ?? PERSON_CUSTOMIZABLE_COLUMNS.map((column) => column.key);
-    return [...dataColumnOrder, 'actions'];
-  }, [gridPreference]);
+  const {
+    initialColumnVisibility,
+    initialColumnOrder,
+    filtersOpen,
+    setFiltersOpen,
+    customizeOpen,
+    setCustomizeOpen,
+    exportOpen,
+    setExportOpen,
+    exportNonce,
+    openExport,
+    handleSaveGridPreference,
+  } = useListingScreen({
+    gridPreference,
+    customizableColumns: PERSON_CUSTOMIZABLE_COLUMNS,
+    saveGridPreferenceAction: savePersonGridPreferenceAction,
+  });
 
   // Shared by the "⋮" column cell and `DataTable`'s `rowActions` (right-click
   // menu) — declared once so both paths always show the identical list.
@@ -160,6 +158,9 @@ export function PersonList({
     data: people,
     columns,
     getRowId: (person) => person.id,
+    rowCount: total,
+    query,
+    onQueryChange: setQuery,
     initialColumnVisibility,
     initialColumnOrder,
   });
@@ -194,17 +195,6 @@ export function PersonList({
     });
   }
 
-  async function handleSaveGridPreference(preferenceColumns: GridColumnPreferenceItem[]) {
-    const result = await savePersonGridPreferenceAction(preferenceColumns);
-
-    if (!result.success) {
-      toast.error(result.message ?? 'Could not save your column preferences');
-      return;
-    }
-
-    toast.success('Column preferences saved');
-  }
-
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
@@ -213,8 +203,8 @@ export function PersonList({
         titleTestId={`${TESTID_PREFIX}-title`}
         meta={
           <p className="eyebrow mt-3 text-muted-foreground">
-            <span className="tabular">{formatCount(people.length)}</span>{' '}
-            {people.length === 1 ? 'record' : 'records'}
+            <span className="tabular">{formatCount(total)}</span>{' '}
+            {total === 1 ? 'record' : 'records'}
           </p>
         }
         actions={
@@ -258,24 +248,24 @@ export function PersonList({
         <ToolbarList
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          onExport={() => {
-            setExportNonce((nonce) => nonce + 1);
-            setExportOpen(true);
-          }}
+          onExport={openExport}
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
         />
       </div>
 
+      <ActiveFilters table={table} fields={PERSON_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
+
       <div
-        className="overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable
           table={table}
           testIdPrefix={TESTID_PREFIX}
           rowActions={getRowActions}
+          getRowLabel={(person) => person.name}
           emptyState={{
             title: 'The registry is empty',
             description:

@@ -6,5 +6,9 @@ import type { FastifyInstance } from 'fastify';
  */
 export async function healthRoutes(app: FastifyInstance) {
   // `hide: true` — a liveness probe, not part of the documented API surface.
-  app.get('/health', { schema: { hide: true } }, async () => ({ status: 'ok' }));
+  // `rateLimit: false` — a probe hitting this every few seconds shouldn't
+  // share a bucket with real traffic from the same IP.
+  app.get('/health', { schema: { hide: true }, config: { rateLimit: false } }, async () => ({
+    status: 'ok',
+  }));
 }

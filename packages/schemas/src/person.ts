@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isValidEmail } from './email.js';
+import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
 
 /**
  * A Person can hold more than one role at once — a company can be a client
@@ -97,6 +98,13 @@ export type PersonUpdateInput = z.infer<typeof personUpdateSchema>;
 export type PersonTypeValue = z.infer<typeof personTypeValueSchema>;
 export type DocumentType = z.infer<typeof documentTypeSchema>;
 
+/** Body of `DELETE /api/persons` — deletes every id in one transaction, all-or-nothing. */
+export const personDeleteManySchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'At least one id is required'),
+});
+
+export type PersonDeleteManyInput = z.infer<typeof personDeleteManySchema>;
+
 /**
  * Filters accepted by `GET /api/persons`.
  *
@@ -118,6 +126,21 @@ export const personQuerySchema = z.object({
 });
 
 export type PersonQuery = z.infer<typeof personQuerySchema>;
+
+/**
+ * `GET /api/persons`'s full query contract: the legacy `type`/`active`/
+ * `search` filters above, plus pagination and sorting. Per-column quick
+ * filters (`f_name`, `f_active`, …) are deliberately not part of this
+ * schema — their key set is dynamic (one column, one entity, at a time),
+ * which doesn't fit a fixed Zod object shape; `apps/api/src/shared/list-query.ts`
+ * parses those directly off the raw query object instead, against a
+ * per-entity field map that's the real whitelist of what's accepted.
+ */
+export const personListQuerySchema = personQuerySchema
+  .extend(paginationQuerySchema.shape)
+  .extend(sortQuerySchema.shape);
+
+export type PersonListQuery = z.infer<typeof personListQuerySchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Form values                                                                 */
@@ -259,4 +282,20 @@ export interface Person {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * `GET /api/persons/summary`'s response — the four counters and "latest
+ * entries" list `/home` needs. A dedicated aggregate endpoint so that page
+ * asks Postgres for four `COUNT`s and a `LIMIT 5`, instead of fetching every
+ * person over HTTP just to fold them client-side (what `get-registry-summary.ts`
+ * used to do before server-side pagination made "just fetch everything"
+ * stop being an option).
+ */
+export interface PersonSummaryDto {
+  total: number;
+  clients: number;
+  suppliers: number;
+  inactive: number;
+  recent: Person[];
 }

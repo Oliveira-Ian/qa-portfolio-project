@@ -1,15 +1,7 @@
-import 'server-only';
-
-import { cache } from 'react';
-import type { GridColumnPreferenceDto } from '@oliveira/schemas';
-import { unwrap } from '@/lib/api/client';
-import { requestGridPreference } from '@/lib/api/grid-preferences';
-import { requireSession } from '@/lib/session';
+import { createGridPreferenceAccess } from '@/lib/grid-preferences';
 
 /** Identifies this grid to the shared preferences backend — see `docs/api/http_responses.md`. */
 export const ACCOUNT_GRID_KEY = 'account-list';
 
-export const getAccountGridPreference = cache(async (): Promise<GridColumnPreferenceDto | null> => {
-  const { token } = await requireSession();
-  return unwrap(await requestGridPreference(token, ACCOUNT_GRID_KEY));
-});
+export const { getPreference: getAccountGridPreference } =
+  createGridPreferenceAccess(ACCOUNT_GRID_KEY);

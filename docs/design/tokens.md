@@ -1,6 +1,7 @@
 # Design — Tokens
 
-Single source of truth for the tokens (CSS variables) used in this project.
+Single source of truth for the tokens (CSS variables) used in this project. For every swatch
+rendered live against the current theme, see [`/styleguide`](/styleguide)`#foundations-colors`.
 
 The palette is called **Olival** and is derived from the product's own assets rather than picked in the abstract: the logo is an olive tree (Oliveira — the company's name), and the auth/landing banner is a construction site at golden hour. Olive is the primary, ink is the chrome, amber is the signal colour (a site vest, the sunset), and the page ground is a warm limestone rather than a cool grey.
 
@@ -33,6 +34,7 @@ The palette is called **Olival** and is derived from the product's own assets ra
   /* Clay — destructive */
   --destructive: #b4442e;
   --destructive-foreground: #ffffff;
+  --destructive-light: rgba(180, 68, 46, 0.1);
 
   --border: #dcd6cb;
   --border-focus: #4f6b3a;
@@ -73,6 +75,15 @@ A full `.dark` block exists with the same variable names, lifted for contrast ra
 - Always reuse tokens; avoid hardcoding values.
 - When you need a recurring new value (e.g. overlay/banner), create a semantic token.
 - A colour used as **text** must be checked against WCAG AA independently of how it reads as a fill — this is why `--signal` and `--signal-strong` are two different tokens instead of one used for both roles.
+
+### Tint tokens (`-light`)
+
+`--primary-light` and `--signal-light` are each a soft fill for their colour — the colour's own hex
+at a low, per-theme-tuned opacity (light ~10-12%, dark ~14-16%, since a flat opacity value reads
+differently against a light vs. a dark ground). `--destructive-light`,
+`--toast-success-light`, `--toast-error-light`, `--toast-warning-light` and `--toast-info-light`
+follow the same technique — every semantic colour that needs a badge/pill fill now has one, so
+nothing reaches for an ad-hoc `bg-destructive/10`-style opacity suffix instead of a named token.
 
 ## Tailwind mapping (apps/web)
 

@@ -1,8 +1,11 @@
 'use client';
 
+import { move } from '@dnd-kit/helpers';
+import { DragDropProvider } from '@dnd-kit/react';
+import { useSortable } from '@dnd-kit/react/sortable';
 import type { Table } from '@tanstack/react-table';
 import type { GridColumnPreferenceItem } from '@oliveira/schemas';
-import { ArrowDown, ArrowUp, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowUp, GripVertical, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -12,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 export interface CustomizableColumn {
   key: string;
@@ -31,9 +35,42 @@ interface GridCustomizationModalProps<TData> {
 }
 
 /**
- * Show/hide + reorder (↑/↓ buttons, not drag-and-drop — see the plan's
- * rationale: keyboard-accessible for free, no second new dependency) for
- * every column the routine declared.
+ * A drag handle (mouse/touch) plus the ↑/↓ buttons (keyboard, screen
+ * readers) both write the same `move`/`table.setColumnOrder` — dragging is a
+ * convenience layer over the fully keyboard-accessible path, never a
+ * replacement for it.
+ */
+function SortableColumnRow({
+  id,
+  index,
+  children,
+}: {
+  id: string;
+  index: number;
+  children: React.ReactNode;
+}) {
+  const { ref, handleRef, isDragging } = useSortable({ id, index });
+
+  return (
+    <li
+      ref={ref}
+      className={cn('flex items-center gap-1 rounded-md px-1.5 py-1', isDragging && 'opacity-50')}
+    >
+      <div
+        ref={handleRef}
+        aria-hidden="true"
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="size-4" aria-hidden="true" />
+      </div>
+      {children}
+    </li>
+  );
+}
+
+/**
+ * Show/hide + reorder (drag handle, or the ↑/↓ buttons kept for keyboard and
+ * screen-reader users) for every column the routine declared.
  *
  * Every action here writes straight to the live `table`'s own
  * `columnOrder`/`columnVisibility` state — there's no separate staging copy
@@ -70,7 +107,7 @@ export function GridCustomizationModal<TData>({
     return columns.find((column) => column.key === key)?.label ?? key;
   }
 
-  function move(index: number, direction: -1 | 1) {
+  function moveByStep(index: number, direction: -1 | 1) {
     const target = index + direction;
 
     if (target < 0 || target >= orderedKeys.length) {
@@ -110,41 +147,51 @@ export function GridCustomizationModal<TData>({
           <DialogTitle>Customize columns</DialogTitle>
         </DialogHeader>
 
-        <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
-          {items.map((item, index) => (
-            <li key={item.key} className="flex items-center gap-2 rounded-md px-1.5 py-1">
-              <Checkbox
-                checked={item.visible}
-                onCheckedChange={() => toggle(item.key, item.visible)}
-                aria-label={`Show ${labelFor(item.key)}`}
-                data-testid={`${testIdPrefix}-customize-checkbox-${item.key}`}
-              />
-              <span className="flex-1 text-sm text-foreground">{labelFor(item.key)}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                disabled={index === 0}
-                onClick={() => move(index, -1)}
-                aria-label={`Move ${labelFor(item.key)} up`}
-                data-testid={`${testIdPrefix}-customize-move-up-${item.key}`}
-              >
-                <ArrowUp aria-hidden="true" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                disabled={index === items.length - 1}
-                onClick={() => move(index, 1)}
-                aria-label={`Move ${labelFor(item.key)} down`}
-                data-testid={`${testIdPrefix}-customize-move-down-${item.key}`}
-              >
-                <ArrowDown aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <DragDropProvider
+          onDragEnd={(event) => {
+            if (event.canceled) {
+              return;
+            }
+
+            table.setColumnOrder(move(orderedKeys, event));
+          }}
+        >
+          <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+            {items.map((item, index) => (
+              <SortableColumnRow key={item.key} id={item.key} index={index}>
+                <Checkbox
+                  checked={item.visible}
+                  onCheckedChange={() => toggle(item.key, item.visible)}
+                  aria-label={`Show ${labelFor(item.key)}`}
+                  data-testid={`${testIdPrefix}-customize-checkbox-${item.key}`}
+                />
+                <span className="flex-1 text-sm text-foreground">{labelFor(item.key)}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={index === 0}
+                  onClick={() => moveByStep(index, -1)}
+                  aria-label={`Move ${labelFor(item.key)} up`}
+                  data-testid={`${testIdPrefix}-customize-move-up-${item.key}`}
+                >
+                  <ArrowUp aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={index === items.length - 1}
+                  onClick={() => moveByStep(index, 1)}
+                  aria-label={`Move ${labelFor(item.key)} down`}
+                  data-testid={`${testIdPrefix}-customize-move-down-${item.key}`}
+                >
+                  <ArrowDown aria-hidden="true" />
+                </Button>
+              </SortableColumnRow>
+            ))}
+          </ul>
+        </DragDropProvider>
 
         <DialogFooter>
           <Button
