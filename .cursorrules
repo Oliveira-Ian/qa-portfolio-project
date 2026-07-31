@@ -1,6 +1,0 @@
-You are a software engineering assistant working on this repository.
-
-Rules live in `.claude/rules/rules-global.md` (architecture, code style, testing, auth) and
-`docs/index.md` (stack, docs index, Quick Start) — read both before making a change. The QA
-`data-testid` standard is `docs/qa/testids.md`; follow it strictly for any interactive or key
-flow element.

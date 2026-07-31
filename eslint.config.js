@@ -8,4 +8,11 @@ const scopedNextConfig = nextConfig.map((entry) =>
   entry.files ? { ...entry, files: entry.files.map((glob) => `apps/web/${glob}`) } : entry,
 );
 
-export default [...baseConfig, ...scopedNextConfig];
+export default [
+  // Third-party skill content installed via `npx skills add` — includes its
+  // own template/example source files (e.g. .tsx starter templates meant to
+  // be copied into a project, not linted as part of this one).
+  { ignores: ['.agents/skills/**', '.claude/skills/**'] },
+  ...baseConfig,
+  ...scopedNextConfig,
+];
