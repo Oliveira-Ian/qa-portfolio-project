@@ -15,3 +15,4 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0006](0006-email-service-seam.md) | `EmailService` as a seam with no real provider wired in |
 | [0007](0007-navigation-catalog-url-shape.md) | 4-level navigation catalog, 3-segment URLs |
 | [0008](0008-multi-tenancy-shared-database.md) | Multi-tenancy: shared database, global identity, membership per company |
+| [0009](0009-branching-and-issue-hierarchy.md) | Branching model and the Epic/Feature/Task hierarchy |
