@@ -14,3 +14,4 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0005](0005-client-side-data-table.md) | `data-table/` state is client-side until the API needs otherwise |
 | [0006](0006-email-service-seam.md) | `EmailService` as a seam with no real provider wired in |
 | [0007](0007-navigation-catalog-url-shape.md) | 4-level navigation catalog, 3-segment URLs |
+| [0008](0008-multi-tenancy-shared-database.md) | Multi-tenancy: shared database, global identity, membership per company |
