@@ -1,0 +1,64 @@
+name: Task
+description: An executable unit inside a Feature — usually one layer or one screen.
+title: '<verb> <what> (<layer>)'
+labels: ['type: task']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A Task exists only inside a specified Feature. If there is no parent Feature yet,
+        you are opening this too early — specify the Feature first.
+
+  - type: input
+    id: feature
+    attributes:
+      label: Parent Feature
+      placeholder: '#42'
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Technical scope
+      description: Exactly what this task changes, and what it deliberately leaves to a sibling task.
+    validations:
+      required: true
+
+  - type: textarea
+    id: layers
+    attributes:
+      label: Layers and files
+      description: >-
+        Which layers this touches. In `apps/api`: route, controller, service, repository,
+        mapper. In `apps/web`: `page.tsx`, `_components`, `_actions`, `_data-access`.
+      placeholder: |
+        - apps/api/src/modules/<module>/
+        - packages/schemas/src/<file>.ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: conventions
+    attributes:
+      label: Conventions this must follow
+      description: >-
+        The Foundation conventions that apply. Only repositories import `@prisma/client`;
+        `_components`/`_actions`/`_data-access` keep the leading underscore; forms use
+        React Hook Form with a Zod resolver; everything technical is written in English.
+      placeholder: '- docs/templates/new-routine.md'
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: What must be true for this to be closed.
+      value: |
+        - [ ] `npm run lint && npm run format && npm run typecheck` clean
+        - [ ] `npm run build -w apps/web` clean (when the web app is touched)
+        - [ ] `npm run dev:doctor` clean, and both servers left running
+        - [ ] New interactive elements carry a `data-testid` registered in `docs/qa/testids.md`
+    validations:
+      required: true

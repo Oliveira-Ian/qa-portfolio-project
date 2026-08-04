@@ -1,0 +1,107 @@
+name: Feature
+description: A vertical, deliverable slice of an Epic — database, API, UI, permission and docs together.
+title: '[F-NN.k] <what the user gets>'
+labels: ['type: feature', 'needs-spec']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A Feature is **vertical**: it delivers behaviour end to end, not one layer of it.
+        A backend-only issue that changes nothing observable is a Task, not a Feature.
+
+        Open it with `needs-spec` and fill the fields below during specification. Nothing
+        leaves the **Analysis** column while `needs-spec` is still on it, and no Task is
+        created before this issue is specified.
+
+  - type: input
+    id: epic
+    attributes:
+      label: Parent Epic
+      placeholder: '#12'
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Functional requirements
+      description: What the user can do once this ships.
+    validations:
+      required: true
+
+  - type: textarea
+    id: business-rules
+    attributes:
+      label: Business rules
+      description: >-
+        The rules that govern the behaviour, including edge cases. Never inferred — these
+        come from an explicit decision.
+    validations:
+      required: true
+
+  - type: textarea
+    id: flows
+    attributes:
+      label: Flows
+      description: Main path and alternatives, including what happens on failure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screens
+    attributes:
+      label: Screens
+      description: >-
+        Which routes are added or changed. New listing screens follow
+        `docs/templates/new-routine.md`; leave "none" for a headless feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: permissions
+    attributes:
+      label: Permissions
+      description: >-
+        Which permission keys guard this, and whether the catalog in
+        `packages/schemas/src/permissions.ts` needs new entries (which then need a re-seed).
+    validations:
+      required: true
+
+  - type: textarea
+    id: validations
+    attributes:
+      label: Validations
+      description: Which Zod schemas in `packages/schemas` are added or changed, and the messages they carry.
+    validations:
+      required: true
+
+  - type: textarea
+    id: data-model
+    attributes:
+      label: Data model impact
+      description: >-
+        Changes to `prisma/schema.prisma`: models, columns, unique constraints, indexes,
+        and whether a migration is needed. "None" is a valid answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: docs-impact
+    attributes:
+      label: Documentation impact
+      description: >-
+        Which documents this changes. A Feature that changes a Foundation convention must
+        update that convention's document in the same PR, or the convention dies.
+      placeholder: |
+        - docs/qa/testids.md — new test ids
+        - docs/adr/00NN — new decision
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Verifiable statements. Someone else must be able to check them without asking you.
+    validations:
+      required: true

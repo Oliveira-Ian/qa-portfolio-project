@@ -1,0 +1,65 @@
+name: Bug
+description: Something behaves differently from what it should.
+title: '<what breaks> when <condition>'
+labels: ['type: bug']
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, starting from a known state. Include the data used.
+      placeholder: |
+        1. Sign in as the seeded admin
+        2. Open /records/people/people
+        3. Filter by Type = CLIENT
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Include the exact error message, and the response body if it came from the API.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where it shows up
+      options:
+        - apps/web
+        - apps/api
+        - Data layer (Prisma / migrations)
+        - packages/schemas
+        - Tooling / CI
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        Branch and commit, how it was running (native dev servers or Docker Compose), and
+        whether the database was seeded.
+      placeholder: |
+        - Branch/commit: develop @ bdaeb2a
+        - Running: npm run dev:api + dev:web
+        - Database seeded: yes
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything already ruled out
+      description: Optional, but it saves whoever picks this up from repeating your work.
