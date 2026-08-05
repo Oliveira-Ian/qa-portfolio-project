@@ -1,0 +1,99 @@
+name: Epic
+description: A Foundation module from the roadmap. Contains Features as sub-issues.
+title: 'EPIC: F-NN <Module name>'
+labels: ['type: epic']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An Epic is one **module** of the Foundation roadmap. It is a container: it never
+        moves across the board on its own, and it is never implemented directly — its
+        Features are. See `docs/process/development-workflow.md`.
+
+  - type: input
+    id: module
+    attributes:
+      label: Module
+      description: The roadmap id and block this module belongs to.
+      placeholder: 'F-12 — Companies & Multi-tenancy (Block 3: Organizational Structure)'
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What this module exists to do, in two or three sentences. Written for a reader who does not know the codebase.
+    validations:
+      required: true
+
+  - type: textarea
+    id: in-scope
+    attributes:
+      label: In scope
+      description: What this module owns.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: >-
+        What this module deliberately does NOT cover, and where it lives instead. This
+        field is what keeps the Foundation generic — anything that depends on how a
+        specific business works belongs to a Platform product module, not here.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-state
+    attributes:
+      label: Current state
+      description: What already exists in the codebase for this module, and what does not. Reference real paths.
+      placeholder: |
+        - Exists: ...
+        - Missing: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: >-
+        Other Epics that must land first, and any shared technical window this module
+        takes part in (a migration or refactor executed once across several modules).
+      placeholder: |
+        - Depends on: #NN (F-15 Audit)
+        - Shared technical window: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocking-decisions
+    attributes:
+      label: Blocking decisions
+      description: >-
+        Open decisions that must be made before this module can be specified. A pending
+        decision is a blocker, never an assumption — leave it here rather than guessing.
+      placeholder: '- Does a user belong to one company or several?'
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Product-level criteria — how we know the module is done. Not implementation steps.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before closing
+      options:
+        - label: Every Feature sub-issue is closed
+        - label: Decisions taken along the way are recorded as ADRs
+        - label: Documentation affected by this module is updated
