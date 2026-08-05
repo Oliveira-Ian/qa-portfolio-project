@@ -143,6 +143,11 @@ feature/* ─→ develop ─→ main
 The types match the Conventional Commit types below, so the branch, the commits and the PR title all
 say the same thing. Slugs are lowercase and kebab-case, like every other identifier in this project.
 
+**No issue yet** (e.g. exploratory work with nothing filed on GitHub): use `0` in place of the
+issue number — `chore/0-session-start-git-context`. File the issue retroactively and rename the
+branch once one exists. This keeps the branch matching `<type>/<issue-number>-<slug>`, so tooling
+that checks the pattern (the `SessionStart` hook in `.claude/hooks/init.js`) doesn't flag it.
+
 ---
 
 ## 6. Commits

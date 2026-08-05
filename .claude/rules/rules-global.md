@@ -8,12 +8,6 @@ Tailwind CSS for styling (no separate `/styles` directory). There is no top-leve
 `/services` directory — feature-specific hooks live next to the feature that uses them (e.g.
 `components/people/use-person-form.ts`), and API calls live in `lib/api/`.
 
-# App Router Best Practices:
-
-Use file-based routing for cleaner code organization.
-Utilize Next.js server components for improved performance where possible.
-Keep client components focused on state management and UI interactions.
-
 # Data Access Layer (DAL) and Services:
 
 Avoid mixing data fetching logic directly in components.
@@ -41,371 +35,15 @@ throughout the codebase; a folder without the underscore is not a variant, it's 
 
 Full file tree, per-file responsibilities, and a worked example: `docs/templates/new-routine.md`
 (People — `apps/web/app/(dashboard)/records/people/people/` — is the reference implementation).
-
-# Page Structure Pattern
-
-The layered pattern every `apps/web` page under `app/(dashboard)/` follows, in more depth than the
-quick reference above. This is specifically about `apps/web` — inside `apps/api`, a repository talks
-to Prisma directly (see "Data Access Layer" above); `apps/web` never imports `@prisma/client` at all.
-Its `_data-access`/`_actions` call the separate API through `lib/api/*.ts` (a `fetch` wrapper), never
-a database directly. That's the one thing the examples below depend on getting right.
-
-## Base structure
-
-```
-/route-name/
-├── page.tsx                    # Server Component (entry point)
-├── _components/                # Page-specific components
-│   └── <entity>-form.tsx       # Main Client Component — named for what it does, never `content.tsx`
-├── _actions/                    # Server Actions
-│   └── update-<entity>.ts
-└── _data-access/                # Data Access Layer
-    └── get-<entity>.ts
-```
-
-## What each layer does
-
-### 1. `page.tsx` — Server Component
-
-- **Always** a Server Component.
-- Responsible for:
-  - Fetching initial data through `_data-access` functions
-  - Checking auth/permissions
-  - Passing data down to client components
-  - Keeping server-only logic on the server
-
-**Example:**
-
-```typescript
-// page.tsx
-import { AccountForm } from './_components/account-form';
-import { getAccountData } from './_data-access/get-account-data';
-
-export default async function Page() {
-  const account = await getAccountData();
-
-  return <AccountForm account={account} />;
-}
-```
-
-### 2. `_components/` — Page Components
-
-- Holds components specific to this page.
-- The leading `_` marks it a private folder — it never becomes a route.
-- Components can be Client or Server Components depending on what they need.
-
-#### Main component — named for what it does
-
-- Usually a **Client Component** (`"use client"`).
-- Needed when the component has:
-  - Interactivity (onClick, onChange, etc.)
-  - React hooks (useState, useEffect, etc.)
-  - Forms with validation
-  - Animations and transitions
-
-**Example:**
-
-```typescript
-// _components/account-form.tsx
-"use client";
-
-import { useState } from "react";
-import { updateAccountAction } from "../_actions/update-account";
-
-export function AccountForm({ account }) {
-  const [state, setState] = useState();
-
-  // Component logic…
-
-  return (
-    <div>
-      {/* Component UI */}
-    </div>
-  );
-}
-```
-
-### 3. `_actions/` — Server Actions
-
-- Holds the Server Actions specific to this page.
-- Always marked `"use server"`.
-- Responsible for:
-  - Validating input with Zod (schemas live in `@oliveira/schemas`, shared with `apps/api`)
-  - Calling the API through `lib/api/*.ts` — never a database directly
-  - Returning a typed `ActionResult` (`@/lib/actions`)
-
-**Example** (matches the real shape of
-`apps/web/app/(dashboard)/records/people/people/new/_actions/create-person.ts`):
-
-```typescript
-// _actions/update-account.ts
-'use server';
-
-import { revalidatePath } from 'next/cache';
-import { accountFormSchema, type AccountFormValues } from '@oliveira/schemas';
-import { requestAccountUpdate } from '@/lib/api/accounts';
-import type { ActionResult } from '@/lib/actions';
-import { requireSession } from '@/lib/session';
-
-export async function updateAccountAction(values: AccountFormValues): Promise<ActionResult> {
-  const { token } = await requireSession();
-  const parsed = accountFormSchema.safeParse(values);
-
-  if (!parsed.success) {
-    return { success: false, message: parsed.error.issues[0]?.message ?? 'Invalid data' };
-  }
-
-  const result = await requestAccountUpdate(token, parsed.data);
-
-  if (!result.success) {
-    return { success: false, message: result.error };
-  }
-
-  revalidatePath('/account');
-  return { success: true, message: 'Updated successfully' };
-}
-```
-
-### 4. `_data-access/` — Data Access Layer
-
-- Holds functions that fetch data.
-- Always runs on the server.
-- Wraps the call to `lib/api/*.ts` — never a database directly.
-- Reusable across pages when the same data is needed in more than one place.
-
-**Example** (matches the real shape of
-`apps/web/app/(dashboard)/records/people/people/_data-access/get-grid-preferences.ts`):
-
-```typescript
-// _data-access/get-account-data.ts
-import 'server-only';
-
-import { cache } from 'react';
-import { unwrap } from '@/lib/api/client';
-import { requestAccount } from '@/lib/api/accounts';
-import { requireSession } from '@/lib/session';
-
-export const getAccountData = cache(async () => {
-  const { token } = await requireSession();
-  return unwrap(await requestAccount(token));
-});
-```
-
-## Data flow
-
-```
-1. User visits the page
-   ↓
-2. page.tsx (Server Component)
-   - Fetches data via _data-access
-   - Checks auth
-   ↓
-3. <entity>-form.tsx (Client Component)
-   - Receives data via props
-   - Renders interactive UI
-   - User interacts (fills a form, clicks a button)
-   ↓
-4. _actions (Server Action)
-   - Validates input
-   - Calls the API to update data
-   - Returns a result
-   ↓
-5. <entity>-form.tsx
-   - Receives the result
-   - Updates the UI (toast, form errors, etc.)
-```
-
-## Best practices
-
-### Server Components (`page.tsx`)
-
-- ✅ Fetch data directly (through `_data-access`)
-- ✅ Access server-only resources
-- ✅ Keep sensitive information on the server
-- ❌ Don't use React hooks
-- ❌ Don't use event handlers
-
-### Client Components (`_components/*`)
-
-- ✅ Handle interactivity
-- ✅ Use React hooks
-- ✅ Hold local state
-- ❌ Don't fetch data directly
-- ❌ Don't call the API layer directly — go through an `_actions`/`_data-access` boundary
-
-### Server Actions (`_actions/`)
-
-- ✅ Validate every input
-- ✅ Check authentication
-- ✅ Return a consistent, typed result (`ActionResult`)
-- ✅ Handle errors properly
-- ❌ Don't return sensitive data
-
-### Data Access (`_data-access/`)
-
-- ✅ Wrap the API call, don't duplicate its logic
-- ✅ Reuse common logic (`cache()` for request-scoped dedup)
-- ✅ Check permissions
-- ✅ Return typed data
-- ❌ Don't expose sensitive data
-
-## Complete example: `/account`
-
-```
-/account/
-├── page.tsx
-│   └── Server Component
-│       └── Calls getAccountData()
-│       └── Renders <AccountForm />
-│
-├── _components/
-│   └── account-form.tsx
-│       └── Client Component
-│       └── Interactive form
-│       └── Calls updateAccountAction()
-│
-├── _actions/
-│   └── update-account.ts
-│       └── Server Action
-│       └── Validates with Zod
-│       └── Calls the API through lib/api/*.ts
-│
-└── _data-access/
-    └── get-account-data.ts
-        └── Fetches account data
-        └── Checks authentication
-```
-
-## When to create each folder
-
-### `_components/`
-
-- **Always** when the page needs UI.
-- Page-specific components.
-- Can hold multiple components.
-
-### `_actions/`
-
-- When the page needs to **change data** (create, update, delete).
-- Operations that need validation.
-- Non-trivial business logic.
-
-### `_data-access/`
-
-- When the page needs to **fetch data**.
-- Complex or reusable queries against the API.
-- Shared data-access logic.
-
-## Key notes
-
-1. **`_` prefix**: folders starting with `_` never become routes in Next.js.
-2. **Separation of concerns**: each layer has one job.
-3. **Typing**: always type function inputs and outputs.
-4. **Validation**: use Zod (`@oliveira/schemas`) to validate data before it leaves the client.
-5. **Security**: always check authentication in `_actions` and `_data-access`.
-
-# Component Placement Guidelines
-
-## 1. Page-Level Components
-
-- **Always check** if there is a `_components` directory at the page or route level where you are working.
-  - Example:
-    ```
-    /app
-      /dashboard
-        /_components
-        page.tsx
-    ```
-  - What to do:
-    If the component is only used within this specific page or route (e.g., only in `/dashboard`), place it inside the `/dashboard/_components` folder.
-
-## 2. Global or Shared Components
-
-- If the component will be reused in multiple pages or modules, place it in the global
-  `apps/web/components/` directory (there is no `/src` directory in this project).
-  - Only add components to `apps/web/components/` when you're sure they will be reused broadly.
-  - If in doubt, always ask first before placing it globally.
-
-## 3. Server vs. Client Component
-
-- Default to Server Components (no `"use client"` directive) whenever possible.
-  - Use Client Components (`"use client"`) **only when strictly necessary** (state, effects, event handlers, etc.).
-  - If you're not sure, start as a Server Component and refactor to Client only if required.
-
-## 4. Other Best Practices
-
-- Prefer colocating components near where they're used (feature or route-level scope) unless you have a clear case for global reuse.
-- Keep component directories organized and use descriptive names.
-- Review import paths after moving or adding components to avoid breaking references.
-- **Always** name the folder as `_components` (with a leading underscore) to distinguish it from pages/routes.
-
-# Reusable and Isolated Components:
-
-Keep components small and focused on a single responsibility.
-Use props effectively and avoid excessive prop drilling by leveraging context or hooks where needed.
-
-# Separation of Concerns:
-
-Avoid placing API calls or business logic inside components.
-Use hooks for state management and side effects (e.g., useSWR, React Query, custom hooks).
-
-# UI and State Separation:
-
-Keep UI components presentational (no logic other than rendering).
-Use containers for data management and complex state logic.
-Code Quality
-
-# UI and Styling
-
-Component Libraries
-
-- Use Shadcn UI for consistent, accessible component design.
-- Integrate Radix UI primitives for customizable, accessible UI elements.
-- Apply composition patterns to create modular, reusable components.
-
-# TypeScript First:
-
-Use TypeScript to ensure type safety across the application.
-Define strict types for props, state, and API responses.
-
-# Clean Code Principles:
-
-Follow SOLID principles where applicable.
-Use meaningful variable names and avoid magic numbers.
-Prefer functional components and hooks over class components.
-
-# Avoid Anti-Patterns:
-
-No large, monolithic components.
-Avoid inline styles in favor of TailwindCSS or modular CSS.
-Performance Optimization
-
-# Code Splitting and Lazy Loading:
-
-Use dynamic imports for large components to improve load times.
-Optimize for faster Time to Interactive (TTI).
-
-# Server Components
-
-- Default to Server Components
-- Use URL query parameters for data fetching and server state management
-- Use 'use client' directive only when necessary:
-- Event listeners
-- Browser APIs
-- State management
-- Client-side-only libraries
-
-# Specific Naming Patterns
-
-- Prefix event handlers with 'handle': handleClick, handleSubmit
-- Prefix boolean variables with verbs: isLoading, hasError, canSubmit
-- Prefix custom hooks with 'use': useAuth, useForm
-- Use complete words over abbreviations except for:
-- err (error)
-- req (request)
-- res (response)
-- props (properties)
-- ref (reference)
+The Server Component / Client Component / Server Action / Data Access layering itself — what each
+layer is responsible for, and the request-to-response flow through them — lives in
+`.claude/rules/nextjs-page-pattern.md`, which only loads while working under `apps/web/app/**` or
+`apps/web/components/**`.
+
+**Planned restructuring, not yet built:** the Foundation roadmap (item 23, "Camada de identidade")
+plans to replace the current 1:1 `Person`/`AccessAccount` link with a global account plus a
+per-company association. That decision is still pending — `Person` remains the current, real model
+described above and in `docs/templates/new-routine.md`. Don't build against the future shape yet.
 
 # Language Standard — English for Everything Technical
 
@@ -498,53 +136,29 @@ a code change. `dev:doctor`'s >300MB flag on a _freshly restarted_ listener is e
 signal something is wrong; it's there to catch a listener that keeps _climbing_ across a session, or
 a genuine duplicate process, not to flag Turbopack's own footprint.
 
-# Documentation:
-
-Use JSDoc or TypeScript comments to describe component props and functions.
-Keep README files updated for each module or library used.
-Security and Best Practices
-
-# Environment Variables:
-
-Use .env files for secrets and configuration.
-Never expose sensitive keys in the frontend.
-
-# Input Validation and Sanitization:
-
-Use Zod for schema validation to prevent bad data.
-Sanitize all inputs to prevent XSS and SQL injection.
-
-# Authentication and Authorization:
+# Security and Authentication
 
 This project does **not** use Supabase. Auth is a self-hosted JWT session (`jose`, `apps/api/src/modules/auth/token.ts`)
 issued by `POST /api/auth/login`, passwords hashed with bcrypt (`apps/api/src/modules/auth/password.ts`),
 and the token is stored in an **httpOnly** cookie by a Server Action — never read by client
 JavaScript, never sent from the browser to the API directly. See `docs/product/access_control.md`
 for the full role/permission model.
-Deployment and Scalability
 
-# Optimized Build Process:
+# Specific Naming Patterns
 
-Use the latest Next.js features for optimized builds.
-Leverage Vercel or a VPS with good caching strategies.
+- Prefix event handlers with 'handle': handleClick, handleSubmit
+- Prefix boolean variables with verbs: isLoading, hasError, canSubmit
+- Prefix custom hooks with 'use': useAuth, useForm
+- Use complete words over abbreviations except for:
+- err (error)
+- req (request)
+- res (response)
+- props (properties)
+- ref (reference)
 
-# Logging and Error Handling:
+# Branch Naming
 
-Use tools like Sentry for error tracking and performance monitoring.
-Implement graceful error handling with fallback components.
-
-# Scaling Strategies:
-
-Plan for horizontal scaling with serverless or containerized deployments.
-Optimize database queries with Prisma for efficient data access.
-Continuous Improvement
-
-# Code Reviews and PR Guidelines:
-
-Set clear code review guidelines to catch issues early.
-Use pull request templates to ensure consistency.
-
-# Performance Audits:
-
-Regularly run Lighthouse and Web Vitals checks.
-Use performance monitoring tools to track improvements.
+Branches follow `<type>/<issue-number>-<slug>` (see `docs/process/development-workflow.md`). When
+creating a branch for work that has no GitHub issue yet, use `0` as the issue number —
+e.g. `chore/0-session-start-git-context` — instead of inventing another placeholder. File the issue
+retroactively and rename the branch once one exists.
