@@ -24,6 +24,11 @@ The coding standards themselves — file structure, the Server Component / Serve
 layering, naming, forms, and the English-only language standard — live in
 `.claude/rules/rules-global.md`.
 
+Claude Code sessions in this repo also run automated guards — confirmation before destructive
+commands or edits to sensitive files, and a note after editing config/infra files that need a
+manual next step. What each one does is documented in its own file: `.claude/hooks/` (wired up in
+`.claude/settings.json`).
+
 ## The short version of the workflow
 
 ```
