@@ -72,7 +72,17 @@ multi-tenant — is `docs/product/access_control.md`.
 
 ## Roadmap
 
-- **Construction domain**: `Project` (Obra), `Cost`, `Step`, connected to `Person` via its `CLIENT`/
-  `SUPPLIER` types.
-- **Multi-tenant**: out of scope today — see "What would change for multi-tenant" in
-  `docs/product/access_control.md` for the shape of that change.
+The entities above are the current, real model. Where the project is headed:
+
+- **Shape**: the Platform (central sign-in and identity) over a shared Foundation, with one product
+  at a time — see `docs/adr/0011-platform-shape.md` and `docs/adr/0015-platform-portal-and-central-identity.md`.
+  The first product is Oliveira FSM (customers, service locations, work orders, assignment, basic
+  field execution); it will be specified as its own Epic and is not modelled here yet. `Person`
+  stays a generic Foundation record: product-specific classifications live in the product, and the
+  fate of today's `Person.types` is decided in the F-13 specification.
+- **Multi-tenant**: decided in `docs/adr/0008-multi-tenancy-shared-database.md` and ADRs 0012–0014
+  (RLS from the start, company/membership/platform roles, UUID v7 keys), not built. The data model,
+  rules and flows are settled in the F-12 specification; "What would change for multi-tenant"
+  in `docs/product/access_control.md` describes the expected shape of the change.
+- The construction roadmap (`Project`/Obra, `Cost`, `Step`) that earlier versions of this document
+  listed is **withdrawn**: there was never code for it, and no product is planned around it now.
