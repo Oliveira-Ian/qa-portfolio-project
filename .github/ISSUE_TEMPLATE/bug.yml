@@ -49,10 +49,10 @@ body:
     attributes:
       label: Environment
       description: >-
-        Branch and commit, how it was running (native dev servers or Docker Compose), and
-        whether the database was seeded.
+        Version (release tag or image tag) or branch and commit, how it was running (native dev
+        servers or Docker Compose), and whether the database was seeded.
       placeholder: |
-        - Branch/commit: develop @ bdaeb2a
+        - Version: v1.1.0 (or develop @ bdaeb2a)
         - Running: npm run dev:api + dev:web
         - Database seeded: yes
     validations:

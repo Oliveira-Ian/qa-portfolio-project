@@ -156,9 +156,25 @@ for the full role/permission model.
 - props (properties)
 - ref (reference)
 
-# Branch Naming
+# Git Workflow & Releases
 
-Branches follow `<type>/<issue-number>-<slug>` (see `docs/process/development-workflow.md`). When
-creating a branch for work that has no GitHub issue yet, use `0` as the issue number —
-e.g. `chore/0-session-start-git-context` — instead of inventing another placeholder. File the issue
-retroactively and rename the branch once one exists.
+Full detail: `docs/process/development-workflow.md` and `docs/process/versioning.md`. What applies
+every time you touch git:
+
+- **Branches** follow `<type>/<issue-number>-<slug>`, cut from `develop` (a `hotfix/…` is cut from
+  `main`). When the work has no GitHub issue yet, use `0` as the issue number — e.g.
+  `chore/0-session-start-git-context` — instead of inventing another placeholder. File the issue
+  retroactively and rename the branch once one exists. Never commit directly to `main` or `develop`.
+- **Commits** are Conventional Commits in English, atomic. The type decides the release: `fix` is a
+  patch, `feat` a minor, `!` after the type (or a `BREAKING CHANGE:` footer) a major; `docs`,
+  `refactor`, `test`, `ci`, `chore`, `style` and `build` release nothing on their own. Pick the type
+  for the effect on whoever runs the product.
+- **Pull requests** target `develop`, and the title is a Conventional Commit too — it becomes the
+  squash commit that release-please reads. Squash work PRs. `develop` → `main` and the post-release
+  `main` → `develop` sync use a **merge commit**, never squash. Open a `develop` → `main` PR only
+  when the user asks for a release.
+- **Never create tags or GitHub Releases, and never edit `CHANGELOG.md`, the root `package.json`
+  version, or `.release-please-manifest.json`.** release-please does all of that from the release PR.
+  A critical bug in the published version gets a `fix:` PR from a `hotfix/…` branch into `main`.
+- **Docker images** are published only by `.github/workflows/release.yml`, only when a Release is
+  created. Do not add a step that pushes images anywhere else.

@@ -83,6 +83,22 @@ const COMMAND_RULES = [
       'git commit --no-verify skips pre-commit validation. (No commit hooks are installed in this repository yet, so this currently skips nothing.)',
   },
   {
+    pattern:
+      /\bgit\s+tag\s+(?!-l\b|--list\b|-n\d*\b|-v\b|--verify\b|--sort\b|--contains\b|--points-at\b|--merged\b|--no-merged\b)\S/,
+    reason:
+      'Version tags are created by release-please when the release PR is merged (docs/process/versioning.md). A hand-made tag desynchronizes the manifest and CHANGELOG.md.',
+  },
+  {
+    pattern: /\bgit\s+push\b[^;&|]*(?:--tags\b|--follow-tags\b|refs\/tags\/)/,
+    reason:
+      'Version tags are created by release-please when the release PR is merged (docs/process/versioning.md). Pushing tags by hand bypasses that.',
+  },
+  {
+    pattern: /\bgh\s+release\s+(?:create|delete|edit|upload)\b/,
+    reason:
+      'GitHub Releases are created by release-please (docs/process/versioning.md), and published releases are immutable.',
+  },
+  {
     pattern: /\bprisma\s+migrate\s+reset\b/,
     reason: 'prisma migrate reset drops the development database and everything seeded into it.',
   },

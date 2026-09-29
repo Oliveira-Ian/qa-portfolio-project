@@ -13,6 +13,7 @@ single entry point.
 | You are changing                                   | Read                                   |
 | -------------------------------------------------- | -------------------------------------- |
 | How work is planned, branched, reviewed and merged | `docs/process/development-workflow.md` |
+| Versions, releases, hotfixes, Docker images        | `docs/process/versioning.md`           |
 | UI, tokens, typography, layouts, components        | `docs/design/`                         |
 | A listing screen, or adding a new routine          | `docs/templates/new-routine.md`        |
 | API responses, errors, status codes                | `docs/api/http_responses.md`           |
@@ -36,12 +37,17 @@ Issue → branch from develop → commits → PR into develop → CI → review 
 ```
 
 - Branches: `<type>/<issue-number>-<slug>`, e.g. `feature/42-company-entity`
-- Commits: Conventional Commits in English, e.g. `feat(web): add company switcher`
-- Pull requests target `develop`. Only a release PR targets `main`, and it is tagged
+- Commits: Conventional Commits in English, e.g. `feat(web): add company switcher`. The type
+  decides the release: `fix` is a patch, `feat` a minor, `!` a major
+- Pull requests target `develop`, are titled as a Conventional Commit and are **squash-merged**.
+  Only a promotion (`develop` → `main`), a `hotfix/*` and the release PR target `main`
 - `main` is stable; `develop` is integration
+- Releases are cut by automation from `main`. Do not create tags or releases, or edit `CHANGELOG.md`
+  or the version, by hand
 
 Full detail, including what each board column means and when something deserves an ADR:
-`docs/process/development-workflow.md`.
+`docs/process/development-workflow.md`. Versions, releases, hotfixes and Docker images:
+`docs/process/versioning.md`.
 
 ## Two rules worth knowing up front
 

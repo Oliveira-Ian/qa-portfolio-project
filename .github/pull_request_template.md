@@ -1,7 +1,9 @@
 <!--
-Title: use the same Conventional Commit form as the commits themselves —
-feat: / fix: / docs: / refactor: / chore: / ci:, with an optional scope.
-Base branch: develop. Only a release PR targets main.
+Title: a Conventional Commit — feat: / fix: / docs: / refactor: / chore: / ci:, with an
+optional scope. It becomes the commit message when this PR is squash-merged, and it decides
+the next version: fix = patch, feat = minor, a "!" after the type (feat!:) = major.
+Base branch: develop. Only a promotion (develop -> main), a hotfix/* and the release PR
+target main — see docs/process/versioning.md.
 -->
 
 ## Summary

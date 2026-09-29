@@ -7,6 +7,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 - **Anything at all** — how work is planned, branched, reviewed, verified and merged, and what an
   Epic, a Feature and a Task each mean: `docs/process/development-workflow.md`. `CONTRIBUTING.md` is
   the short entry point; the reasoning behind the model is `docs/adr/0009`.
+- **Versions, releases, hotfixes, Docker images**: `docs/process/versioning.md` (reasoning:
+  `docs/adr/0010`).
 - **HTML/CSS UI**:
   - Tokens (the "Olival" palette, light + dark): `docs/design/tokens.md`
   - Typography (Archivo / Inter / IBM Plex Mono): `docs/design/typography.md`

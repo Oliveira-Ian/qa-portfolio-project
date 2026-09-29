@@ -14,8 +14,12 @@ import { basename } from 'node:path';
 /** Branches that integrate work rather than hold it. */
 const LONG_LIVED_BRANCHES = ['main', 'develop'];
 
-/** `<type>/<issue-number>-<slug>`, with the Conventional Commit types in use. */
-const BRANCH_NAME_PATTERN = /^(feat|feature|fix|docs|refactor|chore|ci|test|perf|style)\/\d+-.+/;
+/**
+ * `<type>/<issue-number>-<slug>`: the Conventional Commit types, plus `hotfix`
+ * (cut from main, see docs/process/versioning.md).
+ */
+const BRANCH_NAME_PATTERN =
+  /^(feat|feature|fix|docs|refactor|chore|ci|test|perf|style|build|revert|hotfix)\/\d+-.+/;
 
 /** Keeps a large working tree from flooding the session context. */
 const MAX_LISTED_FILES = 20;
@@ -80,7 +84,9 @@ function collectWarnings() {
   if (isDetached) {
     warnings.push('Detached HEAD — commits here belong to no branch.');
   } else if (LONG_LIVED_BRANCHES.includes(branch)) {
-    warnings.push(`Working on '${branch}' — work belongs on its own branch created from develop.`);
+    warnings.push(
+      `Working on '${branch}' — work belongs on its own branch created from develop (hotfix/* from main).`,
+    );
   } else if (!BRANCH_NAME_PATTERN.test(branch)) {
     warnings.push(`Branch '${branch}' does not follow <type>/<issue-number>-<slug>.`);
   }

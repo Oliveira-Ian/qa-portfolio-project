@@ -16,3 +16,4 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0007](0007-navigation-catalog-url-shape.md) | 4-level navigation catalog, 3-segment URLs |
 | [0008](0008-multi-tenancy-shared-database.md) | Multi-tenancy: shared database, global identity, membership per company |
 | [0009](0009-branching-and-issue-hierarchy.md) | Branching model and the Epic/Feature/Task hierarchy |
+| [0010](0010-release-versioning-and-automation.md) | Versioning, releases and image publishing |
