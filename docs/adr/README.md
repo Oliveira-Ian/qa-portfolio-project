@@ -17,7 +17,8 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0008](0008-multi-tenancy-shared-database.md) | Multi-tenancy: shared database, global identity, membership per company |
 | [0009](0009-branching-and-issue-hierarchy.md) | Branching model and the Epic/Feature/Task hierarchy |
 | [0010](0010-release-versioning-and-automation.md) | Versioning, releases and image publishing |
-| [0011](0011-platform-shape.md) | Platform shape: a shared Foundation and one product at a time |
+| [0011](0011-platform-shape.md) | Platform shape: the Platform, a shared Foundation and one product at a time |
 | [0012](0012-tenant-isolation-extension-and-rls.md) | Tenant isolation: Prisma extension plus PostgreSQL row-level security, from the start |
 | [0013](0013-company-membership-and-platform-roles.md) | Company, membership and platform roles |
 | [0014](0014-uuid-v7-primary-keys.md) | UUID v7 primary keys, in the tenancy migration |
+| [0015](0015-platform-portal-and-central-identity.md) | The Platform is a portal with one central identity |

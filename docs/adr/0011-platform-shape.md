@@ -1,4 +1,4 @@
-# 0011 — Platform shape: a shared Foundation and one product at a time
+# 0011 — Platform shape: the Platform, a shared Foundation and one product at a time
 
 ## Context
 
@@ -7,6 +7,10 @@ The first product to be built is **Oliveira FSM** (Field Service Management). Un
 has been described as "the Foundation" ([0008](0008-multi-tenancy-shared-database.md)), with a roadmap
 of 25 modules (F-01…F-25), and no written answer to where a product's own concepts — a work order, a
 checklist, a schedule — live, or who may depend on whom.
+
+The Platform is also not just a name for a group of products: it is a **system the user signs in
+to** ([0015](0015-platform-portal-and-central-identity.md)). That is a different thing from the
+Foundation, which is the technical base underneath it, and the two must not be confused.
 
 An intermediate layer between the Foundation and a product ("Operations": reusable operational
 building blocks) was considered and **rejected for now**. Nothing yet proves which operational
@@ -17,17 +21,31 @@ application, one database.
 ## Decision
 
 ```
-OLIVEIRA PLATFORM
-├── Foundation
-└── Oliveira FSM        (first product; others only if and when there is a real need)
+OLIVEIRA PLATFORM   (the central system: login, identity, home, settings, companies, products)
+│
+├── Foundation        the shared technical base under the Platform and every product
+│
+├── Oliveira FSM      first product
+├── Oliveira CRM      future, only if there is a real need
+├── Oliveira ERP      future, only if there is a real need
+└── other products    future
 ```
 
+The **Platform** is what the user reaches: the sign-in, the single Oliveira account, the companies
+the user belongs to and the products available to them (0015). The **Foundation** is not the
+Platform. It provides what the Platform and the products both stand on.
+
 **Foundation** holds only what is genuinely cross-product: authentication, `User`, `Person`,
-`Company` (the unit of isolation), `Branch` (modelled, not built — see
+`Company` (the unit of isolation), `Branch` (only conceptual for now — see
 [0013](0013-company-membership-and-platform-roles.md)), memberships, authorization, and the
 infrastructure services the roadmap already names (audit, files, notifications, settings) as a
 product pulls them in. It **knows no product rule**: nothing about work orders, dispatch, technicians
 or any other product's vocabulary.
+
+**`Person` stays in the Foundation and stays generic and reusable.** It carries no product or
+domain classification: whatever FSM needs to say about a person (customer, technician, …) lives in
+the FSM domain. Nothing is added to `Person.types` for any product, and nothing is built in the
+Foundation ahead of a need for it.
 
 **A product owns its whole domain in code**: entities, invariants, workflows, checklists, schedules,
 screens. For FSM that includes the work order, dispatch, field execution, and anything else
@@ -58,10 +76,11 @@ low-code engine, and this record does not open that door.
 - Every Foundation module in the roadmap (F-01…F-25) keeps its place. What changes is the order:
   the Foundation is built only as far as FSM needs it, not as a prerequisite for it. A module off
   FSM's path waits until a feature pulls it in.
-- `Person` stays in the Foundation. What follows is a real tension the F-13 specification has to
-  resolve: `Person.types` (`CLIENT`, `SUPPLIER`, `USER`, `EMPLOYEE`) is business vocabulary, and the
-  Foundation is supposed to be free of it. `USER` in particular goes away with membership. Whether
-  the remaining values stay, become product-defined roles, or move out is decided there, not here.
+- What exists today is not touched by this record: `Person.types` (`CLIENT`, `SUPPLIER`, `USER`,
+  `EMPLOYEE`) is business vocabulary that a generic Foundation `Person` should not carry. `USER`
+  goes away with membership, and the F-13 specification decides what happens to the rest — removal,
+  or moving it into the product that needs it. Until then it is neither extended nor relied upon by
+  new work.
 - The sealed permission catalog and the navigation catalog are single files today. They only need to
   become the union of per-product entries when a second product exists; until then FSM adds its
   entries to them like any routine does.

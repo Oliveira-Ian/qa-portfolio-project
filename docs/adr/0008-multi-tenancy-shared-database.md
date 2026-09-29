@@ -4,7 +4,8 @@
 > "RLS later" with RLS from the first migration; [0013](0013-company-membership-and-platform-roles.md)
 > settles the open questions on hierarchy, resellers and the platform super-admin;
 > [0014](0014-uuid-v7-primary-keys.md) moves every key to UUID v7 in the same window;
-> [0011](0011-platform-shape.md) describes where this Foundation sits. Everything else here stands.
+> [0011](0011-platform-shape.md) and [0015](0015-platform-portal-and-central-identity.md) describe
+> where this Foundation sits and how the Platform is the central system. Everything else here stands.
 
 ## Context
 
