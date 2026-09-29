@@ -166,7 +166,8 @@ every time you touch git:
   `chore/0-session-start-git-context` — instead of inventing another placeholder. File the issue
   retroactively and rename the branch once one exists. Never commit directly to `main` or `develop`.
 - **Commits** are Conventional Commits in English, atomic. The type decides the release: `fix` is a
-  patch, `feat` a minor, `!` after the type (or a `BREAKING CHANGE:` footer) a major; `docs`,
+  patch, `feat` a minor, `!` after the type a major (in the title: squash commits keep no body, so a
+  `BREAKING CHANGE:` footer would be lost); `docs`,
   `refactor`, `test`, `ci`, `chore`, `style` and `build` release nothing on their own. Pick the type
   for the effect on whoever runs the product.
 - **Pull requests** target `develop`, and the title is a Conventional Commit too — it becomes the
