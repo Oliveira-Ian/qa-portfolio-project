@@ -146,6 +146,9 @@ feature/* ─→ develop ─→ main          hotfix/* ─→ main
 | `hotfix/*` → `main` | **Squash** |
 | `main` → `develop` (post-release sync) | **Merge commit** |
 
+The one exception among work PRs: a PR that carries a `Release-As:` footer (forcing a version, see
+`docs/process/versioning.md` §2.1) is merged with a **merge commit**, so the footer survives.
+
 Never squash a PR between `develop` and `main`: it creates a commit that exists on only one of the two
 branches, and they drift apart. Why: `docs/adr/0010-release-versioning-and-automation.md`.
 

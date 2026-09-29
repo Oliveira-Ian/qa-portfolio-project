@@ -54,7 +54,25 @@ does not get a release PR at all.
 **Everything release-please needs must be in the title.** Squash merges are configured with an empty
 commit body (so the PR description does not duplicate entries in the CHANGELOG), which means
 footers such as `BREAKING CHANGE:` or `Release-As:` written in a PR description never reach `main`.
-Mark a breaking change with `!` in the title, and force a number with `release-as` (below).
+Mark a breaking change with `!` in the title. Forcing a number is the one case that needs a commit
+body, and has its own procedure (section 2.1).
+
+### 2.1 Forcing a version
+
+Use it when the number release-please would choose is wrong, or when there is nothing releasable to
+trigger a release (only `docs`, `ci`, `chore` … since the last one — the case for `1.0.1`, the first
+release after this process was introduced).
+
+1. Branch from `develop` and add a commit whose **body** ends with the footer, for example:
+   `git commit --allow-empty -m "chore: release 1.0.1" -m "Release-As: 1.0.1"`.
+2. Open the PR into `develop` and merge it with a **merge commit**, not squash: a squash would
+   drop the body and the footer with it. This is the one work PR that is not squashed.
+3. Promote `develop` to `main` as usual. release-please reads the footer from the history and opens
+   the release PR for exactly that number.
+
+`"release-as"` in `release-please-config.json` only fixes the number *when* a release is already
+due; on its own it does not make release-please open a PR, and it sticks until removed. Prefer the
+footer.
 
 ### What counts as MAJOR here
 
@@ -72,9 +90,9 @@ and nothing else. If they cannot, mark it with `!`.
 ### Pre-releases
 
 SemVer allows `1.5.0-rc.1`. This project does not use them by default. If a release ever needs a
-candidate, set `"release-as": "1.5.0-rc.1"` and `"prerelease": true` in `release-please-config.json`
-for that release, and remove both once its release PR is merged. Docker never moves
-`latest` or the `X` / `X.Y` tags for a version that contains `-`.
+candidate, force it with a `Release-As: 1.5.0-rc.1` footer (section 2.1) and set `"prerelease": true`
+in `release-please-config.json` for that release, removing it once its release PR is merged. Docker
+never moves `latest` or the `X` / `X.Y` tags for a version that contains `-`.
 
 ---
 
@@ -196,8 +214,8 @@ required because they only run when Docker or dependency files change.
 
 | Symptom | Cause / fix |
 |---|---|
-| No release PR appears after promoting | Only hidden commit types (`docs`, `ci`, `chore` …) since the last release |
-| The release PR proposes the wrong number | A commit has the wrong type or a missing `!`. Force the number with `"release-as": "X.Y.Z"` in `release-please-config.json` (remove it after the release PR is merged) |
+| No release PR appears after promoting | Only hidden commit types (`docs`, `ci`, `chore` …) since the last release. Add a real `fix`/`feat`, or force a version (section 2.1) |
+| The release PR proposes the wrong number | A commit has the wrong type or a missing `!`. Correct it before merging the release PR, or force the number (section 2.1) |
 | Release workflow fails at the release-please step | The PAT expired or lost a permission (section 7) |
 | Publish fails at "Refuse to overwrite" | That version is already on Docker Hub. This is the guard working; investigate before doing anything |
 | The sync PR has conflicts | Resolve on the PR's branch. Typically `package.json` or `CHANGELOG.md` edited on `develop` by hand |
