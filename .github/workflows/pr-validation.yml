@@ -1,0 +1,70 @@
+name: PR Validation
+
+# The PR title becomes the commit message when a PR is squash-merged, and
+# release-please reads those messages to pick the next version — so the title has to be
+# a valid Conventional Commit. The branch check enforces the flow in
+# docs/process/development-workflow.md.
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-validation-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the title is a Conventional Commit
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+
+      # main takes develop (a release promotion), hotfix/* and the release-please
+      # branch. develop takes work branches and the main -> develop sync.
+      - name: Check the branch flow
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          work_branch='^(feat|feature|fix|docs|refactor|chore|ci|test|perf|style|build|revert)/[0-9]+-.+'
+          hotfix_branch='^hotfix/[0-9]+-.+'
+
+          case "$BASE_REF" in
+            main)
+              if [ "$HEAD_REF" = "develop" ] || [[ "$HEAD_REF" =~ $hotfix_branch ]] || [[ "$HEAD_REF" == release-please--* ]]; then
+                echo "OK: $HEAD_REF -> main"
+              else
+                echo "::error::A PR into main must come from develop, hotfix/<issue>-<slug> or the release-please branch, not '$HEAD_REF'."
+                exit 1
+              fi
+              ;;
+            develop)
+              if [ "$HEAD_REF" = "main" ] || [[ "$HEAD_REF" =~ $work_branch ]]; then
+                echo "OK: $HEAD_REF -> develop"
+              else
+                echo "::error::A PR into develop must come from <type>/<issue>-<slug> (use 0 when there is no issue), or from main for the post-release sync, not '$HEAD_REF'."
+                exit 1
+              fi
+              ;;
+          esac
