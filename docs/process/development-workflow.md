@@ -6,8 +6,9 @@ merged pull request.
 This is written to be **reusable**: it describes a standard for the Oliveira Platform, not a habit of
 one repository. A second project should be able to adopt it by copying `.github/` and this document.
 
-Related: `docs/adr/0009-branching-and-issue-hierarchy.md` records *why* this shape was chosen.
-`docs/index.md` routes to everything else.
+Related: `docs/adr/0009-branching-and-issue-hierarchy.md` records *why* this shape was chosen;
+`docs/process/versioning.md` covers version numbers, releases and Docker images, and
+`docs/adr/0010-release-versioning-and-automation.md` why. `docs/index.md` routes to everything else.
 
 ---
 
@@ -124,12 +125,29 @@ Development**, not to Backlog — the specification did not change, the implemen
 ## 5. Branches
 
 ```
-feature/* ─→ develop ─→ main
+feature/* ─→ develop ─→ main          hotfix/* ─→ main
 ```
 
-- **`main`** — stable. Receives only releases, through a pull request, and every release is tagged.
+- **`main`** — stable. Receives only validated versions, through a pull request, and every release
+  is tagged `vX.Y.Z` by the release automation (`docs/process/versioning.md`).
 - **`develop`** — integration. Everything lands here first.
-- **Work branches** — created from `develop`, one per issue, deleted after merge.
+- **Work branches** — created from `develop`, one per issue, deleted after merge (the repository
+  deletes them automatically).
+- **`hotfix/*`** — the only branch cut from `main`: an urgent fix to the published version.
+- There are no `release/*` branches; the release PR opened by release-please plays that role.
+
+### Merge method
+
+| Pull request | Method |
+|---|---|
+| Work branch → `develop` | **Squash**. The PR title becomes the commit |
+| `develop` → `main` (promotion) | **Merge commit** |
+| Release PR → `main` (opened by release-please) | **Squash** |
+| `hotfix/*` → `main` | **Squash** |
+| `main` → `develop` (post-release sync) | **Merge commit** |
+
+Never squash a PR between `develop` and `main`: it creates a commit that exists on only one of the two
+branches, and they drift apart. Why: `docs/adr/0010-release-versioning-and-automation.md`.
 
 ### Naming
 
@@ -138,7 +156,7 @@ feature/* ─→ develop ─→ main
 ```
 
 `feature/42-company-entity` · `fix/58-login-redirect` · `docs/61-workflow-standard` ·
-`refactor/70-person-repository` · `chore/73-bump-prisma`
+`refactor/70-person-repository` · `chore/73-bump-prisma` · `hotfix/80-session-expiry`
 
 The types match the Conventional Commit types below, so the branch, the commits and the PR title all
 say the same thing. Slugs are lowercase and kebab-case, like every other identifier in this project.
@@ -168,6 +186,15 @@ justifies a non-obvious choice.
 
 Commits are atomic. One commit that changes the schema, the API and the UI is three commits.
 
+**The type decides the version.** `fix` releases a PATCH, `feat` a MINOR, and a `!` after the type or a
+`BREAKING CHANGE:` footer a MAJOR (`feat(api)!: rename the person summary route`). `docs`, `refactor`,
+`test`, `ci`, `chore`, `style` and `build` do not release on their own. Choose the type for what the
+change does to the people running the product, not for which files it touches.
+
+The **pull request title follows the same form**: it becomes the commit message when the PR is
+squash-merged, and the `Validate pull request` check rejects one that is not a Conventional Commit.
+Allowed types: `feat fix docs style refactor perf test build ci chore revert`.
+
 ---
 
 ## 7. From issue to merge
@@ -178,18 +205,32 @@ Commits are atomic. One commit that changes the schema, the API and the UI is th
 3. **Build** — commit as you go. Move the card to *In Development*.
 4. **Pull request** — target `develop`. Fill the template; `Closes #NN` links it so the issue closes
    on merge. Move the card to *Code Review*.
-5. **CI** — five jobs run on every PR: lint and typecheck, unit tests, API tests, E2E tests, and a
-   Docker Compose build. A red PR is not reviewed.
+5. **CI** — six required checks run on every PR: lint and typecheck, unit tests, API tests, E2E tests,
+   a Docker Compose build and smoke test, and `Validate pull request` (title and branch flow). They
+   are required status checks on `main` and `develop`, so a red PR cannot be merged. Two more
+   workflows run when they apply: `docker-dev.yml` (Trivy scans, only when Docker or dependency files
+   change) and, on `main`, `release.yml`.
 6. **Review** — against the acceptance criteria and the conventions, not just the diff.
 7. **QA** — verify the acceptance criteria in a running application. Automated coverage is a separate,
    deliberate phase of this project (`docs/qa/testing-status.md`); until it lands, verification here
    is manual and that is expected, not a gap in the process.
-8. **Merge** — into `develop`. Delete the branch.
+8. **Merge** — into `develop`, with **squash**. The branch is deleted automatically.
 
 ### Releases
 
-When `develop` holds a coherent set of changes, open a pull request from `develop` to `main`. Merge
-it, tag `main` with a semver tag (`v1.1.0`), and write the release notes from the merged PRs.
+Releasing is automated except for the decision to release. In short:
+
+1. When `develop` holds a coherent set of changes, ask for a PR from `develop` to `main`. It runs the
+   full suite. Merge it with a **merge commit**.
+2. release-please opens `chore(main): release X.Y.Z` with the version bump and `CHANGELOG.md`. Merge
+   it with **squash**: that creates the `vX.Y.Z` tag and the GitHub Release, and publishes the web and
+   api images to Docker Hub.
+3. A `chore: sync main into develop` PR is opened automatically. Merge it with a **merge commit**.
+
+**Never create tags, GitHub Releases, or edit `CHANGELOG.md` or the version by hand.** A critical
+problem in the published version is fixed on a `hotfix/*` branch cut from `main`. The full procedure,
+what counts as a MAJOR change, the image tags, and the one-time setup (tokens, secrets):
+`docs/process/versioning.md`.
 
 ---
 
