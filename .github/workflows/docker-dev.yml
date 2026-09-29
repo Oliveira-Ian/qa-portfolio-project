@@ -1,0 +1,157 @@
+name: Docker Vulnerability Scan
+
+# Independent from ci.yml on purpose: ci.yml's docker-build job already builds and
+# smoke-tests the compose stack (the check that actually needs a running container).
+# This workflow only cares about what's inside the images/dependencies, so it never
+# starts a container — path filters keep it from running on changes that can't affect
+# either.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/web/Dockerfile'
+      - 'apps/api/Dockerfile'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'apps/web/package.json'
+      - 'apps/api/package.json'
+      - 'packages/*/package.json'
+      - '.github/workflows/docker-dev.yml'
+  pull_request:
+    paths:
+      - 'apps/web/Dockerfile'
+      - 'apps/api/Dockerfile'
+      - 'docker-compose.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'apps/web/package.json'
+      - 'apps/api/package.json'
+      - 'packages/*/package.json'
+      - '.github/workflows/docker-dev.yml'
+  schedule:
+    # Catches newly disclosed CVEs against pinned base images/dependencies even when
+    # nothing in the repo changed.
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-dev-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# aquasecurity/trivy-action is pinned by commit SHA below, not just the `v0.36.0`
+# tag: the action's tags 0.0.1-0.34.2 were compromised in a March 2026 supply-chain
+# attack (imposter commits injecting a credential stealer). v0.36.0 is the first
+# release after tags were migrated to an immutable, `v`-prefixed scheme, but pinning
+# the SHA is the same defense-in-depth GitHub itself recommends for third-party
+# actions.
+
+jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan (Trivy fs)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run Trivy filesystem scan
+        id: trivy-fs
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-dependencies.sarif
+          limit-severities-for-sarif: true
+          # Report-only for now: existing findings shouldn't block adoption of this
+          # workflow. TODO(security): once the backlog surfaced in the Security tab
+          # is triaged (fixed or accepted via .trivyignore), change to '1' to make
+          # CRITICAL/HIGH findings fail the job.
+          exit-code: '0'
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-dependencies.sarif
+          category: trivy-dependencies
+
+      - name: Archive SARIF report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-dependencies-sarif
+          path: trivy-dependencies.sarif
+          retention-days: 30
+
+  image-scan:
+    name: Image Vulnerability Scan (Trivy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: web
+            dockerfile: apps/web/Dockerfile
+          - app: api
+            dockerfile: apps/api/Dockerfile
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build ${{ matrix.app }} image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          tags: local/${{ matrix.app }}:scan
+          load: true
+          push: false
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+      - name: Run Trivy image scan
+        id: trivy-image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: local/${{ matrix.app }}:scan
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-image-${{ matrix.app }}.sarif
+          limit-severities-for-sarif: true
+          # Report-only for now — see the dependency-scan job for the same note and
+          # the planned rollout to exit-code: '1'.
+          exit-code: '0'
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-image-${{ matrix.app }}.sarif
+          category: trivy-image-${{ matrix.app }}
+
+      - name: Archive SARIF report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-${{ matrix.app }}-sarif
+          path: trivy-image-${{ matrix.app }}.sarif
+          retention-days: 30
