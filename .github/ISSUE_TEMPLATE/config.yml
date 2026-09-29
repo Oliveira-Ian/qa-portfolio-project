@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Development workflow
+    url: https://github.com/Oliveira-Ian/qa-portfolio-project/blob/develop/docs/process/development-workflow.md
+    about: How Epics, Features and Tasks fit together, and what belongs at each level. Read this before opening anything.
+  - name: Architecture decisions
+    url: https://github.com/Oliveira-Ian/qa-portfolio-project/tree/develop/docs/adr
+    about: Decisions that shape the codebase live as ADRs, not as issues. Check whether one already answers your question.

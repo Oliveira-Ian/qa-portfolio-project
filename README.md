@@ -4,7 +4,9 @@
 
 A small, realistic mini-ERP built as a QA automation portfolio: a real database, a real HTTP API with real authentication, and a real UI to practice API and E2E testing against — no mocks, no in-memory data.
 
-**Domain today:** authentication, a People (clients/suppliers/employees/users) registry, and full role- and profile-based access control (accounts, profiles, permissions). **Roadmap:** construction-management entities (Project, Cost, Step) connected to Person via its `CLIENT`/`SUPPLIER` types — see [`docs/product/domain.md`](docs/product/domain.md).
+**Domain today:** authentication, a People (clients/suppliers/employees/users) registry, and full role- and profile-based access control (accounts, profiles, permissions) — see [`docs/product/domain.md`](docs/product/domain.md) for the full model.
+
+**Roadmap:** this repo is being repositioned as the **Oliveira Foundation** — a domain-free, reusable base meant to be shared by future platform products (FSM, CRM, ERP, clinic, help desk, real estate, distribution, solar, field service). The module-by-module roadmap and its pending architectural decisions (multi-tenancy comes first, since it reshapes every table and query) are still being worked out and aren't published in the repo yet.
 
 ## Stack
 

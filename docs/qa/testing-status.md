@@ -11,6 +11,19 @@ build" below).
 - `tests/api/auth.spec.ts` — matches the current `/api/auth/*` contract (messages, status codes).
 - `tests/e2e/auth.spec.ts` — matches the current login/register UI (testids, redirect targets).
 
+### What the active specs need in CI
+
+The specs are healthy, but two of them depend on setup that `.github/workflows/ci.yml` has to do
+explicitly — a red run that mentions either is a missing CI step, not a broken spec:
+
+- **A built `packages/schemas`** (`unit-tests`, `api-tests`, `e2e-tests`). `@oliveira/schemas`
+  resolves to `dist/`, so `tests/unit/email.test.ts` fails to import it on a clean checkout.
+- **A seeded database** (`e2e-tests`). `tests/e2e/auth.spec.ts` registers a user and lands on
+  `/home`, which calls `GET /api/persons/summary` and needs `person:view`. A self-registered user
+  only gets it from the seeded `isDefault` profile (`docs/product/access_control.md`), so without
+  `npm run db:seed` the API answers `403` and the home page never renders. `tests/api` does not
+  need the seed: it only calls the public `/api/auth/*` routes.
+
 ## Disabled (`test.fixme` / `test.describe.fixme`)
 
 The project went through an auth phase (session-gated routes, `requireAuth`), a data-model change
