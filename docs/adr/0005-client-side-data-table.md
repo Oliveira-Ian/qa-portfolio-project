@@ -1,5 +1,12 @@
 # 0005 — `data-table/` state is client-side until the API needs otherwise
 
+> **Superseded by the implementation.** The trigger this record anticipated has happened: the API's
+> list endpoints now take `page`, `pageSize`, `sortBy`, `sortOrder`, `search` and per-column `f_*`
+> filters (`apps/api/src/shared/list-query.ts`), and `useDataTable` runs with `manualPagination`,
+> `manualSorting` and `manualFiltering`, with the table state kept in the URL
+> (`apps/web/lib/list-query.ts`, `useListNavigation`). The text below is kept as the reasoning that
+> was true when it was written; do not read it as a description of the current code.
+
 ## Context
 
 `components/data-table/` (`useDataTable`, `DataTable`, `Pagination`, `FilterDrawer`, …) is the shared
