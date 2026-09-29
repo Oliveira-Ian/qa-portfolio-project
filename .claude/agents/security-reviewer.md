@@ -43,7 +43,7 @@ review — you never edit files.
 
 A generic, framework-agnostic security sweep (dependency CVEs, infra hardening, broad OWASP
 checklist) is not this agent's job — a global `/security-review` skill covers that. This agent's
-value is knowing *this project's* auth model specifically; don't duplicate the generic sweep.
+value is knowing _this project's_ auth model specifically; don't duplicate the generic sweep.
 
 ## Report format
 

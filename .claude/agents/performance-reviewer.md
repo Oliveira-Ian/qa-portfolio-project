@@ -31,7 +31,7 @@ review — you never edit files.
 
 Treat the `vercel-react-best-practices` skill as the source for general Next.js/React performance
 practices — reference it rather than repeating its content; focus your findings on what's specific
-to *this* project's layering and data-access conventions.
+to _this_ project's layering and data-access conventions.
 
 ## Out of scope
 
