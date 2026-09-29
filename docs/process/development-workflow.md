@@ -186,10 +186,11 @@ justifies a non-obvious choice.
 
 Commits are atomic. One commit that changes the schema, the API and the UI is three commits.
 
-**The type decides the version.** `fix` releases a PATCH, `feat` a MINOR, and a `!` after the type or a
-`BREAKING CHANGE:` footer a MAJOR (`feat(api)!: rename the person summary route`). `docs`, `refactor`,
-`test`, `ci`, `chore`, `style` and `build` do not release on their own. Choose the type for what the
-change does to the people running the product, not for which files it touches.
+**The type decides the version.** `fix` releases a PATCH, `feat` a MINOR, and a `!` after the type a
+MAJOR (`feat(api)!: rename the person summary route`). The `!` has to be in the title: squash commits
+carry no body, so a `BREAKING CHANGE:` footer in the PR description would never reach `main`. `docs`,
+`refactor`, `test`, `ci`, `chore`, `style` and `build` do not release on their own. Choose the type
+for what the change does to the people running the product, not for which files it touches.
 
 The **pull request title follows the same form**: it becomes the commit message when the PR is
 squash-merged, and the `Validate pull request` check rejects one that is not a Conventional Commit.

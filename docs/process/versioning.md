@@ -44,12 +44,17 @@ title as the commit subject (repository setting), so the title has to be a valid
 |---|---|---|
 | `fix: …` | PATCH (`1.4.2` → `1.4.3`) | Bug Fixes |
 | `feat: …` | MINOR (`1.4.2` → `1.5.0`) | Features |
-| `feat!: …`, `fix(api)!: …`, or a `BREAKING CHANGE:` footer | MAJOR (`1.4.2` → `2.0.0`) | ⚠ BREAKING CHANGES |
+| `feat!: …`, `fix(api)!: …` | MAJOR (`1.4.2` → `2.0.0`) | ⚠ BREAKING CHANGES |
 | `perf:`, `revert:` | PATCH | Performance / Reverts |
 | `docs:`, `refactor:`, `test:`, `ci:`, `chore:`, `style:`, `build:` | none on their own | hidden |
 
 The highest bump among the commits since the last release wins. A release with only hidden types
 does not get a release PR at all.
+
+**Everything release-please needs must be in the title.** Squash merges are configured with an empty
+commit body (so the PR description does not duplicate entries in the CHANGELOG), which means
+footers such as `BREAKING CHANGE:` or `Release-As:` written in a PR description never reach `main`.
+Mark a breaking change with `!` in the title, and force a number with `release-as` (below).
 
 ### What counts as MAJOR here
 
@@ -67,8 +72,8 @@ and nothing else. If they cannot, mark it with `!`.
 ### Pre-releases
 
 SemVer allows `1.5.0-rc.1`. This project does not use them by default. If a release ever needs a
-candidate, force the number with a commit on `main` whose body contains `Release-As: 1.5.0-rc.1`
-and set `"prerelease": true` in `release-please-config.json` for that release. Docker never moves
+candidate, set `"release-as": "1.5.0-rc.1"` and `"prerelease": true` in `release-please-config.json`
+for that release, and remove both once its release PR is merged. Docker never moves
 `latest` or the `X` / `X.Y` tags for a version that contains `-`.
 
 ---
@@ -192,7 +197,7 @@ required because they only run when Docker or dependency files change.
 | Symptom | Cause / fix |
 |---|---|
 | No release PR appears after promoting | Only hidden commit types (`docs`, `ci`, `chore` …) since the last release |
-| The release PR proposes the wrong number | A commit has the wrong type or a missing `!`. Fix by merging a commit with `Release-As: X.Y.Z` in its body, or correct the type before merging |
+| The release PR proposes the wrong number | A commit has the wrong type or a missing `!`. Force the number with `"release-as": "X.Y.Z"` in `release-please-config.json` (remove it after the release PR is merged) |
 | Release workflow fails at the release-please step | The PAT expired or lost a permission (section 7) |
 | Publish fails at "Refuse to overwrite" | That version is already on Docker Hub. This is the guard working; investigate before doing anything |
 | The sync PR has conflicts | Resolve on the PR's branch. Typically `package.json` or `CHANGELOG.md` edited on `develop` by hand |

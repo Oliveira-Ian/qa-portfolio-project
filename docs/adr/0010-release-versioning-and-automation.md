@@ -31,7 +31,8 @@ describe combinations that never run. Numbering continues from `v1.0.0`.
 **The version is derived, not chosen.** Pull request titles must be Conventional Commits
 (`.github/workflows/pr-validation.yml`), PRs into `develop` are squash-merged with the title as the
 commit message, and release-please computes the next version from those messages on `main`: `fix` is
-PATCH, `feat` is MINOR, `!` or `BREAKING CHANGE` is MAJOR. Commit-time tooling (commitlint, husky) is
+PATCH, `feat` is MINOR, `!` in the title is MAJOR (squash commits are created with an empty body, so
+footers do not survive). Commit-time tooling (commitlint, husky) is
 not added; the title check covers the only message that reaches `main`.
 
 **Releasing is a deliberate act with two merges.** Promoting `develop` to `main` is a PR opened on
