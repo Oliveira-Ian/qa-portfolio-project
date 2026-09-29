@@ -6,7 +6,7 @@ A small, realistic mini-ERP built as a QA automation portfolio: a real database,
 
 **Domain today:** authentication, a People (clients/suppliers/employees/users) registry, and full role- and profile-based access control (accounts, profiles, permissions) — see [`docs/product/domain.md`](docs/product/domain.md) for the full model.
 
-**Roadmap:** this repo is being repositioned as the **Oliveira Foundation** — a domain-free, reusable base meant to be shared by future platform products (FSM, CRM, ERP, clinic, help desk, real estate, distribution, solar, field service). The module-by-module roadmap and its pending architectural decisions (multi-tenancy comes first, since it reshapes every table and query) are still being worked out and aren't published in the repo yet.
+**Roadmap:** this repo is the base of the **Oliveira Platform**: a shared **Foundation** (authentication, users, people, companies, memberships, authorization, and the infrastructure services a product pulls in) and, on top of it, one product at a time — **Oliveira FSM** (Field Service Management) first. The Foundation knows no product rule, and nothing generic is built ahead of a feature that needs it. The shape is recorded in [`docs/adr/0011-platform-shape.md`](docs/adr/0011-platform-shape.md); the module-by-module Foundation roadmap lives as Epics on GitHub. Work proceeds one phase at a time.
 
 ## Stack
 

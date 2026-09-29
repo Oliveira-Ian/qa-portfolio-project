@@ -5,7 +5,9 @@ Project rules that must be followed to keep the system consistent, “real”, a
 ## Goal
 
 - A **testable** system that is close to real-world behavior
-- Evolve into a mini-ERP (e.g. construction), starting with **authentication** and the system foundation
+- Be the base of the Oliveira Platform (`docs/adr/0011-platform-shape.md`), starting with
+  **authentication** and the system foundation, and validated by a first real product (Field Service
+  Management)
 
 ## Core rules (non-negotiable)
 

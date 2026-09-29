@@ -39,7 +39,7 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 - Listings: TanStack Table (`@tanstack/react-table`) powers every listing screen's shared toolbar/grid/filters/export/column-personalization infrastructure (`apps/web/components/data-table/`) — see `docs/design/patterns/listing_pages.md`. Column show/hide + order is the one piece persisted server-side (`GridColumnPreference`, per account); everything else (sort/filter/search/pagination/selection) is client-side state.
 - Backend: Fastify + TypeScript, organized by feature module (`route → controller → service → repository`) with a central error handler (`apps/api`)
 - Data layer: Prisma + PostgreSQL (`prisma/schema.prisma`, single source of truth for the data model)
-- Architecture: monolithic
+- Architecture: modular monolith — a shared Foundation plus one product at a time (Oliveira FSM first), with dependencies pointing only from the product to the Foundation: `docs/adr/0011-platform-shape.md`. The Foundation/product folder split is not made yet; today's `apps/api/src/modules/*` are still one flat list.
 - Shared validation: `packages/schemas` (Zod schemas and messages used by both `apps/web` and `apps/api` — including the auth message strings, so client and server never drift)
 - Shared tooling: `packages/config` (base `tsconfig`, ESLint, Prettier)
 - E-mail: `apps/api/src/modules/email/email.service.ts` — an `EmailService` interface and a `NoopEmailService` that logs to the console. No real provider is wired in and nothing calls it yet; it exists as the seam a future feature (welcome e-mail, password reset) sends through without the caller needing to change when a real provider is added.
