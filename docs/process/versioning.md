@@ -63,10 +63,12 @@ Use it when the number release-please would choose is wrong, or when there is no
 trigger a release (only `docs`, `ci`, `chore` … since the last one — the case for `1.0.1`, the first
 release after this process was introduced).
 
-1. Branch from `develop` and add a commit whose **body** ends with the footer, for example:
-   `git commit --allow-empty -m "chore: release 1.0.1" -m "Release-As: 1.0.1"`.
-2. Open the PR into `develop` and merge it with a **merge commit**, not squash: a squash would
-   drop the body and the footer with it. This is the one work PR that is not squashed.
+1. Open a PR into `develop` titled `chore: release X.Y.Z` (it may be an empty commit, or carry
+   related changes).
+2. Merge it with **squash**, like any work PR, but set the commit body to the footer at merge time —
+   the repository's default squash body is empty, which would drop it:
+   `gh pr merge <number> --squash --subject "chore: release X.Y.Z" --body "Release-As: X.Y.Z"`.
+   On the GitHub button, paste `Release-As: X.Y.Z` into the commit description field.
 3. Promote `develop` to `main` as usual. release-please reads the footer from the history and opens
    the release PR for exactly that number.
 
