@@ -6,6 +6,7 @@ import {
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
+import { withProfileManagerGuard } from '../company/company-guards.js';
 
 export type AccountWithPerson = AccessAccount & { person: Person };
 export type AccountWithProfiles = AccountWithPerson & {
@@ -23,6 +24,8 @@ export interface CreateAccountForPersonData {
   personId: string;
   email: string;
   passwordHash: string;
+  /** The company the new login joins, as a plain member. */
+  companyId: string;
 }
 
 function targetIncludes(error: unknown, field: string): boolean {
@@ -119,7 +122,9 @@ export const accountRepository = {
   /**
    * The admin-initiated path: grants a login to a Person who already exists
    * in the registry, rather than creating a new one. Ensures `types`
-   * includes `USER` (a person with an account is a user by definition).
+   * includes `USER` (a person with an account is a user by definition), and
+   * makes the account a plain member of the company — no seat and no profile:
+   * those are granted separately (docs/adr/0018).
    */
   async createForPerson(data: CreateAccountForPersonData): Promise<AccountWithPerson> {
     try {
@@ -134,7 +139,12 @@ export const accountRepository = {
         }
 
         const account = await tx.accessAccount.create({
-          data: { personId: data.personId, email: data.email, password: data.passwordHash },
+          data: {
+            personId: data.personId,
+            email: data.email,
+            password: data.passwordHash,
+            memberships: { create: { companyId: data.companyId } },
+          },
         });
 
         return { ...account, person };
@@ -189,7 +199,10 @@ export const accountRepository = {
     });
   },
 
+  /** Refused (409) if it would leave the company with no one able to manage profiles. */
   async unlinkProfile(accountId: number, profileId: number): Promise<void> {
-    await prisma.accountProfile.deleteMany({ where: { accountId, profileId } });
+    await withProfileManagerGuard((tx) =>
+      tx.accountProfile.deleteMany({ where: { accountId, profileId } }),
+    );
   },
 };

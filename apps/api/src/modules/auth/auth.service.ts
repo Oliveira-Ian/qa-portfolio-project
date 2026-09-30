@@ -9,7 +9,7 @@ import {
 } from '@oliveira/schemas';
 import { UnauthorizedError, BadRequestError } from '../../shared/errors.js';
 import { accountRepository } from '../account/account.repository.js';
-import { companyService } from '../company/company.service.js';
+import type { AccessSnapshot } from '../company/company.service.js';
 import { recordLoginAttempt } from './auth.metrics.js';
 import { getEffectivePermissions } from './permissions.service.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from './password.js';
@@ -76,7 +76,8 @@ export const authService = {
     return { token, user: sessionAccount };
   },
 
-  async getMe(accountId: number): Promise<MeResponse> {
+  /** `access` is the snapshot `requireAuth` already resolved for this request — not read twice. */
+  async getMe(accountId: number, access: AccessSnapshot): Promise<MeResponse> {
     const account = await accountRepository.findById(accountId);
 
     if (!account) {
@@ -84,8 +85,6 @@ export const authService = {
       // no session at all rather than leaking that distinction.
       throw new UnauthorizedError();
     }
-
-    const access = await companyService.resolveAccess(accountId);
 
     // The profiles' permissions are the ERP's; without an ERP seat they grant
     // nothing, so none are reported (docs/adr/0018).

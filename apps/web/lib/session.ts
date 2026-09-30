@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { sessionAccountSchema, type SessionAccount } from '@oliveira/schemas';
 
-const SESSION_COOKIE = 'oliveira_session';
+const SESSION_COOKIE = 'oliveira_platform_session';
 
 /** Matches the API's own token lifetime (`JWT_EXPIRES_IN`, 8h). */
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;

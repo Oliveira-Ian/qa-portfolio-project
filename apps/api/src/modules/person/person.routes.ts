@@ -8,13 +8,14 @@ import {
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import type { WithId } from '../../shared/params.js';
 import { requireAuth } from '../auth/require-auth.js';
-import { requirePermission } from '../auth/authorize.js';
+import { requirePermission, requireProductAccess } from '../auth/authorize.js';
 import { personController } from './person.controller.js';
 
 /**
- * Every person endpoint needs a session (`requireAuth`, plugin-wide) plus the
- * matching business permission (`requirePermission`, per route — ADMIN
- * accounts bypass it, everyone else needs a profile granting it). `errorMessage`
+ * Every person endpoint needs a session (`requireAuth`, plugin-wide), a seat in
+ * the ERP (`requireProductAccess`, plugin-wide — the people registry is the
+ * ERP's) and the matching permission (`requirePermission`, per route — granted
+ * by a profile, and no role is exempt: docs/adr/0018). `errorMessage`
  * is the copy an unexpected failure answers with, declared per route so the
  * documented wording lives next to the handler it describes.
  *
@@ -25,6 +26,7 @@ import { personController } from './person.controller.js';
  */
 export async function personRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireProductAccess('ERP'));
 
   app.get(
     '/',

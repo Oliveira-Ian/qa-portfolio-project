@@ -38,9 +38,9 @@ export const authController = {
     });
   },
 
-  /** `requireAuth` (wired at the route) guarantees `request.account` here. */
+  /** `requireAuth` (wired at the route) guarantees `request.account` and `request.access` here. */
   async me(request: FastifyRequest, reply: FastifyReply) {
-    const data = await authService.getMe(request.account!.id);
+    const data = await authService.getMe(request.account!.id, request.access!);
     return sendSuccess(reply, 200, data);
   },
 };

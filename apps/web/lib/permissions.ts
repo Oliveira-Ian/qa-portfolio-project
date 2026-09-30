@@ -33,20 +33,19 @@ export const getMe = cache(async (): Promise<MeResponse> => {
   return unwrap(result);
 });
 
-export async function isAdmin(): Promise<boolean> {
+/** Whether the caller administers their own company — layer 2 of docs/adr/0018; it grants nothing in a product. */
+export async function isCompanyAdmin(): Promise<boolean> {
   const me = await getMe();
-  return me.account.role === 'SUPER_ADMIN';
+  return me.membership?.role === 'ADMIN';
 }
 
 /**
- * Mirrors the bypass rule in `apps/api/src/modules/auth/authorize.ts`:
- * `/me`'s `permissions` list is exactly what the account's profiles grant,
- * not adjusted for role — an ADMIN account only "has" whatever the
- * Administrator profile lists, same as anyone else. The bypass has to be
- * re-applied here, or an ADMIN would see UI hidden that the API would
- * actually let them use.
+ * Exactly what `/me` reports: the permissions the caller's profiles grant in
+ * the ERP (none without an ERP seat). No role widens it — the API has no
+ * administrator exemption either (docs/adr/0018), so this can't hide a button
+ * the API would allow, or show one it would refuse.
  */
 export async function can(permission: PermissionKey): Promise<boolean> {
   const me = await getMe();
-  return me.account.role === 'SUPER_ADMIN' || me.permissions.includes(permission);
+  return me.permissions.includes(permission);
 }

@@ -3,19 +3,20 @@ import { profileListQuerySchema, profileWriteSchema } from '@oliveira/schemas';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import type { WithId } from '../../shared/params.js';
 import { requireAuth } from '../auth/require-auth.js';
-import { requireRole } from '../auth/authorize.js';
+import { requirePermission, requireProductAccess } from '../auth/authorize.js';
 import { profileController } from './profile.controller.js';
 
 /**
- * System administration — gated by the technical ADMIN role, not a business
- * permission (see docs/product/access_control.md for the distinction). Unlike
+ * The ERP's profiles — gated by a seat in the ERP and the `profile:manage`
+ * permission, not by any role (docs/adr/0018). Unlike
  * `/api/persons`, POST/PUT return the full resource: this is greenfield API
  * surface with no legacy "message only" contract to preserve, and the admin
  * UI needs the created/updated profile's id and permission list right away.
  */
 export async function profileRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireRole('SUPER_ADMIN'));
+  app.addHook('preHandler', requireProductAccess('ERP'));
+  app.addHook('preHandler', requirePermission('profile:manage'));
 
   app.get(
     '/',

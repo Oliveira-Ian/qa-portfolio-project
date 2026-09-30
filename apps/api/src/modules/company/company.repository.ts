@@ -27,4 +27,15 @@ export const companyRepository = {
       include: { company: { include: { products: true } }, productAccess: true },
     });
   },
+
+  /** The account's membership in one company, active or not, with its seats. */
+  findMembership(
+    accountId: number,
+    companyId: string,
+  ): Promise<(Membership & { productAccess: ProductAccess[] }) | null> {
+    return prisma.membership.findUnique({
+      where: { accountId_companyId: { accountId, companyId } },
+      include: { productAccess: true },
+    });
+  },
 };

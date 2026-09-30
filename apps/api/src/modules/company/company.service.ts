@@ -1,15 +1,17 @@
-import { PRODUCTS, type MeMembership, type Product } from '@oliveira/schemas';
-import { ForbiddenError } from '../../shared/errors.js';
+import { PRODUCTS, PRODUCT_LABELS, type MeMembership, type Product } from '@oliveira/schemas';
+import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors.js';
 import { companyRepository } from './company.repository.js';
 
 /** What an account may enter right now — the answer to layers 2 and 3 of docs/adr/0018. */
 export interface AccessSnapshot {
   membership: MeMembership | null;
+  /** A suspended company's members keep their membership but can do nothing in it. */
+  isCompanyActive: boolean;
   /** Contracted by the company (and the company active) **and** granted to this member. */
   products: ReadonlySet<Product>;
 }
 
-const NO_ACCESS: AccessSnapshot = { membership: null, products: new Set() };
+const NO_ACCESS: AccessSnapshot = { membership: null, isCompanyActive: false, products: new Set() };
 
 export const companyService = {
   /**
@@ -59,7 +61,25 @@ export const companyService = {
         companyName: membership.company.tradeName ?? membership.company.legalName,
         role: membership.role,
       },
+      isCompanyActive,
       products,
     };
+  },
+
+  /**
+   * 404 unless the account is a member of the company — the company's own data
+   * (its accounts) is invisible from outside it, and "not found" doesn't say
+   * whether the account exists elsewhere.
+   */
+  async requireMember(accountId: number, companyId: string, product?: Product): Promise<void> {
+    const membership = await companyRepository.findMembership(accountId, companyId);
+
+    if (!membership) {
+      throw new NotFoundError('Account not found');
+    }
+
+    if (product && !membership.productAccess.some((seat) => seat.product === product)) {
+      throw new ConflictError(`This account has no access to ${PRODUCT_LABELS[product]}`);
+    }
   },
 };
