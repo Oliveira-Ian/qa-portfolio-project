@@ -64,17 +64,20 @@ The old flat paths (`/people`, `/profiles`, `/users`) still work, as do the firs
 
 ## Quick Start (apps/api)
 
-Requires a local PostgreSQL instance (e.g. `docker run -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=oliveira_erp -p 5432:5432 postgres:16-alpine`). Copy `prisma/.env.example` to `prisma/.env` and `apps/api/.env.example` to `apps/api/.env`, adjusting `DATABASE_URL` if needed. Set `JWT_SECRET` in `apps/api/.env` for anything beyond local dev (a dev-only default is used otherwise, and boot fails if that default is still set with `NODE_ENV=production`). Set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `prisma/.env` to bootstrap the first admin account — without them, `db:seed` still seeds the permission catalog and default profiles, just no admin.
+Requires Node 22.18 or newer (Prisma 7) and a local PostgreSQL instance (e.g. `docker run -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=oliveira_erp -p 5432:5432 postgres:16-alpine`). Copy `prisma/.env.example` to `prisma/.env` and `apps/api/.env.example` to `apps/api/.env`, adjusting `DATABASE_URL` if needed. Set `JWT_SECRET` in `apps/api/.env` for anything beyond local dev (a dev-only default is used otherwise, and boot fails if that default is still set with `NODE_ENV=production`). Set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `prisma/.env` to bootstrap the first admin account — without them, `db:seed` still seeds the permission catalog and default profiles, just no admin.
 
 ```bash
 npm install
 npm run build -w packages/schemas   # compiles the shared Zod schemas apps/api imports at runtime
+npm run db:generate                 # writes the Prisma client to apps/api/src/generated (git-ignored)
 npm run db:migrate                  # applies prisma/migrations against your local Postgres
 npm run db:seed                     # permission catalog, default profiles, and the first admin
 npm run dev:api                     # starts apps/api on http://localhost:3000
 ```
 
 `packages/schemas` isn't watched automatically — re-run `npm run build -w packages/schemas` whenever you change it, or `apps/api`/`apps/web` keep using the previously-compiled version.
+
+Prisma 7 no longer does two things on its own: `db:migrate` neither regenerates the client nor runs the seed. Re-run `npm run db:generate` after every schema change (and after a fresh clone), and `npm run db:seed` whenever you want the seed. The Prisma CLI reads `prisma/.env` through `prisma.config.ts` (which also holds the seed command); the API and the seed talk to Postgres through the `pg` driver adapter (`apps/api/src/config/prisma.ts`). Two transitive dependencies of the Prisma CLI are forced to patched versions through `overrides` in the root `package.json` (`deepmerge-ts` 8, `mysql2` 3.22+) because Prisma 7.10 pins vulnerable exact versions; drop the overrides once a Prisma release ships fixed ones.
 
 Interactive API docs (Swagger UI, generated from the same Zod schemas): `http://localhost:3000/docs` (raw OpenAPI JSON at `/docs/json`). Documents request shapes only — see `docs/api/http_responses.md` for the exact response envelope and error messages, which the generated spec doesn't capture.
 

@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { config as loadEnv } from 'dotenv';
 import { PERMISSION_CATALOG, SEED_PROFILE_NAMES, permissionKey } from '@oliveira/schemas';
+import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
 
 // `npm run db:seed` runs this from the repo root, but DATABASE_URL and the
-// admin-bootstrap vars live in prisma/.env (same convention the Prisma CLI
-// itself uses for --schema=prisma/schema.prisma) — resolved from this file's
-// own location so it works regardless of the caller's working directory.
+// admin-bootstrap vars live in prisma/.env (the same file prisma.config.ts loads
+// for the Prisma CLI) — resolved from this file's own location so it works
+// regardless of the caller's working directory.
 loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 /**
@@ -22,7 +23,15 @@ loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') 
  * blindly, so re-running after `db:migrate` never creates duplicates.
  */
 
-const prisma = new PrismaClient();
+// The generated client lives in apps/api (see the generator block in schema.prisma) and, like
+// the API, talks to Postgres through a driver adapter — no adapter, no client, in Prisma 7.
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required — set it in prisma/.env (see prisma/.env.example).');
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 // Matches apps/api/src/modules/auth/password.ts — kept in sync by hand since
 // this script runs outside the API's module graph.

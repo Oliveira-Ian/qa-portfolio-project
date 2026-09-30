@@ -1,4 +1,4 @@
-import type { Permission } from '@prisma/client';
+import type { Permission } from '../../generated/prisma/client.js';
 import type { PermissionDto } from '@oliveira/schemas';
 
 export function toPermissionDto(row: Permission): PermissionDto {

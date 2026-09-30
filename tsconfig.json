@@ -5,6 +5,7 @@
   },
   "include": [
     "vitest.config.ts",
+    "prisma.config.ts",
     "tests/unit/**/*.ts",
     "tests/api/**/*.ts",
     "tests/e2e/**/*.ts",

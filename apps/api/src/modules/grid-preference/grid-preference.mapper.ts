@@ -1,4 +1,4 @@
-import type { GridColumnPreference } from '@prisma/client';
+import type { GridColumnPreference } from '../../generated/prisma/client.js';
 import type { GridColumnPreferenceDto, GridColumnPreferenceItem } from '@oliveira/schemas';
 
 export function toGridColumnPreferenceDto(row: GridColumnPreference): GridColumnPreferenceDto {

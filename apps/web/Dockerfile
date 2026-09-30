@@ -1,5 +1,5 @@
 # Build context is the repo root (npm workspaces) — see docker-compose.yml.
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/package.json
@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build -w packages/schemas
 RUN npm run build -w apps/web
 
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /repo
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
