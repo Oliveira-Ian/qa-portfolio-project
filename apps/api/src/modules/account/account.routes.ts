@@ -17,7 +17,7 @@ import { accountController, type WithProfileLink } from './account.controller.js
  */
 export async function accountRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireRole('ADMIN'));
+  app.addHook('preHandler', requireRole('SUPER_ADMIN'));
 
   app.get(
     '/',

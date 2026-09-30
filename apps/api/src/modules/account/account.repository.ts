@@ -30,15 +30,6 @@ function targetIncludes(error: unknown, field: string): boolean {
   return Array.isArray(target) && target.includes(field);
 }
 
-/** Links a newly-created account to the `isDefault` profile, if one is seeded. */
-async function linkDefaultProfile(tx: Prisma.TransactionClient, accountId: number) {
-  const defaultProfile = await tx.accessProfile.findFirst({ where: { isDefault: true } });
-
-  if (defaultProfile) {
-    await tx.accountProfile.create({ data: { accountId, profileId: defaultProfile.id } });
-  }
-}
-
 /**
  * The only place in the account module that knows Prisma exists. Everything
  * above it works with plain objects, which is what makes the service testable
@@ -90,11 +81,11 @@ export const accountRepository = {
     return prisma.accessAccount.count({ where });
   },
 
-  /** Active ADMIN accounts, optionally excluding one — see `account-guards.ts`. */
-  countActiveAdmins(excludingAccountId?: number): Promise<number> {
+  /** Active SUPER_ADMIN accounts, optionally excluding one — see `account-guards.ts`. */
+  countActiveSuperAdmins(excludingAccountId?: number): Promise<number> {
     return prisma.accessAccount.count({
       where: {
-        role: 'ADMIN',
+        role: 'SUPER_ADMIN',
         active: true,
         ...(excludingAccountId === undefined ? {} : { id: { not: excludingAccountId } }),
       },
@@ -102,10 +93,9 @@ export const accountRepository = {
   },
 
   /**
-   * Self-registration's path: creates the Person too (types: ["USER"]) and
-   * links the `isDefault` profile — a database that hasn't been seeded yet
-   * (so no profile is marked default) still lets registration succeed with
-   * no profile attached, rather than failing.
+   * Self-registration's path: creates the Person too (types: ["USER"]). The
+   * account starts with no membership, no seat and no profile — registering
+   * grants nothing (docs/adr/0018).
    */
   createWithPerson(data: CreateAccountData): Promise<AccountWithPerson> {
     return prisma.$transaction(async (tx) => {
@@ -122,8 +112,6 @@ export const accountRepository = {
         data: { personId: person.id, email: data.email, password: data.passwordHash },
       });
 
-      await linkDefaultProfile(tx, account.id);
-
       return { ...account, person };
     });
   },
@@ -131,8 +119,7 @@ export const accountRepository = {
   /**
    * The admin-initiated path: grants a login to a Person who already exists
    * in the registry, rather than creating a new one. Ensures `types`
-   * includes `USER` (a person with an account is a user by definition) and
-   * links the `isDefault` profile, same as self-registration.
+   * includes `USER` (a person with an account is a user by definition).
    */
   async createForPerson(data: CreateAccountForPersonData): Promise<AccountWithPerson> {
     try {
@@ -149,8 +136,6 @@ export const accountRepository = {
         const account = await tx.accessAccount.create({
           data: { personId: data.personId, email: data.email, password: data.passwordHash },
         });
-
-        await linkDefaultProfile(tx, account.id);
 
         return { ...account, person };
       });

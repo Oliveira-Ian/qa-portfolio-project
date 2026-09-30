@@ -15,7 +15,7 @@ import { profileController } from './profile.controller.js';
  */
 export async function profileRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireRole('ADMIN'));
+  app.addHook('preHandler', requireRole('SUPER_ADMIN'));
 
   app.get(
     '/',

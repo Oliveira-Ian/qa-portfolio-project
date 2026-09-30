@@ -1,7 +1,10 @@
 /**
- * The permission catalog — sealed on purpose. Nothing in the product lets a
- * user invent a permission; the UI only attaches entries from this list to a
- * profile. A permission that exists in the database but isn't checked
+ * The permission catalog — sealed on purpose. Every entry belongs to the ERP
+ * today; the catalog gains a product dimension when the FSM has its first
+ * permission (docs/adr/0018), not before.
+ *
+ * Nothing in the product lets a user invent a permission; the UI only attaches
+ * entries from this list to a profile. A permission that exists in the database but isn't checked
  * anywhere in code is worse than no permission at all, so the catalog and the
  * code that enforces it are meant to be edited together.
  *
@@ -21,6 +24,7 @@ export const PERMISSION_CATALOG = [
   { resource: 'person', action: 'create', label: 'Create people' },
   { resource: 'person', action: 'edit', label: 'Edit people' },
   { resource: 'person', action: 'delete', label: 'Delete people' },
+  { resource: 'profile', action: 'manage', label: 'Manage profiles and their access' },
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionEntry = (typeof PERMISSION_CATALOG)[number];

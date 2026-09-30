@@ -52,7 +52,7 @@ export function requirePermission(key: PermissionKey) {
       throw new UnauthorizedError();
     }
 
-    if (request.account.role === 'ADMIN') {
+    if (request.account.role === 'SUPER_ADMIN') {
       return;
     }
 

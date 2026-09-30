@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isValidEmail } from './email.js';
 import type { PermissionKey } from './permissions.js';
+import type { MeMembership, Product } from './platform.js';
 
 /**
  * Every user-facing auth string in one place.
@@ -149,12 +150,13 @@ export function validateRegisterRequest(body: unknown): RequestValidation<Regist
 /* -------------------------------------------------------------------------- */
 
 /**
- * Technical role — controls system administration access, not what the
- * account holder does in the business (that's AccessProfile, added in a
- * later phase). SYSTEM is reserved for integrations/jobs and cannot sign in
- * interactively.
+ * Role on the Platform itself — `SUPER_ADMIN` is the Oliveira team. It says
+ * nothing about a company (that's `Membership.role`) or about what the person
+ * does inside a product (that's the product's profiles), and it grants no
+ * access to either. SYSTEM is reserved for integrations/jobs and cannot sign
+ * in interactively. See docs/adr/0018.
  */
-export const accountRoleSchema = z.enum(['ADMIN', 'USER', 'SYSTEM']);
+export const accountRoleSchema = z.enum(['SUPER_ADMIN', 'USER', 'SYSTEM']);
 
 export type AccountRole = z.infer<typeof accountRoleSchema>;
 
@@ -179,14 +181,20 @@ export type SessionAccount = z.infer<typeof sessionAccountSchema>;
 /**
  * `GET /api/auth/me`'s response — shared so `apps/api`'s service and
  * `apps/web`'s data-access layer agree on the shape by construction, not by
- * two hand-written copies staying in sync. `permissions` is exactly what the
- * account's `AccessProfile` links grant, unfiltered — it does **not**
- * reflect the `ADMIN` bypass (see `apps/api/src/modules/auth/authorize.ts`);
- * a caller that needs "can this account actually do X" has to check
- * `account.role === 'ADMIN'` itself, same as the authorization engine does.
+ * two hand-written copies staying in sync.
+ *
+ * - `membership` is the caller's active company, or `null` (a newly registered
+ *   account has none).
+ * - `products` are the products the caller may enter right now: contracted by
+ *   their company and granted to them.
+ * - `permissions` is what the caller's `AccessProfile` links grant inside the
+ *   ERP, and is empty without an ERP seat. No role widens it — there is no
+ *   administrator exemption (docs/adr/0018).
  */
 export interface MeResponse {
   account: { id: number; personId: string; email: string; role: AccountRole; active: boolean };
   person: { id: string; name: string };
+  membership: MeMembership | null;
+  products: Product[];
   permissions: PermissionKey[];
 }

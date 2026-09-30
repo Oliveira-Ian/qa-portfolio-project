@@ -35,7 +35,7 @@ export const getMe = cache(async (): Promise<MeResponse> => {
 
 export async function isAdmin(): Promise<boolean> {
   const me = await getMe();
-  return me.account.role === 'ADMIN';
+  return me.account.role === 'SUPER_ADMIN';
 }
 
 /**
@@ -48,5 +48,5 @@ export async function isAdmin(): Promise<boolean> {
  */
 export async function can(permission: PermissionKey): Promise<boolean> {
   const me = await getMe();
-  return me.account.role === 'ADMIN' || me.permissions.includes(permission);
+  return me.account.role === 'SUPER_ADMIN' || me.permissions.includes(permission);
 }

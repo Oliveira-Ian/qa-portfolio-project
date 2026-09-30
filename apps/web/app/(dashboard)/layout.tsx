@@ -26,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <DashboardShell
       userName={me.person.name}
       userEmail={me.account.email}
-      isAdmin={me.account.role === 'ADMIN'}
+      isAdmin={me.account.role === 'SUPER_ADMIN'}
       permissions={me.permissions}
     >
       {children}

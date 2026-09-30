@@ -6,7 +6,7 @@ import { permissionController } from './permission.controller.js';
 /** The catalog itself — system administration, gated by role like the rest of it. */
 export async function permissionRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireRole('ADMIN'));
+  app.addHook('preHandler', requireRole('SUPER_ADMIN'));
 
   app.get(
     '/',
