@@ -80,8 +80,8 @@ cypress/screenshots/
 # =========================
 # Prisma generated (optional)
 # =========================
-prisma/generated/
-src/generated/prisma/
+# Rebuilt by `npm run db:generate`; see the generator block in prisma/schema.prisma.
+apps/api/src/generated/
 
 # =========================
 # Cursor / AI tooling caches

@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { GridColumnPreferenceItem } from '@oliveira/schemas';
 import { prisma } from '../../config/prisma.js';
 

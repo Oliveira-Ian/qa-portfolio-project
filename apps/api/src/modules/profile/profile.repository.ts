@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../config/prisma.js';
 import { NotFoundError } from '../../shared/errors.js';
 import { RECORD_NOT_FOUND, isPrismaCode } from '../../shared/prisma-errors.js';

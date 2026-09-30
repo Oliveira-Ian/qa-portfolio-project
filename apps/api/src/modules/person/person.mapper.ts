@@ -1,4 +1,4 @@
-import type { Person as PersonRow, Prisma } from '@prisma/client';
+import type { Person as PersonRow, Prisma } from '../../generated/prisma/client.js';
 import type { Person, PersonCreateInput } from '@oliveira/schemas';
 
 /**

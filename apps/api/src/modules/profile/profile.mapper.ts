@@ -1,4 +1,8 @@
-import type { AccessProfile, Permission, ProfilePermission } from '@prisma/client';
+import type {
+  AccessProfile,
+  Permission,
+  ProfilePermission,
+} from '../../generated/prisma/client.js';
 import type { ProfileDto } from '@oliveira/schemas';
 import { toPermissionDto } from '../permission/permission.mapper.js';
 

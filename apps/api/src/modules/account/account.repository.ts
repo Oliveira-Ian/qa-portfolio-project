@@ -1,4 +1,4 @@
-import type { AccessAccount, AccountRole, Person, Prisma } from '@prisma/client';
+import type { AccessAccount, AccountRole, Person, Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {

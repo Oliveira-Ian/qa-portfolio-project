@@ -12,7 +12,7 @@ export default [
   // Third-party skill content installed via `npx skills add` — includes its
   // own template/example source files (e.g. .tsx starter templates meant to
   // be copied into a project, not linted as part of this one).
-  { ignores: ['.agents/skills/**', '.claude/skills/**'] },
+  { ignores: ['.agents/skills/**', '.claude/skills/**', 'apps/api/src/generated/**'] },
   ...baseConfig,
   ...scopedNextConfig,
 ];

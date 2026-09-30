@@ -1,15 +1,25 @@
+/// The client is generated as plain source into apps/api (git-ignored, rebuilt
+/// by `npm run db:generate`) rather than into node_modules — Prisma 7's
+/// `prisma-client` generator requires an explicit output. ESM with `.js` import
+/// specifiers, to match how apps/api is compiled and run.
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  provider               = "prisma-client"
+  output                 = "../apps/api/src/generated/prisma"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
 }
 
+/// The connection URL lives in prisma.config.ts (Prisma 7), not here.
+///
+/// The `pg_trgm` extension behind the two `gin_trgm_ops` indexes on Person is
+/// created by migration 20260731050843 (`CREATE EXTENSION IF NOT EXISTS`); the
+/// `postgresqlExtensions` preview feature that used to declare it here is
+/// deprecated. Those indexes make `GET /api/persons?search=`'s `contains`
+/// (Prisma's ILIKE) hit an index instead of a sequential scan.
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  // Backs the two `gin_trgm_ops` indexes on Person below — makes
-  // `GET /api/persons?search=`'s `contains` (Prisma's ILIKE) hit an index
-  // instead of a sequential scan as the table grows past a few hundred rows.
-  extensions = [pg_trgm]
+  provider = "postgresql"
 }
 
 /// Kept as database enums rather than free text so an invalid value is
