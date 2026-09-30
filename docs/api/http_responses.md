@@ -165,24 +165,26 @@ Also returned — with the exact same message, deliberately — for a deactivate
 ```
 
 ### GET /api/auth/me
-Requires a session (`Authorization: Bearer <token>`). Returns the caller's own account, person and effective permissions — the piece a login response can't carry, since permissions are resolved from the account's `AccessProfile` links at read time, not baked into the JWT.
+Requires a session (`Authorization: Bearer <token>`). Returns the caller's own account, person, company, the products they may enter and their effective permissions — the pieces a login response can't carry, since they are resolved from the database at read time, not baked into the JWT.
 
 **Success Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "account": { "id": 1, "personId": "uuid", "email": "string", "role": "ADMIN | USER | SYSTEM", "active": true },
+    "account": { "id": 1, "personId": "uuid", "email": "string", "role": "SUPER_ADMIN | USER | SYSTEM", "active": true },
     "person": { "id": "uuid", "name": "string" },
+    "membership": { "id": "uuid", "companyId": "uuid", "companyName": "string", "role": "ADMIN | MEMBER" },
+    "products": ["ERP"],
     "permissions": ["person:view", "person:create", "…"]
   }
 }
 ```
-`permissions` is whatever the account's profiles grant — an `ADMIN` account still gets its profile-derived list here (not "everything"); the technical bypass that lets `ADMIN` skip permission checks happens at authorization time, not in this response.
+`membership` is `null` for an account with no active company (a newly registered one). `products` are the products the caller may enter right now — contracted by their company and granted to them (a seat). `permissions` is whatever the account's profiles grant in the ERP, and is `[]` without an ERP seat. No role widens any of it: there is no administrator exemption (`docs/adr/0018`). An account that belongs to more than one company is answered with **403** `"This account belongs to more than one company"` until company switching exists.
 
 ### Authentication and authorization
 
-Every `/api/persons/*` route requires a session: `Authorization: Bearer <token>` from the login response. Missing or invalid tokens (expired, tampered, wrong signature) all answer identically:
+Every `/api/persons/*` route requires a session — `Authorization: Bearer <token>` from the login response — **and a seat in the ERP** (a session without one gets **403** `"No access to Oliveira ERP"`, before its permission is even looked at). Missing or invalid tokens (expired, tampered, wrong signature) all answer identically:
 
 ```json
 { "success": false, "error": "Unauthorized" }
@@ -194,7 +196,7 @@ Beyond having a session, each route requires a specific permission (`person:view
 ```json
 { "success": false, "error": "Forbidden" }
 ```
-with status **403**. `ADMIN`-role accounts bypass this check entirely — see `docs/product/access_control.md`.
+with status **403**. No role bypasses this check — see `docs/product/access_control.md`.
 
 ### GET /api/persons
 Requires `person:view`. Query params (all optional): `type` (`CLIENT`|`SUPPLIER`|`USER`|`EMPLOYEE` — matches persons whose `types` array **contains** this value, via Prisma's `has`), `active` (`true`|`false`), `search` (matches name or document).
@@ -262,12 +264,16 @@ Requires `person:delete`.
 **Success Response (200):** `{ "success": true, "data": { "message": "Person deleted successfully" } }`
 **Error Responses:** **404** `{ "success": false, "error": "Person not found" }` for an unknown id (previously a bare 500).
 
-### System administration — `/api/profiles`, `/api/permissions`, `/api/accounts`
+### Access administration — `/api/profiles`, `/api/permissions`, `/api/accounts`, `/api/company`
 
-All three require `Authorization: Bearer <token>` **and** the technical role `ADMIN`
-(`requireRole('ADMIN')`) — not a business permission, and not bypassable by any `AccessProfile`. A
-valid session with role `USER` gets the same `403 Forbidden` shape as a missing permission on
-`/api/persons`. See `docs/product/access_control.md` for the role-vs-profile distinction.
+Each needs `Authorization: Bearer <token>` plus the guard for the question it asks
+(`docs/product/access_control.md` has the table): `/api/profiles` and `/api/permissions` — an ERP seat
+and the `profile:manage` permission; `GET /api/accounts` — an ERP seat and `profile:manage` (or being
+the company's administrator), scoped to the caller's company; `POST /api/accounts` — an ERP seat and
+company administrator; `PATCH /api/accounts/:id` (an account's global role and active flag) — the
+`SUPER_ADMIN` role; `/api/company/members…` (members and their product seats) — company administrator.
+A session that lacks the guard gets the same `403 Forbidden` shape as a missing permission on
+`/api/persons`. An account outside the caller's company answers `404 Account not found`.
 
 ### GET /api/permissions
 The catalog, read-only — whatever's seeded from `packages/schemas/src/permissions.ts`.
