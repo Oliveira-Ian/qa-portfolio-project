@@ -3,8 +3,9 @@ import { FastifyOtelInstrumentation } from '@fastify/otel';
 import { context, propagation, trace } from '@opentelemetry/api';
 import { node, tracing } from '@opentelemetry/sdk-node';
 import Fastify from 'fastify';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { registerTraceIdHeader } from '../../apps/api/src/plugins/trace-id-header.js';
+import { keepQueryOffSpan } from '../../apps/api/src/shared/telemetry-privacy.js';
 
 /**
  * Observability guarantees that can be checked without a collector or a
@@ -77,6 +78,33 @@ describe('x-trace-id header', () => {
     await app.close();
   });
 
+  it('keeps the query string, and so the list filters, off the request span', async () => {
+    exporter.reset();
+    const app = Fastify();
+    await app.register(
+      new FastifyOtelInstrumentation({
+        // What `instrumentation.ts` gives `@fastify/otel`; without it the span
+        // records `url.path` with the query string attached.
+        requestHook: (span, request) => keepQueryOffSpan(span, request.url),
+      }).plugin(),
+    );
+    app.get('/persons', async () => ({ ok: true }));
+
+    await app.inject({ method: 'GET', url: '/persons?f_name=Maria&f_document=12345678901' });
+    await app.close();
+
+    const spans = exporter.getFinishedSpans();
+    expect(spans.length).toBeGreaterThan(0);
+
+    const everything = JSON.stringify(spans.map((span) => [span.name, span.attributes]));
+    expect(everything).not.toContain('Maria');
+    expect(everything).not.toContain('12345678901');
+
+    const [requestSpan] = spans.filter((span) => span.attributes['url.path'] !== undefined);
+    expect(requestSpan?.attributes['url.path']).toBe('/persons');
+    expect(requestSpan?.attributes['url.query']).toBe('[redacted]');
+  });
+
   it('is left out when there is no active span, instead of a made-up id', async () => {
     const app = Fastify();
     registerTraceIdHeader(app);
@@ -91,6 +119,10 @@ describe('x-trace-id header', () => {
 });
 
 describe('log lines', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('keep the path and drop the query string, the client address and credentials', async () => {
     // `config/logger.ts` reads the API environment; the schema only insists on this one.
     vi.stubEnv('DATABASE_URL', 'postgresql://user:password@localhost:5432/database');
@@ -126,7 +158,5 @@ describe('log lines', () => {
     const entry = JSON.parse(firstLine ?? '{}') as Record<string, unknown>;
     expect(entry).toMatchObject({ service: 'oliveira-api', env: 'test' });
     expect(new Date(String(entry.time)).toISOString()).toBe(entry.time);
-
-    vi.unstubAllEnvs();
   });
 });

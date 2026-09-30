@@ -1,4 +1,5 @@
 import type { FastifyServerOptions } from 'fastify';
+import { pathOf } from '../shared/telemetry-privacy.js';
 import { env } from './env.js';
 
 /**
@@ -20,7 +21,7 @@ export const loggerOptions: Exclude<FastifyServerOptions['logger'], boolean | un
   serializers: {
     req: (request) => ({
       method: request.method,
-      url: request.url.split('?')[0] ?? '',
+      url: pathOf(request.url),
     }),
   },
   // Belt and braces: the serializer above already leaves headers out.

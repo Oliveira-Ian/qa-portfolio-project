@@ -24,6 +24,7 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { logs, metrics, NodeSDK, resources } from '@opentelemetry/sdk-node';
 import { PrismaInstrumentation } from '@prisma/instrumentation';
+import { keepQueryOffSpan, pathOf } from './shared/telemetry-privacy.js';
 
 // The stable HTTP semantic conventions: `url.path` / `url.query` / `http.route`
 // and the `http.server.request.duration` histogram in seconds. The legacy set
@@ -34,8 +35,10 @@ process.env.OTEL_SEMCONV_STABILITY_OPT_IN ??= 'http';
 const SERVICE_NAME = process.env.OTEL_SERVICE_NAME ?? 'oliveira-api';
 
 // Probes and the API docs are noise in a trace list and in the request rate.
-const isQuietPath = (url: string | undefined) =>
-  url === '/health' || url?.startsWith('/docs') === true;
+const isQuietPath = (url: string | undefined) => {
+  const path = url === undefined ? undefined : pathOf(url);
+  return path === '/health' || path?.startsWith('/docs') === true;
+};
 
 const sdk = new NodeSDK({
   resource: resources.resourceFromAttributes({
@@ -54,8 +57,8 @@ const sdk = new NodeSDK({
       // List endpoints take filters in the query string (name, document, …), and
       // those are personal data: keep the fact that there was one, not its value.
       requestHook: (span, request) => {
-        if ('url' in request && request.url?.includes('?')) {
-          span.setAttribute('url.query', '[redacted]');
+        if ('url' in request) {
+          keepQueryOffSpan(span, request.url);
         }
       },
     }),
@@ -67,6 +70,8 @@ const sdk = new NodeSDK({
       // One span per hook (helmet, cors, …) would bury the handler and the
       // queries; the request and handler spans are enough.
       instrumentHooks: false,
+      // Its `request` span records `url.path` with the query string attached.
+      requestHook: (span, request) => keepQueryOffSpan(span, request.url),
     }),
     // Adds `trace_id` / `span_id` to every pino line, and forwards the lines to
     // the collector as OTLP logs (the SDK above supplies the log pipeline).
@@ -79,7 +84,18 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-/** Flushes what is still buffered. Called by `server.ts` once the app has closed. */
+const SHUTDOWN_TIMEOUT_MS = 2_000;
+
+/**
+ * Flushes what is still buffered. Called by `server.ts` once the app has closed.
+ * A collector that is not there must not hold up a clean stop (Docker gives a
+ * container ten seconds) or turn it into a failure, so this waits a couple of
+ * seconds at most and never throws.
+ */
 export async function shutdownTelemetry(): Promise<void> {
-  await sdk.shutdown();
+  const giveUp = new Promise<void>((resolve) => {
+    setTimeout(resolve, SHUTDOWN_TIMEOUT_MS).unref();
+  });
+
+  await Promise.race([sdk.shutdown().catch(() => undefined), giveUp]);
 }
