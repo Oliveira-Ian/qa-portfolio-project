@@ -52,8 +52,8 @@ Tempo (traces), Prometheus (metrics) and Grafana in a single image.
 - A new metric or span is a few lines next to the code that does the work
   (`modules/auth/auth.metrics.ts` is the model); a new dashboard panel is an edit to a JSON file under
   `infra/observability/grafana/`. Both are described in `docs/operations/observability.md`.
-- The OpenTelemetry context and the request context of ADR 0016 both live on `AsyncLocalStorage` and
-  do not interfere: one holds the current span, the other the actor.
+- The OpenTelemetry context and the request context of [ADR 0016](0016-request-context.md) both live
+  on `AsyncLocalStorage` and do not interfere: one holds the current span, the other the actor.
 - The availability alert can only tell that the API stopped reporting — it cannot tell a hung process
   from a healthy one. The web app has no metrics and no logs in Loki yet, and `client.address` stays on
   the span; both are fine for `localhost` and to be revisited before any shared environment.

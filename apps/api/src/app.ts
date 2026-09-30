@@ -14,6 +14,7 @@ import { personRoutes } from './modules/person/person.routes.js';
 import { profileRoutes } from './modules/profile/profile.routes.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerOpenApi } from './plugins/openapi.js';
+import { registerRequestContext } from './plugins/request-context.js';
 import { registerTraceIdHeader } from './plugins/trace-id-header.js';
 
 /**
@@ -25,6 +26,8 @@ export function buildApp() {
   const app = Fastify({ logger: loggerOptions });
 
   registerErrorHandler(app);
+  // Before any route is registered: a hook only reaches the routes added after it.
+  registerRequestContext(app);
   // Before the routes, so every response carries the header, errors included.
   registerTraceIdHeader(app);
   // `void`: buildApp() stays synchronous — Fastify queues `.register()` calls

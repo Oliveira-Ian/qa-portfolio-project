@@ -19,8 +19,9 @@ migration over every table and a period in which the only barrier is application
 
 The active company reaches both from the same place: the request context
 ([#36](https://github.com/Oliveira-Ian/qa-portfolio-project/issues/36)), carried by
-`AsyncLocalStorage`, whose company comes from the session **validated against the caller's membership
-in the database** on each request (the token proves identity only).
+`AsyncLocalStorage` ([0016](0016-request-context.md)), whose company comes from the session
+**validated against the caller's membership in the database** on each request (the token proves
+identity only).
 
 Kept deliberately small: one mechanism, no abstraction beyond a function that runs work in a company
 context. It replaces the RLS-later sentence of 0008; the rest of 0008 stands.
@@ -49,6 +50,11 @@ working spike against a real database before anything is migrated.
   identity — the account and its memberships, which login and company switching must read *before* a
   company is chosen — need their own, narrower policies. Which tables are which is part of the F-12
   specification.
+- **The company is read from the request context inside the extension.** That an extension callback
+  sees the calling request's context, even for batched `findUnique` calls, was measured on Prisma 7.10
+  ([0016](0016-request-context.md)). What the spike still has to prove is the wrapper around each
+  operation — `set_config` plus the query in one transaction — and interactive transactions: that two
+  concurrent requests for different companies never see each other's rows, over the connection pool.
 - **Per-operation vs per-unit-of-work.** Prisma's documented pattern wraps each operation in a batch
   transaction of `set_config` plus the query. Its documentation also warns that an extension calling a
   client-level method inside another transaction opens a new connection and ignores the surrounding
