@@ -1,0 +1,138 @@
+# Local alert rules for the Oliveira API. Grafana-managed, provisioned from this
+# file; they show up under Alerting > Alert rules. No contact point is wired on
+# purpose (no e-mail, chat or paging service in this stage) — a firing rule is
+# read in the Grafana UI. Criteria and the reasoning: docs/operations/observability.md.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: oliveira-api
+    folder: Oliveira
+    interval: 1m
+    rules:
+      # 5xx responses as a share of all responses. The `and on()` clause keeps the
+      # rule quiet below 0.1 request/s: one failure among three requests is not a
+      # 33% error rate worth waking anyone for. Below that traffic the query has
+      # no result, and "no data" is read as healthy.
+      - uid: oliveira-api-error-rate
+        title: API error rate above 5%
+        condition: C
+        for: 2m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of API responses were 5xx over the last 5 minutes
+          description: >-
+            Open the "Oliveira API - Overview" dashboard, then Explore > Loki with
+            {service_name="oliveira-api"} | detected_level="error" and follow the trace_id.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                100 * (sum(rate(http_server_request_duration_seconds_count{job="oliveira-api",http_response_status_code=~"5.."}[5m])) or vector(0))
+                / sum(rate(http_server_request_duration_seconds_count{job="oliveira-api"}[5m]))
+                and on() sum(rate(http_server_request_duration_seconds_count{job="oliveira-api"}[5m])) > 0.1
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+
+      # p95 of request duration. Login is the slowest route (bcrypt) and stays far
+      # below a second, so a second at p95 is a real slowdown, not normal variation.
+      # Same traffic floor as above, and a longer `for`, since latency is noisier.
+      - uid: oliveira-api-latency
+        title: API p95 latency above 1s
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: The 95th percentile of API request duration was above 1 second over the last 5 minutes
+          description: >-
+            Open the "Oliveira API - Overview" dashboard to see which route, then look
+            for the slow span in a trace of that route (Explore > Tempo).
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{job="oliveira-api"}[5m])))
+                and on() sum(rate(http_server_request_duration_seconds_count{job="oliveira-api"}[5m])) > 0.1
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+
+      # The API pushes its metrics every 15 seconds, so when it stops the series
+      # simply stops growing. `absent_over_time` returns 1 only when there is no
+      # sample at all in the window, and nothing otherwise. Limit: a process that is
+      # alive but stuck can still push, so this catches a stopped API, not a hung one.
+      - uid: oliveira-api-down
+        title: API is not reporting
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: The API has sent no telemetry for at least 2 minutes
+          description: >-
+            The API is stopped, or cannot reach the collector on port 4318. Check
+            `npm run dev:doctor` and the API's console.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: absent_over_time(target_info{job="oliveira-api"}[2m])
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }

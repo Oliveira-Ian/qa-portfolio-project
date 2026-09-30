@@ -26,7 +26,9 @@
     "dev:web": "npm run dev -w apps/web",
     "dev:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-doctor.ps1",
     "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "obs:up": "docker compose --profile observability up -d lgtm",
+    "obs:down": "docker compose --profile observability stop lgtm"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
