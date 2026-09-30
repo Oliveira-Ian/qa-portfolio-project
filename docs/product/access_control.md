@@ -47,11 +47,20 @@ them use.
 omits it — an admin can't hand-pick it for a person's account) and blocked from interactive login
 (`auth.service.ts`) — otherwise it's just an admin account with a different name.
 
-**Permissions never enter the JWT.** The session token carries `{ sub, personId, name, email, role }`
-only. With N profiles per account, baking permissions into the token would mean they go stale the
-moment an admin changes a profile mid-session. Instead, `GET /api/auth/me` resolves the effective set
-at read time (`permissions.service.ts#getEffectivePermissions`), and `apps/web` calls it once per
-request via React's `cache()` (`apps/web/lib/permissions.ts#getMe`).
+**The token proves identity only.** The session token carries `{ sub, personId, name, email, role }`,
+but the API trusts it for exactly one thing: *which account is calling*. On every request
+`requireAuth` (`apps/api/src/modules/auth/require-auth.ts`) reads that account from the database and
+rejects it with `401` if it no longer exists or is deactivated; the `role` that `requireRole()` and
+the `ADMIN` bypass check is the database's, not the token's. So deactivating an account, or demoting
+an admin, takes effect on that account's very next request — not when its 8-hour token expires. (The
+copy of `name`/`role` in the token and in `apps/web`'s session cookie is only for display; nothing
+authorises against it.) The price is one primary-key lookup per request.
+
+**Permissions never enter the JWT.** With N profiles per account, baking permissions into the token
+would mean they go stale the moment an admin changes a profile mid-session. Instead,
+`GET /api/auth/me` resolves the effective set at read time
+(`permissions.service.ts#getEffectivePermissions`), and `apps/web` calls it once per request via
+React's `cache()` (`apps/web/lib/permissions.ts#getMe`).
 
 ## Self-registration vs. admin-initiated accounts
 
@@ -126,8 +135,9 @@ require re-architecting the authorization engine later:
 
 - Add `tenantId` to `Person`, `AccessAccount`, and `AccessProfile` — every row belongs to exactly one
   tenant, the same pattern already used for `id`.
-- Scope `AccountProfile` (and every business-data query) by the caller's `tenantId`, resolved from the
-  session the same way `role` is today — added to the JWT payload and to `SessionAccount`.
+- Scope `AccountProfile` (and every business-data query) by the caller's `tenantId`, resolved on each
+  request the same way `role` is today — from the database, validated against the caller's
+  membership, never trusted from the token (see ADR 0008 and 0012).
 - `Permission` (the catalog) stays global — permissions describe *capabilities the code has*, not
   something a tenant configures per-installation. Profiles stay per-tenant.
 - `requireRole()`/`requirePermission()` don't change: both already operate on the resolved account,
