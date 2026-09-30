@@ -18,8 +18,8 @@ can see it.
 
 ## Functional requirements
 
-1. A request has a **context** that lives for the whole of its handling and is invisible to every other
-   request.
+1. A request has a **context** that lives from validation through the handler (see Flows for why it
+   opens there, not earlier) and is invisible to every other request.
 2. `requireAuth` puts the **actor** into that context: `accountId`, `personId` and `role`, taken from
    the account it already loads from the database.
 3. Code anywhere below the route — in practice the repository layer — can read the actor
@@ -107,7 +107,11 @@ None. No migration, no schema change, no new dependency (`node:async_hooks` is p
 
 ## Acceptance criteria
 
-1. A repository function reads the caller's actor without it being passed in.
+1. Code below the route — a repository function, in practice — **can** read the caller's actor without
+   it being passed in. No repository does yet: the first consumers are #60 and #37, and nothing is built
+   ahead of a consumer ([ADR 0011](../adr/0011-platform-shape.md)). It was verified with a temporary
+   probe in `personRepository.findMany` (not committed): 60 interleaved requests from two accounts,
+   60 of 60 read the right actor.
 2. Two concurrent requests with different actors never see each other's, including after an `await`,
    inside `Promise.all`, and **after a JSON body has been parsed**.
 3. Outside a request there is no ambient actor: `getActor()` is `undefined`, `requireActor()` and
