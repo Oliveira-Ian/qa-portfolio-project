@@ -1,5 +1,10 @@
 # 0013 — Company, membership and platform roles
 
+> **Refined by [0018](0018-authorization-layers-and-product-access.md):** the company `ADMIN` also
+> grants members their seat in each contracted product, within a limit `SUPER_ADMIN` sets, and neither
+> role administers a product by being an administrator. Membership, `Company` and the roles below are
+> introduced in that record's first phase, ahead of the isolation work of #60.
+
 ## Context
 
 [0008](0008-multi-tenancy-shared-database.md) left several questions to the F-12 specification:

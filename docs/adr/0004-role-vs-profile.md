@@ -1,5 +1,10 @@
 # 0004 — Technical role vs. business profile, with an ADMIN bypass
 
+> **Partly superseded by [0018](0018-authorization-layers-and-product-access.md).** The bypass is
+> removed: no role exempts anyone from `requirePermission()`, and `AccountRole.ADMIN` is renamed
+> `SUPER_ADMIN`. The distinction between a technical role and a business profile stands; the profiles
+> and permissions described here are the ERP's own.
+
 ## Context
 
 Two different questions come up when deciding what an account can do: "is this a system

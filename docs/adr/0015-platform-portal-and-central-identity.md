@@ -1,5 +1,11 @@
 # 0015 — The Platform is a portal with one central identity
 
+> **Updated by [0018](0018-authorization-layers-and-product-access.md) and
+> [0019](0019-erp-existing-product-and-product-areas.md).** With the ERP and the FSM there are two
+> products, so the catalog of systems is built now. Access has two levels — the company's contract
+> (`CompanyProduct`, with a seat limit) and the member's seat (`ProductAccess`) — instead of company
+> access alone. "Same application, same session" (below) stands.
+
 ## Context
 
 "Oliveira Platform" has so far been read as an architectural umbrella: a name for the Foundation

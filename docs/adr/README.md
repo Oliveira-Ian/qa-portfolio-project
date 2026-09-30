@@ -24,3 +24,5 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0015](0015-platform-portal-and-central-identity.md) | The Platform is a portal with one central identity |
 | [0016](0016-request-context.md) | Request context through AsyncLocalStorage |
 | [0017](0017-observability-opentelemetry-lgtm.md) | Observability: OpenTelemetry pushed to one local `grafana/otel-lgtm` container |
+| [0018](0018-authorization-layers-and-product-access.md) | Authorization in four layers: platform role, membership, product access, product permissions |
+| [0019](0019-erp-existing-product-and-product-areas.md) | The ERP is an existing product; products are areas of the web application |
