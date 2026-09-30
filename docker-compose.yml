@@ -76,8 +76,7 @@ services:
     profiles: [observability]
     ports:
       - '127.0.0.1:3002:3000' # Grafana
-      - '127.0.0.1:4317:4317' # OTLP gRPC
-      - '127.0.0.1:4318:4318' # OTLP HTTP — what the API and the web app push to
+      - '127.0.0.1:4318:4318' # OTLP over HTTP — what the API and the web app push to
     volumes:
       - lgtm-data:/data
       # The image already provisions the datasources (Prometheus, Tempo, Loki)

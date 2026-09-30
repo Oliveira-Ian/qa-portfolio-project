@@ -47,7 +47,8 @@ Tempo (traces), Prometheus (metrics) and Grafana in a single image.
 - One more thing to know when adding a dependency that the API loads before the app: the
   instrumentations patch modules as they load, so `instrumentation.ts` must stay the first thing
   `node` runs (the `dev` and `start` scripts and the Dockerfile's `CMD` all pass `--import`). Running
-  `node dist/server.js` directly still works — it just produces no telemetry.
+  `node dist/server.js` directly still works, but the SDK starts too late to patch what is already
+  loaded, so the HTTP and Fastify spans are missing.
 - A new metric or span is a few lines next to the code that does the work
   (`modules/auth/auth.metrics.ts` is the model); a new dashboard panel is an edit to a JSON file under
   `infra/observability/grafana/`. Both are described in `docs/operations/observability.md`.

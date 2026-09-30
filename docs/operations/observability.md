@@ -51,11 +51,11 @@ about 30 seconds to be ready.
 | Grafana                    | <http://localhost:3002> — no login (see Limitations)    |
 | Dashboard                  | Dashboards > **Oliveira API - Overview**                |
 | Alert rules                | Alerting > Alert rules > folder **Oliveira**            |
-| OTLP receiver (the apps)   | `http://localhost:4318` (HTTP), `:4317` (gRPC)          |
+| OTLP receiver (the apps)   | `http://localhost:4318` (OTLP over HTTP)                |
 
 The ports are published on `127.0.0.1` only. Loki, Tempo and Prometheus are not published at all.
-To wipe the collected data: `docker compose --profile observability stop lgtm`, then remove the
-`lgtm-data` volume.
+`obs:down` keeps the collected data. To wipe it, stop the container and remove its volume:
+`npm run obs:down`, then `docker volume rm qa-portfolio-project_lgtm-data`.
 
 ## What is collected
 
@@ -89,8 +89,10 @@ also has `job` / `service_name` = `oliveira-api`.
  "msg":"Invalid email or password"}
 ```
 
-- Levels: `info` for the request lifecycle, `warn` for a client error the API refused (400, 401, 403,
-  404, 429 … with the reason in `msg`), `error` for a server error (5xx, with the stack).
+- Levels: `info` for the request lifecycle, `warn` for a client error the API refused through its
+  error handler (400 validation, 401, 403, a `NotFoundError` 404 … with the reason in `msg`), `error`
+  for a server error (5xx, with the stack). An unknown route (404) and a rate-limit rejection (429)
+  do not get a `warn`: they show in the `request completed` line and in the metrics.
 - `LOG_LEVEL` sets the minimum (`info` by default).
 - `trace_id` / `span_id` appear only on lines written while a request is being traced.
 
@@ -249,7 +251,7 @@ All optional. The `OTEL_*` variables are read by the OpenTelemetry SDK itself, n
 | ------------------------------ | --------------------------- | --------------------------------------------------------- |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`  | `http://localhost:4318`     | Where to push. Compose sets `http://lgtm:4318`.           |
 | `OTEL_SDK_DISABLED`            | unset                       | `true` turns telemetry off; no header, no data.           |
-| `OTEL_SERVICE_NAME`            | `oliveira-api` / `oliveira-web` | The service name in every signal.                     |
+| `OTEL_SERVICE_NAME`            | `oliveira-api` / `oliveira-web` | The service name in every signal. It overrides the code, so one value exported in a shell renames both services. |
 | `LOG_LEVEL` (API)              | `info`                      | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent`. |
 
 Compose passes `OTEL_EXPORTER_OTLP_ENDPOINT` from your shell if it is set, so `docker compose up`
@@ -257,12 +259,16 @@ can point at a different collector.
 
 ## Privacy
 
-- **The request log has the path, never the query string** — list filters (`f_name`, `f_document`)
-  are personal data. The span attribute `url.query` is replaced by `[redacted]`.
+- **The request log and every span have the path, never the query string** — list filters
+  (`f_name`, `f_document`, `search`) are personal data. On the API, `url.path` keeps the path and
+  `url.query` becomes `[redacted]` (`apps/api/src/shared/telemetry-privacy.ts`). On the web app, a
+  span processor strips the query from the URL attributes and span names of the page and of the
+  `fetch` to the API (`apps/web/instrumentation.ts`).
 - **No client address in the log**, no headers; `authorization`, `cookie`, `password` and `token`
   are also redacted by name.
-- Log messages for refused requests are fixed strings from `packages/schemas`, never the caller's
-  input. Keep it that way in new code: log ids and reasons, not values.
+- What is logged for a refused request is a fixed string from `packages/schemas`, or Fastify's error
+  code — never text derived from the caller's input (a JSON parser's message can quote the body it
+  choked on). Keep it that way in new code: log ids and reasons, not values.
 - The one thing not filtered is the text of an **unexpected** error (a 5xx): it comes from the library.
   A Prisma error quotes the source of the failing call and the reason, not the runtime values, but read
   a new kind of error once before trusting that it holds nothing personal.
@@ -279,7 +285,11 @@ can point at a different collector.
 - The web app sends traces only; its logs stay on its console, and it has no metrics.
 - An E2E failure is correlated by route and time, not by id.
 - Prisma spans show the SQL with placeholders, not the parameter values.
-- `node dist/server.js` without `--import ./dist/instrumentation.js` still runs, with no telemetry.
+- `node dist/server.js` without `--import ./dist/instrumentation.js` still runs, but the SDK then
+  starts after Fastify and the HTTP module are loaded, so their spans are missing. Always start it
+  with the preload.
+- The API accepts a `traceparent` from any caller, so a caller can choose the trace id that
+  `x-trace-id` echoes back. Fine for local use; not something to rely on elsewhere.
 
 ## Later
 
