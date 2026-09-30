@@ -7,6 +7,7 @@ import { loggerOptions } from './config/logger.js';
 import { prisma } from './config/prisma.js';
 import { accountRoutes } from './modules/account/account.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { companyRoutes } from './modules/company/company.routes.js';
 import { gridPreferenceRoutes } from './modules/grid-preference/grid-preference.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { permissionRoutes } from './modules/permission/permission.routes.js';
@@ -65,6 +66,7 @@ export function buildApp() {
   app.register(profileRoutes, { prefix: '/api/profiles' });
   app.register(permissionRoutes, { prefix: '/api/permissions' });
   app.register(accountRoutes, { prefix: '/api/accounts' });
+  app.register(companyRoutes, { prefix: '/api/company' });
   app.register(gridPreferenceRoutes, { prefix: '/api/grid-preferences' });
 
   app.addHook('onClose', async () => {

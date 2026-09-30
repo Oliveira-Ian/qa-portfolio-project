@@ -31,10 +31,11 @@ can see it.
 
 ## Business rules
 
-- **The context holds only what exists today.** The actor, nothing else. The active company is *not*
-  added here: no company exists yet, and nothing is built ahead of a consumer
-  ([ADR 0011](../adr/0011-platform-shape.md)). The tenancy work (#60) adds `companyId` to the same
-  object, set at the same place, after validating the caller's membership in the database.
+- **The context holds only what exists today.** The actor, and — since the Platform access model
+  ([ADR 0018](../adr/0018-authorization-layers-and-product-access.md)) — the active company, set at the same
+  place after `requireAuth` has read the caller's membership from the database. Nothing is built ahead of
+  a consumer ([ADR 0011](../adr/0011-platform-shape.md)): the company scopes the company's own data and
+  the lockout guards today, and the tenancy work (#60) makes it the filter on every business query.
 - **Reading an actor that is not there is a programming error, not a user error.** A function that
   needs one (`requireActor()`) fails loudly, which surfaces as a `500`; it never falls back to a
   default, and never answers `401`.

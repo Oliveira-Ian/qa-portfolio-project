@@ -1,145 +1,176 @@
-# Access Control — Oliveira ERP
+# Access Control — Oliveira Platform
 
-How identity, credentials, and permissions fit together. `docs/product/domain.md` covers what each
-entity *is*; this document covers how they interact to decide who can do what.
+How identity, companies, product access and permissions fit together. `docs/product/domain.md` covers
+what each entity _is_; this document covers how they interact to decide who can do what. The reasoning
+is in [ADR 0018](../adr/0018-authorization-layers-and-product-access.md) and
+[ADR 0019](../adr/0019-erp-existing-product-and-product-areas.md); the data, endpoints and the
+acceptance matrix are in [`docs/especificacoes/platform-access-model.md`](../especificacoes/platform-access-model.md).
 
-## The model
+## The model: four layers
 
 ```
-Person 1──0..1 AccessAccount 0..N──N AccessProfile N──N Permission
-                    │
-                    └── role: ADMIN | USER | SYSTEM
+AccessAccount ── one login for the whole Platform
+   │ role: SUPER_ADMIN | USER | SYSTEM                 layer 1 — the Platform
+   ▼
+Membership ── account × company, role ADMIN | MEMBER   layer 2 — the company
+   │
+   ├── CompanyProduct ── the company's contract for a product, with a seat limit
+   └── ProductAccess  ── this member's seat in a product          layer 3 — the product
+                                  │
+                                  ▼
+       AccessProfile N──N Permission  ── what the member does inside the product   layer 4
 ```
 
-- **`Person`** — the identity. Everyone starts here, whether they ever get a login or not.
-- **`AccessAccount`** — the credential. `email` + bcrypt `password` + `role` + `active`. At most one
-  per Person (`personId` is unique).
-- **`AccessProfile`** — a named bundle of permissions ("Manager", "Finance", …). An account can
-  hold any number of them (`AccountProfile`, the join table); its *effective* permission set is the
-  union of every profile it's linked to.
-- **`Permission`** — a sealed catalog entry, `resource:action` (`person:view`, `person:create`, …),
-  defined in code (`packages/schemas/src/permissions.ts`) and seeded into the database. Nothing in the
-  UI can invent a permission that no route actually checks.
+Each layer answers one question, and **none grants anything in the next**:
 
-## Role vs. profile — two different questions
+| Layer | Question | Held by | Checked by |
+|---|---|---|---|
+| 1. Platform | Does this account administer the Platform itself? | `AccessAccount.role` | `requireRole('SUPER_ADMIN')` |
+| 2. Company | Does it belong to an active company, and administer it? | `Membership.role` | `requireCompanyAdmin` |
+| 3. Product | Did the company contract the product, and was this member granted a seat? | `CompanyProduct`, `ProductAccess` | `requireProductAccess('ERP')` |
+| 4. Permissions | What may it do inside the product? | the product's profiles | `requirePermission('person:view')` |
 
-These answer different questions and are checked by different code paths:
+- **`SUPER_ADMIN`** is the Oliveira team. It changes an account's global role and active flag (and, in
+  a later phase, administers companies and contracts). It has **no access to any product and no default
+  access to any company's data**: to use the ERP it needs a membership and a seat like anyone else.
+- **Company `ADMIN`** administers its own company only: its members, their status and company role,
+  and the seats it grants within the contracted limit. It cannot change contracts or limits, sees no
+  other company, and is **not** thereby an administrator of a product.
+- **A seat** is what a member needs to enter a product. Granting one is counted against the company's
+  `seatLimit` for that product.
+- **`Permission`** is a sealed catalog entry, `resource:action` (`person:view`, `profile:manage`, …),
+  defined in code (`packages/schemas/src/permissions.ts`) and seeded into the database. Today the
+  catalog is the ERP's. **`AccessProfile`** is a named bundle of them; an account may hold any number,
+  and its effective set is their union.
 
-| | `AccessAccount.role` | `AccessProfile` |
-|---|---|---|
-| Question it answers | "Is this a system administration account?" | "What does this person do in the business?" |
-| Values | `ADMIN`, `USER`, `SYSTEM` — a fixed, small enum | However many profiles the business defines |
-| Checked by | `requireRole('ADMIN')` — `apps/api/src/modules/auth/authorize.ts` | `requirePermission('person:view')` — same file |
-| Governs | `/api/accounts`, `/api/profiles`, `/api/permissions` — system administration | `/api/persons` and every future business-data route |
-| Editable via | `/administration/access-control/users`, ADMIN only | `/administration/access-control/profiles` (CRUD), ADMIN only |
+**There is no bypass.** No role is exempt from `requirePermission()`; a `SUPER_ADMIN` or a company
+`ADMIN` who wants to work in the ERP grants themself the seat and holds a profile, as anyone would.
+(This replaces the `ADMIN` bypass of ADR 0004.)
 
-**`ADMIN` bypasses every permission check.** It doesn't matter which profiles an ADMIN account holds —
-`requirePermission()` lets it through unconditionally, because it's the account that configures
-profiles and permissions in the first place; a permission system that could lock its own administrator
-out would just be a bug waiting to happen. `GET /api/auth/me` still reports an ADMIN's real
-profile-derived `permissions` array (not "everything"), because that list is also what `apps/web`'s
-`can()` helper reads — which is why `can()` re-applies the same bypass client-side
-(`apps/web/lib/permissions.ts`): otherwise an ADMIN would see UI hidden that the API would actually let
-them use.
+**Every ERP route needs a seat**, in the API — `requireProductAccess('ERP')` runs before the route's own
+permission on `/api/persons`, `/api/profiles`, `/api/permissions` and the ERP parts of `/api/accounts`.
+The web's ERP layout also refuses to render the page without a seat, but that is only the polite half:
+Server Actions are public endpoints, so the API is the boundary.
 
-**`SYSTEM`** is reserved for integrations and background jobs. It's excluded from the role picker in
-`/administration/access-control/users` (`apps/web`'s `ROLE_OPTIONS` deliberately
-omits it — an admin can't hand-pick it for a person's account) and blocked from interactive login
-(`auth.service.ts`) — otherwise it's just an admin account with a different name.
+## Who may call what
 
-**The token proves identity only.** The session token carries `{ sub, personId, name, email, role }`,
-but the API trusts it for exactly one thing: *which account is calling*. On every request
-`requireAuth` (`apps/api/src/modules/auth/require-auth.ts`) reads that account from the database and
-rejects it with `401` if it no longer exists or is deactivated; the `role` that `requireRole()` and
-the `ADMIN` bypass check is the database's, not the token's. So deactivating an account, or demoting
-an admin, takes effect on that account's very next request — not when its 8-hour token expires. (The
-copy of `name`/`role` in the token and in `apps/web`'s session cookie is only for display; nothing
-authorises against it.) The price is one primary-key lookup per request.
+| Route | Guard |
+|---|---|
+| `GET /api/auth/me` | signed in |
+| `/api/persons/*` | ERP seat + `person:*` |
+| `/api/profiles/*`, `/api/permissions` | ERP seat + `profile:manage` |
+| `GET /api/accounts`, `/:id` | ERP seat + (`profile:manage` or company `ADMIN`), scoped to the caller's company |
+| `POST /api/accounts` (give a person a login) | ERP seat + company `ADMIN`; the login joins the company, with no seat and no profile |
+| `POST`/`DELETE /api/accounts/:id/profiles…` | ERP seat + `profile:manage`; the target must hold an ERP seat |
+| `PATCH /api/accounts/:id` (global role, active) | `SUPER_ADMIN` |
+| `/api/company/members…` | company `ADMIN` (needs no seat) |
+| `/api/grid-preferences/*` | signed in |
+
+## Where the truth is read
+
+**The token proves identity only.** The session token carries `{ sub, personId, name, email, role }`, but
+the API trusts it for exactly one thing: _which account is calling_. On every request `requireAuth`
+(`apps/api/src/modules/auth/require-auth.ts`) reads that account from the database and rejects it with
+`401` if it no longer exists or is deactivated; the `role` is the database's. It then reads the
+account's active membership, its company's contracts and its seats
+(`apps/api/src/modules/company/company.service.ts#resolveAccess`) and puts the company in the request
+context (`docs/adr/0016`). So deactivating an account, revoking a seat, deactivating a membership or
+suspending a contract takes effect on the account's very next request, not when its 8-hour token
+expires. (The copy of `name`/`role` in the token and in `apps/web`'s session cookie is only for
+display; nothing authorises against it.) The price is a primary-key lookup and one membership query
+per request.
 
 **Permissions never enter the JWT.** With N profiles per account, baking permissions into the token
-would mean they go stale the moment an admin changes a profile mid-session. Instead,
-`GET /api/auth/me` resolves the effective set at read time
-(`permissions.service.ts#getEffectivePermissions`), and `apps/web` calls it once per request via
-React's `cache()` (`apps/web/lib/permissions.ts#getMe`).
+would mean they go stale the moment an administrator changes a profile mid-session. `GET /api/auth/me`
+resolves the effective set at read time (`permissions.service.ts#getEffectivePermissions`) — and
+reports it only while the account holds an ERP seat — and `apps/web` calls it once per request via
+React's `cache()` (`apps/web/lib/permissions.ts#getMe`). `can()` reads exactly that list: there is no
+administrator exemption to re-apply, so it cannot hide what the API allows or show what it refuses.
 
-## Self-registration vs. admin-initiated accounts
+**One active membership per account** until company switching exists (F-12). An account with more than
+one is refused with `403`; the API never picks one silently.
 
-Two different paths create an `AccessAccount`, and they exist for different reasons:
+## Registration and joining a company
 
-**`POST /api/auth/register`** (self-registration) creates the `Person` *and* the `AccessAccount`
-together, in one transaction (`accountRepository.createWithPerson`):
+`POST /api/auth/register` creates the `Person` and the `AccessAccount` together, in one transaction
+(`accountRepository.createWithPerson`) — and **nothing else**: no membership, no seat, no profile. The
+new user can sign in and sees that they have no access yet.
 
-1. `Person { name, email, birthdate, types: ["USER"] }` — no document, no `CLIENT`/`SUPPLIER` type.
-2. `AccessAccount { personId, email, password: hash, role: "USER", active: true }`.
-3. Linked to whichever `AccessProfile` has `isDefault: true` ("Default User", seeded) — silently
-   skipped if the database hasn't been seeded yet, so registration still succeeds with zero profiles
-   rather than failing.
+To get in, a company administrator either:
+
+- adds the account by e-mail (`POST /api/company/members`) — the answer is always the same generic
+  message, so it never says whether an address has an account; it adds only an active, non-`SYSTEM`
+  account with no company. This stands in for invitations, which replace it before a second company
+  exists; or
+- gives a person of the registry a login (`POST /api/accounts`,
+  `accountRepository.createForPerson`) — the login becomes a member of the administrator's company.
+
+Then the administrator grants a seat (`PUT /api/company/members/:id/products/ERP`). **The first ERP seat
+of an account with no profile links the `isDefault` profile**; an account that already holds profiles
+keeps them. Revoking a seat leaves the profile links in place (dormant without the seat).
 
 No document is collected and no `CLIENT` record is created — a person registering for the app is not
-automatically a customer of the business the app runs for. If that Person later *is* a client, that's
-a separate, deliberate step (checking `CLIENT` on their Person record, which then requires a document).
+automatically a customer of the business the app runs for.
 
-**`POST /api/accounts`** (admin-initiated, `accountRepository.createForPerson`) grants a login to a
-Person who already exists in the registry — a `CLIENT` who's about to start working the front desk, an
-`EMPLOYEE` who needs system access. It adds `USER` to that Person's `types` if not already present,
-creates the `AccessAccount`, and links the same `isDefault` profile — everything self-registration
-does, minus creating the Person. Reachable from the Person edit page's Account section
-(`apps/web/components/people/account-section.tsx`) once `types` includes `USER`. This endpoint isn't
-in the original phase plan's literal endpoint list for `/api/accounts` — it was added because the
-Person edit page needs *some* way to create an account for an existing Person, and this is the
-narrowest addition that does it.
+## Seats and limits
 
-Both paths require `ADMIN` to *view or manage* afterward — `/api/accounts` is `requireRole('ADMIN')`
-end to end. Self-registration itself is public (no auth required), same as before.
+`CompanyProduct.seatLimit` (null = unlimited) is per company × product. A seat used is a
+`ProductAccess` of an **active** membership. Granting a seat runs in one transaction that locks the
+company row, so two concurrent grants cannot go past the limit; at the limit the answer is `409`,
+`No licenses left for Oliveira ERP. Contact Oliveira to raise the limit.` Granting a seat the member
+already holds is a no-op. Deactivating a membership frees its seats. Contracts and limits are written
+by the Oliveira team (the seed, later the console), never by a company's administrator.
 
 ## Lockout guards
 
-`assertAdminChangeAllowed()` (`apps/api/src/modules/account/account-guards.ts`) blocks two specific
-changes to `PATCH /api/accounts/:id`:
+Each is a `409`, checked in the same transaction as the change with the company row locked
+(`apps/api/src/modules/company/company-guards.ts`):
 
-- An `ADMIN` account demoting **itself** away from `ADMIN`.
-- The **last active** `ADMIN` account being deactivated or demoted, by anyone.
+- **The last active `SUPER_ADMIN`** cannot be deactivated or demoted, and a `SUPER_ADMIN` cannot
+  demote or deactivate themself (`account-guards.ts`).
+- **The last active company `ADMIN`** cannot be demoted or deactivated.
+- **The last member able to manage the ERP's profiles** — an active member with an ERP seat and a
+  profile that carries `profile:manage` — cannot lose that: by unlinking the profile, by editing or
+  deleting a profile that carries the permission, by revoking the ERP seat, or by being deactivated.
+  Without it, nobody could change who may do what in the ERP without database access.
 
-Both would otherwise leave the system with no account able to manage accounts, profiles, or
-permissions — a state only fixable by direct database access. `SYSTEM` and inactive accounts are
-excluded from login (`auth.service.ts`) regardless of role, checked before the password even.
+`SYSTEM` and inactive accounts are excluded from login (`auth.service.ts`) regardless of role, checked
+before the password even.
+
+## Audit
+
+Every grant, revocation and change of a membership's status or role emits a structured log line
+(`access.product.granted`, `access.product.revoked`, `access.membership.added`,
+`access.membership.updated`) with the actor's account id, the company, the target and the product — ids
+only, no e-mail or name. A seat also records who granted it and when (`ProductAccess.grantedById`,
+`grantedAt`). The lines reach Loki through the OpenTelemetry pipeline (`docs/operations/observability.md`);
+a persisted, queryable trail belongs to F-15 (#7).
 
 ## What's deliberately not here
 
-- **Password reset for existing accounts.** `AccountUpdateInput` (`packages/schemas/src/access-control.ts`)
-  only covers `active`/`role` — there's no admin-initiated "reset this person's password" endpoint yet.
-  The Person edit page's Account section reflects this: once an account exists, it shows a read-only
-  summary and a link to `/administration/access-control/users`, not a password field.
+- **Isolation of business data between companies.** `Person`, profiles and the rest are not yet
+  company-scoped; that is #60 (`docs/adr/0012`). Until it lands there is exactly one company and
+  nothing provisions another. The accounts listing and profile links are already scoped to the caller's
+  company; the business tables are not.
+- **Invitations, company switching, contracts/plans/billing, branches, support access for
+  `SUPER_ADMIN`.** See ADR 0018's "What this does not decide".
+- **Password reset for existing accounts.** `AccountUpdateInput` only covers `active`/`role`.
 - **Per-account permission overrides.** An account's permissions are exactly the union of its
-  profiles' — there's no "grant this one extra permission to this one account" escape hatch. If a
-  permission set doesn't fit an existing profile, the answer is a new profile, not a per-account patch.
+  profiles' — if a permission set doesn't fit an existing profile, the answer is a new profile.
 - **Login by `login`.** `AccessAccount.login` exists in the schema (unique, nullable) for future
-  ERP-style username login, but nothing reads it yet — `email` is the only credential `/api/auth/login`
-  accepts.
+  username login, but nothing reads it — `email` is the only credential `/api/auth/login` accepts.
 
 ## Adding a new permission
 
 1. Add the entry to `PERMISSION_CATALOG` in `packages/schemas/src/permissions.ts`
    (`{ resource: 'service-order', action: 'approve', label: 'Approve service orders' }`).
 2. Re-run `npm run db:seed` — `seedPermissions()` upserts by `(resource, action)`, so this is safe to
-   run against a database that already has data.
-3. Guard the route: `app.addHook('preHandler', requirePermission('service-order:approve'))`, or per-route.
-4. The admin UI needs no code change — the Profiles screen's permission picker
-   (`/administration/access-control/profiles`) reads the live catalog from
+   run against a database that already has data. The seeded Administrator profile is re-synced to hold
+   the whole catalog.
+3. Guard the route: `app.addHook('preHandler', requirePermission('service-order:approve'))`, or per-route,
+   after the product's `requireProductAccess`.
+4. The profiles screen needs no code change — its permission picker reads the live catalog from
    `GET /api/permissions` and groups by `resource` automatically.
 
-## What would change for multi-tenant
-
-Out of scope today (see the project's own scope notes), but the shape of the change, so it doesn't
-require re-architecting the authorization engine later:
-
-- Add `tenantId` to `Person`, `AccessAccount`, and `AccessProfile` — every row belongs to exactly one
-  tenant, the same pattern already used for `id`.
-- Scope `AccountProfile` (and every business-data query) by the caller's `tenantId`, resolved on each
-  request the same way `role` is today — from the database, validated against the caller's
-  membership, never trusted from the token (see ADR 0008 and 0012).
-- `Permission` (the catalog) stays global — permissions describe *capabilities the code has*, not
-  something a tenant configures per-installation. Profiles stay per-tenant.
-- `requireRole()`/`requirePermission()` don't change: both already operate on the resolved account,
-  which would simply also carry a `tenantId` by then. The only new check is "does this row's
-  `tenantId` match the caller's" — added once, at the repository layer, not per-route.
+When the FSM has its first permission the catalog gains a product dimension (ADR 0018); until then every
+entry is the ERP's.
