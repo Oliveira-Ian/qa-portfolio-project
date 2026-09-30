@@ -32,6 +32,8 @@ const envSchema = z.object({
    * `origin` option configured at all used to do.
    */
   CORS_ORIGINS: z.string().min(1).default('http://localhost:3000'),
+  /** Minimum level the logger writes — see `config/logger.ts`. */
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
 function loadEnv() {

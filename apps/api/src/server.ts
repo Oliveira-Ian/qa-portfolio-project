@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
+import { shutdownTelemetry } from './instrumentation.js';
 
 const app = buildApp();
 
@@ -7,13 +8,18 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     // Closing the app drains in-flight requests and runs the onClose hook that
     // disconnects Prisma — without it a container restart leaves sessions open.
-    app.close().then(
-      () => process.exit(0),
-      (error: unknown) => {
-        app.log.error(error);
-        process.exit(1);
-      },
-    );
+    // Telemetry is flushed last, so the spans and logs of the requests that
+    // were still in flight are not lost with the process.
+    app
+      .close()
+      .then(() => shutdownTelemetry())
+      .then(
+        () => process.exit(0),
+        (error: unknown) => {
+          app.log.error(error);
+          process.exit(1);
+        },
+      );
   });
 }
 

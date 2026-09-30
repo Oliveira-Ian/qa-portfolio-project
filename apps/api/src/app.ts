@@ -3,6 +3,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
 import { corsOrigins } from './config/env.js';
+import { loggerOptions } from './config/logger.js';
 import { prisma } from './config/prisma.js';
 import { accountRoutes } from './modules/account/account.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
@@ -13,6 +14,7 @@ import { personRoutes } from './modules/person/person.routes.js';
 import { profileRoutes } from './modules/profile/profile.routes.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerOpenApi } from './plugins/openapi.js';
+import { registerTraceIdHeader } from './plugins/trace-id-header.js';
 
 /**
  * Composition root: it wires plugins and route modules together and owns
@@ -20,9 +22,11 @@ import { registerOpenApi } from './plugins/openapi.js';
  * be built without a server or a port.
  */
 export function buildApp() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: loggerOptions });
 
   registerErrorHandler(app);
+  // Before the routes, so every response carries the header, errors included.
+  registerTraceIdHeader(app);
   // `void`: buildApp() stays synchronous — Fastify queues `.register()` calls
   // made inside and resolves them before the app becomes ready, so nothing
   // here needs to be awaited at this call site.
