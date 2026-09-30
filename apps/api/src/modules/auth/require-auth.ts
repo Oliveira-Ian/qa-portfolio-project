@@ -1,6 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 import type { SessionAccount } from '@oliveira/schemas';
 import { UnauthorizedError } from '../../shared/errors.js';
+import { setActor } from '../../shared/request-context.js';
 import { accountRepository } from '../account/account.repository.js';
 import { verifySessionToken } from './token.js';
 
@@ -61,4 +62,9 @@ export async function requireAuth(request: FastifyRequest): Promise<void> {
     email: account.email,
     role: account.role,
   };
+
+  // The same caller, for code that has no `request` — the repository layer
+  // (`shared/request-context.ts`). Set here and nowhere else, after the account
+  // has been loaded and checked.
+  setActor({ accountId: account.id, personId: account.personId, role: account.role });
 }
