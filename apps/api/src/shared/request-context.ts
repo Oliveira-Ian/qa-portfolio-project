@@ -24,12 +24,12 @@ export interface RequestContext {
 const storage = new AsyncLocalStorage<RequestContext>();
 
 /**
- * Runs `fn` with `context` as the ambient context. `plugins/request-context.ts`
+ * Runs `callback` with `context` as the ambient context. `plugins/request-context.ts`
  * does it once per request; the seed, a background job or a test does it
  * explicitly, since there is no ambient actor outside a request.
  */
-export function runWithRequestContext<T>(context: RequestContext, fn: () => T): T {
-  return storage.run(context, fn);
+export function runWithRequestContext<T>(context: RequestContext, callback: () => T): T {
+  return storage.run(context, callback);
 }
 
 /** The caller, or `undefined` — a route that never authenticates has none. */
