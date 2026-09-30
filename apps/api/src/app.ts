@@ -13,6 +13,7 @@ import { personRoutes } from './modules/person/person.routes.js';
 import { profileRoutes } from './modules/profile/profile.routes.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerOpenApi } from './plugins/openapi.js';
+import { registerRequestContext } from './plugins/request-context.js';
 
 /**
  * Composition root: it wires plugins and route modules together and owns
@@ -23,6 +24,8 @@ export function buildApp() {
   const app = Fastify({ logger: true });
 
   registerErrorHandler(app);
+  // Before any route is registered: a hook only reaches the routes added after it.
+  registerRequestContext(app);
   // `void`: buildApp() stays synchronous — Fastify queues `.register()` calls
   // made inside and resolves them before the app becomes ready, so nothing
   // here needs to be awaited at this call site.
