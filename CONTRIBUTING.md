@@ -19,6 +19,7 @@ single entry point.
 | API responses, errors, status codes                | `docs/api/http_responses.md`           |
 | Auth, roles, profiles, permissions                 | `docs/product/access_control.md`       |
 | Test selectors                                     | `docs/qa/testids.md`                   |
+| Logs, metrics, traces, dashboards, alerts          | `docs/operations/observability.md`     |
 | Why something is built the way it is               | `docs/adr/`                            |
 
 The coding standards themselves — file structure, the Server Component / Server Action / data-access

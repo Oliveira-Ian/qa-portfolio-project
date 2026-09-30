@@ -7,6 +7,7 @@ import {
 } from '@oliveira/schemas';
 import { UnauthorizedError, BadRequestError } from '../../shared/errors.js';
 import { accountRepository } from '../account/account.repository.js';
+import { recordLoginAttempt } from './auth.metrics.js';
 import { getEffectivePermissions } from './permissions.service.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from './password.js';
 import { signSessionToken } from './token.js';
@@ -54,6 +55,7 @@ export const authService = {
     // integrations/jobs, never interactive login) — so the response can't be
     // used to enumerate which addresses are registered or which are admins.
     if (!account || !passwordMatches || !account.active || account.role === 'SYSTEM') {
+      recordLoginAttempt('failure');
       throw new UnauthorizedError(authMessages.login.invalidCredentials);
     }
 
@@ -65,7 +67,10 @@ export const authService = {
       role: account.role,
     };
 
-    return { token: await signSessionToken(sessionAccount), user: sessionAccount };
+    const token = await signSessionToken(sessionAccount);
+    recordLoginAttempt('success');
+
+    return { token, user: sessionAccount };
   },
 
   async getMe(accountId: number): Promise<MeResponse> {

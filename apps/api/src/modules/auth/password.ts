@@ -1,4 +1,7 @@
+import { trace } from '@opentelemetry/api';
 import bcrypt from 'bcryptjs';
+
+const tracer = trace.getTracer('oliveira-api');
 
 /**
  * `bcryptjs` (pure JS) rather than `bcrypt` (native): this repo is developed on
@@ -27,10 +30,18 @@ export const DUMMY_PASSWORD_HASH = '$2b$10$kcbCUa/94v9S9Ehxgv2gGeM2Zeoxf4XNKlqn4
  * — rows created before hashing existed hold plaintext, and those users simply
  * can't sign in until they register again.
  */
-export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  try {
-    return await bcrypt.compare(plain, hash);
-  } catch {
-    return false;
-  }
+export function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  // A span of its own because this is where a login spends its time — hashing
+  // is deliberately slow — and a trace should show that at a glance instead of
+  // leaving a gap between the account lookup and the response. No attributes:
+  // nothing about the password or the account belongs on a span.
+  return tracer.startActiveSpan('auth.verify_password', async (span) => {
+    try {
+      return await bcrypt.compare(plain, hash);
+    } catch {
+      return false;
+    } finally {
+      span.end();
+    }
+  });
 }

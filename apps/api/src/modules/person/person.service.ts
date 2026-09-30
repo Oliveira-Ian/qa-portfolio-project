@@ -14,6 +14,7 @@ import {
   type FilterFieldMap,
 } from '../../shared/list-query.js';
 import { toPersonDto, toPersonWriteData } from './person.mapper.js';
+import { recordPersonChange } from './person.metrics.js';
 import { personRepository } from './person.repository.js';
 
 /**
@@ -132,19 +133,23 @@ export const personService = {
 
   async create(input: PersonCreateInput): Promise<Person> {
     const row = await personRepository.create(toPersonWriteData(input));
+    recordPersonChange('create');
     return toPersonDto(row);
   },
 
   async update(id: string, input: PersonCreateInput): Promise<Person> {
     const row = await personRepository.update(id, toPersonWriteData(input));
+    recordPersonChange('update');
     return toPersonDto(row);
   },
 
-  remove(id: string): Promise<void> {
-    return personRepository.delete(id);
+  async remove(id: string): Promise<void> {
+    await personRepository.delete(id);
+    recordPersonChange('delete');
   },
 
-  removeMany(ids: string[]): Promise<void> {
-    return personRepository.deleteMany(ids);
+  async removeMany(ids: string[]): Promise<void> {
+    await personRepository.deleteMany(ids);
+    recordPersonChange('delete', ids.length);
   },
 };

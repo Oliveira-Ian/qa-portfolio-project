@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: Oliveira
+    type: file
+    # Grafana re-reads the folder, so editing a dashboard JSON shows up without a restart.
+    updateIntervalSeconds: 10
+    options:
+      path: /oliveira/dashboards
+      foldersFromFilesStructure: false

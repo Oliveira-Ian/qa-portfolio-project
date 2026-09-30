@@ -23,3 +23,4 @@ reader (including future-you) would otherwise have to reconstruct the reasoning 
 | [0014](0014-uuid-v7-primary-keys.md) | UUID v7 primary keys, in the tenancy migration |
 | [0015](0015-platform-portal-and-central-identity.md) | The Platform is a portal with one central identity |
 | [0016](0016-request-context.md) | Request context through AsyncLocalStorage |
+| [0017](0017-observability-opentelemetry-lgtm.md) | Observability: OpenTelemetry pushed to one local `grafana/otel-lgtm` container |

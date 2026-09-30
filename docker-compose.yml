@@ -35,6 +35,10 @@ services:
       # `JWT_SECRET` in the host shell before deploying this compose file
       # anywhere it needs to be trusted.
       JWT_SECRET: ${JWT_SECRET:-local-compose-only-not-a-real-secret}
+      # Where telemetry is pushed. No `depends_on: lgtm` on purpose: the
+      # observability container is optional (profile below), and with nothing
+      # listening the exporters drop their data quietly — the API runs the same.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://lgtm:4318}
     ports:
       - '3001:3000'
     depends_on:
@@ -50,10 +54,37 @@ services:
       # (inside this container), not from the browser, so this doesn't need
       # to be host-reachable the way a NEXT_PUBLIC_* value would.
       API_URL: http://api:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://lgtm:4318}
     ports:
       - '3000:3000'
     depends_on:
       - api
 
+  # Local observability backend: OpenTelemetry Collector, Loki (logs), Tempo
+  # (traces), Prometheus (metrics) and Grafana in one image. Development and
+  # testing only — see docs/operations/observability.md and ADR 0017.
+  #
+  # Behind a profile so `docker compose up` (and the CI smoke test) neither
+  # pulls nor starts it. Start it with `npm run obs:up`.
+  #
+  # Published on 127.0.0.1 only: no authentication is configured, so it must not
+  # be reachable from the network. Grafana is on 3002 because 3000 is the web app.
+  # Loki, Tempo and Prometheus are not published at all; Grafana reaches them
+  # inside the container.
+  lgtm:
+    image: grafana/otel-lgtm:0.34.0
+    profiles: [observability]
+    ports:
+      - '127.0.0.1:3002:3000' # Grafana
+      - '127.0.0.1:4318:4318' # OTLP over HTTP — what the API and the web app push to
+    volumes:
+      - lgtm-data:/data
+      # The image already provisions the datasources (Prometheus, Tempo, Loki)
+      # with the links between them; these add the dashboard and the alerts.
+      - ./infra/observability/grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/oliveira.yaml:ro
+      - ./infra/observability/grafana/dashboards:/oliveira/dashboards:ro
+      - ./infra/observability/grafana/alerting.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/oliveira.yaml:ro
+
 volumes:
   postgres-data:
+  lgtm-data:
