@@ -23,6 +23,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
   - HTTP response standardization: `docs/api/http_responses.md`
 - **QA selectors (`data-testid`)**:
   - Single source of truth: `docs/qa/testids.md`
+- **Logs, metrics, traces, dashboards, alerts** (adding a metric or a span, investigating a failure
+  by its trace id): `docs/operations/observability.md` (reasoning: `docs/adr/0017`).
 - **System rules / domain**:
   - Project rules: `docs/product/business_rules.md`
   - Auth functional rules: `docs/product/auth_rules.md`
@@ -42,6 +44,7 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 - Architecture: modular monolith — the Platform (the central system: sign-in, one identity, home) over a shared Foundation, with one product at a time entered from it (Oliveira FSM first) as an area of the same web app and session. Dependencies point only from a product to the Foundation: `docs/adr/0011-platform-shape.md`, `docs/adr/0015-platform-portal-and-central-identity.md`. The Foundation/product folder split is not made yet; today's `apps/api/src/modules/*` are still one flat list.
 - Shared validation: `packages/schemas` (Zod schemas and messages used by both `apps/web` and `apps/api` — including the auth message strings, so client and server never drift)
 - Shared tooling: `packages/config` (base `tsconfig`, ESLint, Prettier)
+- Observability: OpenTelemetry in `apps/api` (logs, metrics, traces — `apps/api/src/instrumentation.ts`, preloaded with `node --import`) and `apps/web` (traces, `apps/web/instrumentation.ts`), pushed over OTLP to a single optional `grafana/otel-lgtm` container (`docker-compose.yml`, profile `observability`). Local development and testing only. Every API response carries an `x-trace-id` header. `docs/operations/observability.md`, `docs/adr/0017`.
 - E-mail: `apps/api/src/modules/email/email.service.ts` — an `EmailService` interface and a `NoopEmailService` that logs to the console. No real provider is wired in and nothing calls it yet; it exists as the seam a future feature (welcome e-mail, password reset) sends through without the caller needing to change when a real provider is added.
 
 ### Auth and access control
@@ -121,3 +124,12 @@ npm run docker:up     # builds + starts postgres, api and web
 If you've been following the apps/api Quick Start above and have its standalone Postgres container running (`docker run ... postgres:16-alpine`), stop it first (`docker stop <container>`) — it binds the same host port 5432 as Compose's own `postgres` service, and both can't listen at once.
 
 For active development, keep using `npm run dev -w apps/api` / `npm run dev -w apps/web` natively (fast hot-reload) — Compose is for testing the built system end-to-end, and for CI to verify the images actually build and boot (`.github/workflows/ci.yml`, `docker-build` job).
+
+## Quick Start (observability — optional)
+
+```bash
+npm run obs:up     # starts one container: collector + Loki + Tempo + Prometheus + Grafana
+npm run obs:down   # stops it; the data stays in a volume
+```
+
+Grafana is at `http://localhost:3002` (no login; the port is published on `127.0.0.1` only). The API and the web app, run natively or in Compose, push their telemetry to it on their own — start them as usual. Nothing else depends on this container: without it the apps run the same. Everything else — how to find a request by its `x-trace-id`, the dashboard, the alerts, adding a metric — is in `docs/operations/observability.md`.
