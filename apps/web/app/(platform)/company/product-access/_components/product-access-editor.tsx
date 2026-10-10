@@ -261,7 +261,7 @@ export function ProductAccessEditor({ company, product }: ProductAccessEditorPro
           ) : null}
 
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <Table data-testid="company-access-table">
+            <Table stacked data-testid="company-access-table">
               <TableHeader>
                 <TableRow className="h-10 hover:bg-transparent">
                   <TableHead>{t('company.members.columns.member')}</TableHead>
@@ -293,13 +293,13 @@ export function ProductAccessEditor({ company, product }: ProductAccessEditorPro
                         <TableCell>
                           <MemberIdentity member={member} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label={t('company.members.columns.role')}>
                           <RoleTag role={member.role} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label={t('company.members.columns.status')}>
                           <MembershipStatusBadge status={member.status} />
                         </TableCell>
-                        <TableCell data-product="platform">
+                        <TableCell data-product="platform" data-label={label}>
                           <span className="flex items-center gap-3">
                             <Switch
                               checked={isActive && isGranted}

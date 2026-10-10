@@ -62,7 +62,7 @@ export function FilterField({
           value={current}
           onValueChange={(next) => onChange(next === 'any' ? undefined : next)}
         >
-          <SelectTrigger className="w-full" data-testid={testId}>
+          <SelectTrigger className="w-full" aria-label={label} data-testid={testId}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

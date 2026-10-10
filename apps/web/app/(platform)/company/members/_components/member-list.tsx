@@ -212,7 +212,7 @@ export function MemberList({ company }: MemberListProps) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <Table data-testid="company-members-table">
+        <Table stacked data-testid="company-members-table">
           <TableHeader>
             <TableRow className="h-10 hover:bg-transparent">
               <TableHead aria-sort={ariaSortOf('name')}>
@@ -289,26 +289,29 @@ export function MemberList({ company }: MemberListProps) {
                       <MemberIdentity member={member} />
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={t('company.members.columns.role')}>
                     <RoleTag role={member.role} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={t('company.members.columns.status')}>
                     <MembershipStatusBadge status={member.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={PRODUCT_LABELS.ERP}>
                     {member.status === 'ACTIVE' ? (
                       <AccessBadge state={member.products.includes('ERP') ? 'granted' : 'none'} />
                     ) : (
                       <span className="text-text-3">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={PRODUCT_LABELS.FSM}>
                     <span className="text-text-3">—</span>
                   </TableCell>
-                  <TableCell className="olv-data text-text-2">
+                  <TableCell
+                    className="olv-data text-text-2"
+                    data-label={t('company.members.columns.joined')}
+                  >
                     {formatDateMedium(member.createdAt, locale)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" data-card-corner>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button

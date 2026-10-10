@@ -72,7 +72,7 @@ export function DataTable<TData>({
 
   return (
     <div className="overflow-x-auto" data-testid={`${testIdPrefix}-table-container`}>
-      <Table data-testid={`${testIdPrefix}-table`}>
+      <Table stacked data-testid={`${testIdPrefix}-table`}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -87,10 +87,23 @@ export function DataTable<TData>({
                 </TableHead>
               ) : null}
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
+                <TableHead
+                  key={header.id}
+                  aria-sort={
+                    header.column.getIsSorted() === 'asc'
+                      ? 'ascending'
+                      : header.column.getIsSorted() === 'desc'
+                        ? 'descending'
+                        : header.column.getCanSort()
+                          ? 'none'
+                          : undefined
+                  }
+                >
+                  {header.isPlaceholder ? null : header.column.id === 'actions' ? (
+                    <span className="sr-only">{t('table.rowActions')}</span>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
                 </TableHead>
               ))}
             </TableRow>
@@ -150,11 +163,19 @@ export function DataTable<TData>({
                       />
                     </TableCell>
                   ) : null}
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const labelKey = cell.column.columnDef.meta?.labelKey;
+
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        {...(labelKey ? { 'data-label': t(labelKey) } : {})}
+                        {...(cell.column.id === 'actions' ? { 'data-card-corner': true } : {})}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
 

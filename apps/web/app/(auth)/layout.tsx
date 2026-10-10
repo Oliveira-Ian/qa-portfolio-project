@@ -29,10 +29,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           <LanguageSwitch tone="dark" labels="short" testId="auth-mobile-language-switch" />
         </AuthMobileHeader>
 
-        <div className="hidden items-center justify-end gap-3 px-10 pt-7 min-[901px]:flex">
+        <header className="hidden items-center justify-end gap-3 px-10 pt-7 min-[901px]:flex">
           <span className="text-[13px] text-text-3">{t('common.language')}</span>
           <LanguageSwitch />
-        </div>
+        </header>
 
         <main className="flex flex-1 items-start justify-center px-4 py-8 min-[901px]:items-center min-[901px]:px-10 min-[901px]:py-10">
           {children}

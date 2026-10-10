@@ -87,7 +87,12 @@ function RoleCell({ account, onRoleChange, isPending }: AccountCellProps) {
       disabled={isPending}
       onValueChange={(role: AccountRole) => onRoleChange(account, role)}
     >
-      <SelectTrigger size="sm" className="w-36" data-testid="account-list-select-role">
+      <SelectTrigger
+        size="sm"
+        className="w-36"
+        aria-label={`${t('erp.columns.role')}: ${account.personName}`}
+        data-testid="account-list-select-role"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

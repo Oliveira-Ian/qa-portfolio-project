@@ -16,8 +16,8 @@ interface ColumnHeaderProps<TData, TValue> {
  * descending, none — via `column.getToggleSortingHandler()` rather than a
  * hand-rolled cycle, so the behaviour matches what every other sortable
  * table already does. Columns with `enableSorting: false` render as plain
- * text. The header is a ghost button (handoff § 4, Table); `aria-sort` is the
- * state a screen reader hears.
+ * text. The header is a ghost button (handoff § 4, Table); the `aria-sort` a
+ * screen reader hears sits on its cell, in `DataTable`.
  */
 export function ColumnHeader<TData, TValue>({
   column,
@@ -36,7 +36,6 @@ export function ColumnHeader<TData, TValue>({
       type="button"
       onClick={column.getToggleSortingHandler()}
       data-testid={testId}
-      aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}
       className={cn(
         '-ml-2 inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-[13px] font-semibold text-foreground transition-colors hover:bg-foreground/5 focus-visible:ring-focus',
         className,

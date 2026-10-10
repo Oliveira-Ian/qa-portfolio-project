@@ -80,7 +80,7 @@ export async function CompanyOverview() {
           </p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <Table data-testid="company-contracts-table">
+            <Table stacked data-testid="company-contracts-table">
               <TableHeader>
                 <TableRow className="h-10 hover:bg-transparent">
                   <TableHead>{t('company.overview.product')}</TableHead>
@@ -97,7 +97,7 @@ export async function CompanyOverview() {
                     <TableCell className="font-medium" translate="no">
                       {PRODUCT_LABELS[contract.product]}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t('company.overview.status')}>
                       <StatusBadge tone={contract.status === 'ACTIVE' ? 'success' : 'warning'}>
                         {t(
                           contract.status === 'ACTIVE'
@@ -106,7 +106,10 @@ export async function CompanyOverview() {
                         )}
                       </StatusBadge>
                     </TableCell>
-                    <TableCell className="olv-data tabular">
+                    <TableCell
+                      className="olv-data tabular"
+                      data-label={t('company.overview.licenses')}
+                    >
                       {contract.seatLimit === null
                         ? `${contract.seatsUsed} · ${t('company.overview.unlimited')}`
                         : t('company.overview.used', {

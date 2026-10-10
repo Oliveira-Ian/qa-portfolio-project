@@ -102,6 +102,7 @@ export function ListPagination({
             <SelectTrigger
               size="sm"
               className="olv-data w-[4.5rem]"
+              aria-label={t('pagination.rowsPerPage')}
               data-testid={`${testIdPrefix}-pagination-page-size`}
             >
               <SelectValue />

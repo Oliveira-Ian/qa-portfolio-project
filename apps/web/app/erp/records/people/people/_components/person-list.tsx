@@ -284,15 +284,27 @@ export function PersonList({
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-5">
         <TabsList aria-label={t('erp.people.tabs.label')} data-testid={`${TESTID_PREFIX}-tabs`}>
-          <TabsTrigger value="all" data-testid={`${TESTID_PREFIX}-tab-all`}>
+          <TabsTrigger
+            value="all"
+            aria-controls={undefined}
+            data-testid={`${TESTID_PREFIX}-tab-all`}
+          >
             {t('erp.people.tabs.all')}
             <TabsCount>{counts.total}</TabsCount>
           </TabsTrigger>
-          <TabsTrigger value="clients" data-testid={`${TESTID_PREFIX}-tab-clients`}>
+          <TabsTrigger
+            value="clients"
+            aria-controls={undefined}
+            data-testid={`${TESTID_PREFIX}-tab-clients`}
+          >
             {t('erp.people.tabs.clients')}
             <TabsCount>{counts.clients}</TabsCount>
           </TabsTrigger>
-          <TabsTrigger value="suppliers" data-testid={`${TESTID_PREFIX}-tab-suppliers`}>
+          <TabsTrigger
+            value="suppliers"
+            aria-controls={undefined}
+            data-testid={`${TESTID_PREFIX}-tab-suppliers`}
+          >
             {t('erp.people.tabs.suppliers')}
             <TabsCount>{counts.suppliers}</TabsCount>
           </TabsTrigger>
