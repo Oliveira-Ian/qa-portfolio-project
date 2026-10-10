@@ -26,6 +26,59 @@ export const en = {
     details: 'Details',
   },
 
+  auth: {
+    builtAs: 'Built as a QA automation portfolio.',
+    copyright: '© {year} Oliveira',
+    panel: {
+      signIn: { headline: 'One account for every Oliveira product.' },
+      register: { headline: 'Start with your account. Your company comes next.' },
+      products: {
+        platform: 'Company, members and product access',
+        erp: 'Construction back office',
+        fsm: 'Coming soon',
+      },
+      steps: {
+        account: { title: 'Your account', body: 'Name, email and password' },
+        company: { title: 'Your company', body: 'Added by a company admin' },
+        access: { title: 'Product access', body: 'Granted by a company admin' },
+      },
+    },
+    fields: {
+      email: 'Email',
+      workEmail: 'Work email',
+      emailPlaceholder: 'name@company.com',
+      password: 'Password',
+      fullName: 'Full name',
+      fullNamePlaceholder: 'Ana Oliveira',
+      birthDate: 'Birth date',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+    },
+    signIn: {
+      title: 'Sign in',
+      lead: 'Use your Oliveira account to reach your company’s products.',
+      forgot: 'Forgot password?',
+      remember: 'Remember me',
+      submit: 'Sign in',
+      submitting: 'Signing in…',
+      notImplemented: 'Not implemented',
+      newHere: 'New to Oliveira?',
+      createAccount: 'Create an account',
+      failedTitle: 'We couldn’t sign you in',
+      failedBody: 'Check your details and try again.',
+    },
+    register: {
+      title: 'Create your account',
+      lead: 'One account for every Oliveira product.',
+      submit: 'Create account',
+      submitting: 'Creating account…',
+      haveAccount: 'Already have an account?',
+      signIn: 'Sign in',
+      takenTitle: 'That address already has an account',
+      takenBody: 'Sign in with it instead, or use a different address.',
+    },
+  },
+
   nav: {
     platform: {
       home: 'Home',
@@ -132,6 +185,84 @@ export const en = {
     notFound: {
       title: 'There’s nothing at this address',
       body: 'The page may have been renamed, or the record it pointed at was deleted.',
+    },
+  },
+
+  /**
+   * What `apps/api` and `packages/schemas` say, in the user's language. The
+   * originals are English contract strings (docs/api/http_responses.md) and stay
+   * as they are; `translateApiMessage` maps each one to a key here and shows the
+   * original when it doesn't know a message.
+   */
+  api: {
+    generic: {
+      invalidData: 'Invalid data',
+      unauthorized: 'Unauthorized',
+      forbidden: 'Forbidden',
+      serverError: 'Something went wrong on our side. Try again.',
+      routeNotFound: 'Route not found',
+      networkError: 'Could not reach the server. Check that the API is running and try again.',
+      malformedResponse: 'The server sent a response this app could not read.',
+    },
+    validation: {
+      nameRequired: 'Name is required',
+      typeRequired: 'At least one type is required',
+      invalidEmail: 'Invalid email',
+      emailRequired: 'Valid email is required',
+      passwordRequired: 'Password is required',
+      fullNameRequired: 'Full name is required',
+      birthDateRequired: 'Birth date is required',
+      documentRequired: 'Document is required',
+      documentTypeRequired: 'Document type is required',
+      invalidDocumentFormat: 'Invalid document format',
+      idRequired: 'At least one id is required',
+      personRequired: 'Person is required',
+      updateFieldRequired: 'Provide at least one field to update',
+      columnRequired: 'At least one column is required',
+      invalidGridKey: 'Invalid grid key',
+      unknownProduct: 'Unknown product',
+    },
+    auth: {
+      missingFields: 'Please fill in email and password',
+      invalidEmailFormat: 'Invalid email format',
+      invalidCredentials: 'Invalid email or password',
+      loginSuccess: 'Login successful',
+      registerMissingFields: 'Please fill in all required fields',
+      emailTaken: 'Email already exists',
+      registerSuccess: 'User created successfully',
+      registered: 'Registration successful',
+      personHasAccount: 'This person already has an account',
+    },
+    access: {
+      noAccess: 'No access to {product}',
+      accountNoAccess: 'This account has no access to {product}',
+      noContract: 'Your company has no active contract for {product}',
+      noLicenses: 'No licenses left for {product}. Contact Oliveira to raise the limit.',
+      memberInactive: 'This member is inactive',
+      multipleCompanies: 'This account belongs to more than one company',
+    },
+    notFound: {
+      member: 'Member not found',
+      account: 'Account not found',
+      company: 'Company not found',
+      person: 'Person not found',
+      people: 'One or more people were not found',
+      profile: 'Profile not found',
+    },
+    guard: {
+      lastCompanyAdmin: 'The company must keep at least one administrator',
+      lastProfileManager: 'At least one member must keep the ability to manage profiles',
+      lastSuperAdmin: 'Cannot remove the last active super admin',
+      ownSuperAdmin: 'A super admin cannot remove their own access',
+      protectedProfile: 'This profile is protected and cannot be deleted',
+    },
+    done: {
+      personCreated: 'Person created successfully',
+      personUpdated: 'Person updated successfully',
+      personDeleted: 'Person deleted',
+      peopleDeleted: '{count} people deleted',
+      profileDeleted: 'Profile deleted',
+      profilesDeleted: '{count} profiles deleted',
     },
   },
 
