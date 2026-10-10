@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 import { Slot } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
@@ -63,21 +64,40 @@ function Button({
   variant = 'default',
   size = 'default',
   asChild = false,
+  loading = false,
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    /**
+     * Loading (handoff § 4): the label is hidden but keeps its space, so the
+     * button doesn't change width; a spinner sits centred and `aria-busy` says so.
+     * The button stays focusable — the caller ignores a second press while busy.
+     */
+    loading?: boolean;
   }) {
   const Comp = asChild ? Slot.Root : 'button';
+  const isLoading = loading && !asChild;
 
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
+      aria-busy={isLoading || undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {isLoading ? (
+        <>
+          <span className="invisible inline-flex items-center gap-[inherit]">{children}</span>
+          <Loader2 className="absolute animate-spin" aria-hidden="true" />
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
   );
 }
 

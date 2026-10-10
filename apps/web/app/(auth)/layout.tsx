@@ -1,51 +1,46 @@
-import Image from 'next/image';
-import { Wordmark } from '@/components/brand/wordmark';
+import { LanguageSwitch } from '@/components/shell/language-switch';
+import { getTranslator } from '@/lib/i18n/server';
+import { AuthMobileHeader, AuthPanel } from './_components/auth-panel';
 
 /**
- * Split screen: the site on the left, the form on the right.
+ * Sign in and Create account (handoff S01, S02, M01): a dark brand panel on the
+ * left (~42%), the form on the right. Below 900px the panel becomes a compact
+ * dark header — the artwork is dropped rather than shrunk, and the form gets the
+ * whole viewport. The language switch lives here, top right: it is the one place
+ * a signed-out visitor can change it.
  *
- * The photograph is the product's own subject — a build at golden hour — pushed
- * through an ink-to-olive duotone so the brand reads even at a glance. Below
- * 900px the image is dropped rather than shrunk: a letterboxed sliver of a
- * photo adds nothing on a phone, and the form gets the whole viewport.
+ * There are no Privacy / Terms links in the footer because there are no such
+ * pages yet; they come back with the pages.
  */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const t = await getTranslator();
+  const year = new Date().getFullYear();
+
   return (
-    <div className="flex min-h-dvh" data-testid="auth-layout">
-      <div className="relative flex-[0_0_58%] max-[900px]:hidden" data-testid="auth-banner">
-        <Image
-          src="/images/banner.jpg"
-          alt=""
-          aria-hidden="true"
-          fill
-          priority
-          sizes="58vw"
-          className="object-cover"
-        />
-        <div
-          className="absolute inset-0 bg-linear-to-br from-auth-banner-overlay-dark to-auth-banner-overlay-primary"
-          aria-hidden="true"
-        />
+    <div
+      data-product="platform"
+      className="grid min-h-dvh bg-background min-[901px]:grid-cols-[42fr_58fr]"
+      data-testid="auth-layout"
+    >
+      <AuthPanel />
 
-        <div className="absolute inset-0 z-10 flex flex-col justify-between p-10 xl:p-14">
-          <Wordmark tone="light" className="text-auth-banner-text" />
+      <div className="flex min-h-dvh flex-col min-[901px]:min-h-0">
+        <AuthMobileHeader>
+          <LanguageSwitch tone="dark" labels="short" testId="auth-mobile-language-switch" />
+        </AuthMobileHeader>
 
-          <div className="max-w-[34rem]">
-            <p className="eyebrow text-auth-banner-text-muted">Since the first foundation</p>
-            <p className="mt-4 font-display text-[clamp(1.75rem,3vw,2.75rem)] leading-[1.12] font-semibold tracking-tight text-auth-banner-text">
-              Every client, supplier and cost the site depends on — in one register.
-            </p>
-            <div className="mt-7 h-px w-16 bg-auth-banner-text/50" aria-hidden="true" />
-            <p className="mt-5 text-sm leading-relaxed text-auth-banner-text-muted">
-              Built as a QA portfolio: a real database, a real API and a real interface to test
-              against.
-            </p>
-          </div>
+        <div className="hidden items-center justify-end gap-3 px-10 pt-7 min-[901px]:flex">
+          <span className="text-[13px] text-text-3">{t('common.language')}</span>
+          <LanguageSwitch />
         </div>
-      </div>
 
-      <div className="flex flex-[0_0_42%] items-center justify-center bg-background px-6 py-10 max-[900px]:flex-[0_0_100%] sm:px-10">
-        {children}
+        <main className="flex flex-1 items-start justify-center px-4 py-8 min-[901px]:items-center min-[901px]:px-10 min-[901px]:py-10">
+          {children}
+        </main>
+
+        <footer className="px-4 py-6 text-center text-[13px] text-text-3 min-[901px]:px-10 min-[901px]:text-left">
+          {t('auth.copyright', { year })}
+        </footer>
       </div>
     </div>
   );

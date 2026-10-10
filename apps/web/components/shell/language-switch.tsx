@@ -12,6 +12,8 @@ interface LanguageSwitchProps {
   tone?: 'light' | 'dark';
   /** `short` shows EN / PT, where space is tight; `long` shows English / Português. */
   labels?: 'short' | 'long';
+  /** Prefix of the `data-testid`s; a second switch on the same page needs its own. */
+  testId?: string;
   className?: string;
 }
 
@@ -27,6 +29,7 @@ interface LanguageSwitchProps {
 export function LanguageSwitch({
   tone = 'light',
   labels = 'long',
+  testId = 'language-switch',
   className,
 }: LanguageSwitchProps) {
   const t = useT();
@@ -49,7 +52,7 @@ export function LanguageSwitch({
     <div
       role="group"
       aria-label={t('common.language')}
-      data-testid="language-switch"
+      data-testid={testId}
       className={cn(
         'inline-flex gap-0.5 rounded-lg p-[3px]',
         tone === 'dark' ? 'bg-shell-control' : 'bg-[#e9e6df]',
@@ -64,7 +67,7 @@ export function LanguageSwitch({
           lang={option}
           aria-pressed={option === locale}
           aria-label={LOCALE_NAMES[option]}
-          data-testid={`language-switch-${option}`}
+          data-testid={`${testId}-${option}`}
           onClick={() => handleSelect(option)}
           className={cn(
             'h-7 rounded-md px-3 text-[13px] font-medium transition-colors duration-100 outline-none focus-visible:ring-2',
