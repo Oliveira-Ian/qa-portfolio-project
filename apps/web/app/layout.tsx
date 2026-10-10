@@ -35,7 +35,13 @@ export const metadata: Metadata = {
   },
   description: 'One account for every Oliveira product.',
   icons: {
-    icon: [{ url: '/brand/favicon.svg', type: 'image/svg+xml' }],
+    // The SVG for browsers that take one; the PNGs and the .ico for those that do not.
+    icon: [
+      { url: '/brand/favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/brand/favicon.ico', sizes: '16x16 32x32' },
+    ],
     apple: [{ url: '/brand/apple-touch-icon.png', sizes: '180x180' }],
   },
 };
