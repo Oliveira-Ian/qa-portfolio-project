@@ -46,6 +46,8 @@ const EXACT: Record<string, MessageKey> = {
   'User created successfully': 'api.auth.registerSuccess',
   'Registration successful': 'api.auth.registered',
   'This person already has an account': 'api.auth.personHasAccount',
+  'If an account with this e-mail exists and does not belong to a company yet, it was added to yours.':
+    'api.auth.memberAdded',
 
   // Company, members and seats
   'This member is inactive': 'api.access.memberInactive',

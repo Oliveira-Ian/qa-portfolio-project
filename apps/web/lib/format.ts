@@ -119,3 +119,31 @@ export function toIsoDate(date: Date): string {
 export function orDash(value: string | null | undefined): string {
   return value?.trim() ? value : '—';
 }
+
+const mediumDateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * "Sep 29, 2026" / "29 de set. de 2026": a date in the **interface** language
+ * (handoff § 7: language is not data — the UI language picks the format). Still
+ * read in UTC, for the same reason as `formatDate`.
+ */
+export function formatDateMedium(value: string | null | undefined, locale: string): string {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  let formatter = mediumDateFormatters.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+    mediumDateFormatters.set(locale, formatter);
+  }
+
+  return formatter.format(date);
+}
