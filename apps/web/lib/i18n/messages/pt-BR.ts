@@ -1,4 +1,6 @@
 import type { Messages } from './en';
+import { erpPtBR } from './erp';
+import { tablePtBR } from './table';
 
 /** Brazilian Portuguese. Typed against `en.ts`: the two always have the same keys. */
 export const ptBR: Messages = {
@@ -12,6 +14,18 @@ export const ptBR: Messages = {
     cancel: 'Cancelar',
     save: 'Salvar',
     back: 'Voltar',
+    remove: 'Remover',
+    previousSlide: 'Slide anterior',
+    nextSlide: 'Próximo slide',
+    select: 'Selecione…',
+    noResults: 'Nenhum resultado encontrado.',
+    pickDate: 'Selecione uma data…',
+    pickRange: 'Selecione um período…',
+    breadcrumb: 'Trilha de navegação',
+    uploadClick: 'Clique para enviar',
+    uploadOr: 'ou arraste e solte',
+    fixErrors: 'Corrija os erros acima',
+    checkFields: '{count, plural, one {Confira # campo} other {Confira # campos}}',
   },
 
   breadcrumb: {
@@ -381,6 +395,10 @@ export const ptBR: Messages = {
       profilesDeleted: '{count, plural, one {# perfil excluído} other {# perfis excluídos}}',
     },
   },
+
+  erp: erpPtBR,
+
+  table: tablePtBR,
 
   shell: {
     nav: { label: 'Principal' },

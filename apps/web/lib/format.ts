@@ -51,8 +51,22 @@ export function formatDateTime(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? '—' : dateTimeFormatter.format(date);
 }
 
-export function formatCount(value: number): string {
-  return numberFormatter.format(value);
+const countFormatters = new Map<string, Intl.NumberFormat>();
+
+/** A count in the interface language's digits and grouping (`1,234` / `1.234`); pt-BR when none is given. */
+export function formatCount(value: number, locale: string = LOCALE): string {
+  if (locale === LOCALE) {
+    return numberFormatter.format(value);
+  }
+
+  let formatter = countFormatters.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale);
+    countFormatters.set(locale, formatter);
+  }
+
+  return formatter.format(value);
 }
 
 export function formatCurrency(value: number | null | undefined): string {

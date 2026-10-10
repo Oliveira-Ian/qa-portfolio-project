@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import type {
-  AccountDto,
-  AccountRole,
-  GridColumnPreferenceDto,
-  ProfileDto,
+import {
+  PRODUCT_LABELS,
+  type AccountDto,
+  type AccountRole,
+  type GridColumnPreferenceDto,
+  type ProfileDto,
 } from '@oliveira/schemas';
-import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -23,6 +23,8 @@ import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
 import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import { updateAccountAction } from '../_actions/update-account';
 import { saveAccountGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
@@ -55,6 +57,7 @@ interface AccountListProps {
  * callbacks rather than declared as a static array.
  */
 export function AccountList({ accounts, total, profiles, gridPreference }: AccountListProps) {
+  const t = useT();
   const router = useRouter();
   const { query, setQuery } = useListNavigation(ACCOUNT_FILTERABLE_COLUMNS);
   const [isPending, startTransition] = useTransition();
@@ -89,15 +92,17 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
         const result = await updateAccountAction(account.id, { role });
 
         if (!result.success) {
-          toast.error(result.message ?? 'Could not update the role');
+          toast.error(
+            result.message ? translateApiMessage(result.message, t) : t('erp.users.roleFailed'),
+          );
           return;
         }
 
-        toast.success('Role updated');
+        toast.success(t('erp.users.roleUpdated'));
         router.refresh();
       });
     },
-    [router],
+    [router, t],
   );
 
   const handleToggleActive = useCallback(
@@ -106,15 +111,17 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
         const result = await updateAccountAction(account.id, { active: !account.active });
 
         if (!result.success) {
-          toast.error(result.message ?? 'Could not update the account');
+          toast.error(
+            result.message ? translateApiMessage(result.message, t) : t('erp.users.accountFailed'),
+          );
           return;
         }
 
-        toast.success(account.active ? 'Account deactivated' : 'Account activated');
+        toast.success(t(account.active ? 'erp.users.deactivated' : 'erp.users.activated'));
         router.refresh();
       });
     },
-    [router],
+    [router, t],
   );
 
   const handleManageProfiles = useCallback((account: AccountDto) => {
@@ -128,13 +135,13 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
     (account: AccountDto): RowAction[] => [
       {
         key: 'manage-profiles',
-        label: 'Manage profiles',
+        label: t('erp.users.manageProfiles'),
         icon: ShieldCheck,
         onSelect: () => handleManageProfiles(account),
         testId: `${TESTID_PREFIX}-row-action-manage-profiles`,
       },
     ],
-    [handleManageProfiles],
+    [handleManageProfiles, t],
   );
 
   const columns = useMemo<ColumnDef<AccountDto>[]>(
@@ -175,8 +182,8 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
   return (
     <div data-testid="users-page-container">
       <PageHeader
-        title="Users"
-        description="Who can sign in to Oliveira ERP, and what they can do."
+        title={t('erp.users.title')}
+        description={t('erp.users.description', { product: PRODUCT_LABELS.ERP })}
         titleTestId="users-page-title"
       />
 
@@ -188,13 +195,12 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
+          filterFields={ACCOUNT_FILTER_FIELDS}
         />
       </div>
 
-      <ActiveFilters table={table} fields={ACCOUNT_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
-
       <div
-        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="overflow-hidden rounded-xl border border-border bg-surface"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable
@@ -203,12 +209,12 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
           rowActions={getRowActions}
           enableSelection={false}
           emptyState={{
-            title: 'No accounts yet',
-            description: 'Accounts are created from a person’s own record, not from here.',
+            title: t('erp.users.empty.title'),
+            description: t('erp.users.empty.body'),
           }}
         />
-        <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
       </div>
+      <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
 
       <FilterDrawer
         table={table}

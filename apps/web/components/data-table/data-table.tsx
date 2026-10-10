@@ -10,6 +10,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useT } from '@/lib/i18n/provider';
 import {
   Table,
   TableBody,
@@ -59,6 +60,7 @@ export function DataTable<TData>({
   rowActions,
   getRowLabel,
 }: DataTableProps<TData>) {
+  const t = useT();
   const rows = table.getRowModel().rows;
   // Hidden columns don't render a cell, so a `colSpan` that still counted
   // them made the empty-state placeholder wider than the visible table
@@ -77,7 +79,7 @@ export function DataTable<TData>({
               {enableSelection ? (
                 <TableHead className="w-10">
                   <Checkbox
-                    aria-label="Select all rows on this page"
+                    aria-label={t('table.selectAll')}
                     data-testid={`${testIdPrefix}-checkbox-select-all`}
                     checked={isAllSelected ? true : isSomeSelected ? 'indeterminate' : false}
                     onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked === true)}
@@ -141,7 +143,7 @@ export function DataTable<TData>({
                   {enableSelection ? (
                     <TableCell onClick={(event) => event.stopPropagation()}>
                       <Checkbox
-                        aria-label={`Select ${rowLabel}`}
+                        aria-label={t('table.selectRow', { name: rowLabel })}
                         data-testid={`${testIdPrefix}-checkbox-row`}
                         checked={row.getIsSelected()}
                         onCheckedChange={(checked) => row.toggleSelected(checked === true)}

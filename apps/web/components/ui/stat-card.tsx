@@ -6,6 +6,8 @@ interface StatCardProps {
   label: string;
   value: number;
   icon?: LucideIcon;
+  /** The interface language, for the digits — the page knows it (`getLocale()`). */
+  locale?: string;
   className?: string;
   'data-testid'?: string;
 }
@@ -15,15 +17,15 @@ interface StatCardProps {
  * optional icon. Expects a `<dl>` grid wrapper (it renders `dt`/`dd`, not the
  * list itself), the same shape `/home`'s stat row already used by hand.
  */
-export function StatCard({ label, value, icon: Icon, className, ...props }: StatCardProps) {
+export function StatCard({ label, value, icon: Icon, locale, className, ...props }: StatCardProps) {
   return (
-    <div className={cn('bg-card px-5 py-6', className)} {...props}>
+    <div className={cn('bg-surface px-5 py-5', className)} {...props}>
       <div className="flex items-center justify-between gap-2">
-        <dt className="eyebrow text-muted-foreground">{label}</dt>
+        <dt className="olv-overline text-text-3">{label}</dt>
         {Icon ? <Icon aria-hidden="true" className="size-4 text-muted-foreground" /> : null}
       </div>
-      <dd className="tabular mt-2 text-3xl leading-none font-medium text-foreground">
-        {formatCount(value)}
+      <dd className="olv-data tabular mt-2 text-[28px] leading-none font-medium text-foreground">
+        {formatCount(value, locale)}
       </dd>
     </div>
   );

@@ -15,11 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useT } from '@/lib/i18n/provider';
+import type { MessageKey } from '@/lib/i18n/translate';
 import { cn } from '@/lib/utils';
 
 export interface CustomizableColumn {
   key: string;
-  label: string;
+  /** The column's name, as a catalogue key. */
+  labelKey: MessageKey;
   /** Whether this column ships visible before any account customizes it — what "Restore default" returns to. Defaults to `true`. */
   defaultVisible?: boolean;
 }
@@ -88,6 +91,7 @@ export function GridCustomizationModal<TData>({
   onSave,
   testIdPrefix,
 }: GridCustomizationModalProps<TData>) {
+  const t = useT();
   const order = table.getState().columnOrder;
   const visibility = table.getState().columnVisibility;
   const knownKeys = new Set(columns.map((column) => column.key));
@@ -104,7 +108,9 @@ export function GridCustomizationModal<TData>({
   const visibleCount = items.filter((item) => item.visible).length;
 
   function labelFor(key: string): string {
-    return columns.find((column) => column.key === key)?.label ?? key;
+    const column = columns.find((candidate) => candidate.key === key);
+
+    return column ? t(column.labelKey) : key;
   }
 
   function moveByStep(index: number, direction: -1 | 1) {
@@ -144,7 +150,7 @@ export function GridCustomizationModal<TData>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid={`${testIdPrefix}-customize-modal`} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Customize columns</DialogTitle>
+          <DialogTitle>{t('table.customize.title')}</DialogTitle>
         </DialogHeader>
 
         <DragDropProvider
@@ -162,7 +168,7 @@ export function GridCustomizationModal<TData>({
                 <Checkbox
                   checked={item.visible}
                   onCheckedChange={() => toggle(item.key, item.visible)}
-                  aria-label={`Show ${labelFor(item.key)}`}
+                  aria-label={t('table.customize.show', { label: labelFor(item.key) })}
                   data-testid={`${testIdPrefix}-customize-checkbox-${item.key}`}
                 />
                 <span className="flex-1 text-sm text-foreground">{labelFor(item.key)}</span>
@@ -172,7 +178,7 @@ export function GridCustomizationModal<TData>({
                   size="icon-xs"
                   disabled={index === 0}
                   onClick={() => moveByStep(index, -1)}
-                  aria-label={`Move ${labelFor(item.key)} up`}
+                  aria-label={t('table.export.moveUp', { label: labelFor(item.key) })}
                   data-testid={`${testIdPrefix}-customize-move-up-${item.key}`}
                 >
                   <ArrowUp aria-hidden="true" />
@@ -183,7 +189,7 @@ export function GridCustomizationModal<TData>({
                   size="icon-xs"
                   disabled={index === items.length - 1}
                   onClick={() => moveByStep(index, 1)}
-                  aria-label={`Move ${labelFor(item.key)} down`}
+                  aria-label={t('table.export.moveDown', { label: labelFor(item.key) })}
                   data-testid={`${testIdPrefix}-customize-move-down-${item.key}`}
                 >
                   <ArrowDown aria-hidden="true" />
@@ -201,10 +207,10 @@ export function GridCustomizationModal<TData>({
             data-testid={`${testIdPrefix}-customize-restore`}
           >
             <RotateCcw aria-hidden="true" />
-            Restore default
+            {t('table.customize.restore')}
           </Button>
           <Button type="button" onClick={handleSave} data-testid={`${testIdPrefix}-customize-save`}>
-            Save
+            {t('table.customize.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

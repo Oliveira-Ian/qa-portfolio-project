@@ -7,6 +7,9 @@
  * `pt-BR.ts` is typed against this file: a key added here and not there fails
  * the typecheck.
  */
+import { erpEn } from './erp';
+import { tableEn } from './table';
+
 export const en = {
   common: {
     appName: 'Oliveira',
@@ -18,6 +21,18 @@ export const en = {
     cancel: 'Cancel',
     save: 'Save',
     back: 'Back',
+    remove: 'Remove',
+    previousSlide: 'Previous slide',
+    nextSlide: 'Next slide',
+    select: 'Select…',
+    noResults: 'No results found.',
+    pickDate: 'Select a date…',
+    pickRange: 'Select a date range…',
+    breadcrumb: 'Breadcrumb',
+    uploadClick: 'Click to upload',
+    uploadOr: 'or drag and drop',
+    fixErrors: 'Please fix the errors above',
+    checkFields: '{count, plural, one {Check # field} other {Check # fields}}',
   },
 
   breadcrumb: {
@@ -390,6 +405,10 @@ export const en = {
       profilesDeleted: '{count} profiles deleted',
     },
   },
+
+  erp: erpEn,
+
+  table: tableEn,
 
   shell: {
     nav: { label: 'Main' },

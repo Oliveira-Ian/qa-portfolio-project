@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCount } from '@/lib/format';
-import { useT } from '@/lib/i18n/provider';
+import { useLocale, useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZES = [10, 25, 50];
@@ -24,6 +24,8 @@ interface ListPaginationProps {
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions?: number[];
   testIdPrefix: string;
+  /** Replaces the "Showing 1–10 of 24" text — a selection count, say. */
+  summary?: React.ReactNode;
   className?: string;
 }
 
@@ -64,9 +66,11 @@ export function ListPagination({
   onPageSizeChange,
   pageSizeOptions = DEFAULT_PAGE_SIZES,
   testIdPrefix,
+  summary,
   className,
 }: ListPaginationProps) {
   const t = useT();
+  const locale = useLocale();
   const pageCount = Math.max(Math.ceil(total / pageSize), 1);
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
@@ -77,15 +81,16 @@ export function ListPagination({
       data-testid={`${testIdPrefix}-pagination`}
       className={cn('flex flex-wrap items-center justify-between gap-3 py-4', className)}
     >
-      <p className="olv-data text-text-3" data-testid={`${testIdPrefix}-pagination-range`}>
-        {total === 0
-          ? t('pagination.empty')
-          : t('pagination.summary', {
-              from: formatCount(from),
-              to: formatCount(to),
-              total: formatCount(total),
-            })}
-      </p>
+      <div className="olv-data text-text-3" data-testid={`${testIdPrefix}-pagination-range`}>
+        {summary ??
+          (total === 0
+            ? t('pagination.empty')
+            : t('pagination.summary', {
+                from: formatCount(from, locale),
+                to: formatCount(to, locale),
+                total: formatCount(total, locale),
+              }))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">

@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -30,7 +29,8 @@ import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
 import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
-import { formatCount } from '@/lib/format';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { deleteProfileAction } from '../_actions/delete-profile';
 import { saveProfileGridPreferenceAction } from '../_actions/save-grid-preferences';
@@ -53,15 +53,16 @@ interface ProfileListProps {
 /**
  * A thin composition of `components/data-table/`'s shared listing
  * infrastructure — same shape as People (`person-list.tsx`), the first
- * routine built on it. This screen is entirely ADMIN-gated at the page level
- * (`perfis/page.tsx`), so Add/Edit/Delete have no per-permission checks the
- * way Person's do.
+ * routine built on it. This screen is entirely gated at the page level by
+ * `profile:manage`, so Add/Edit/Delete have no per-permission checks the way
+ * Person's do.
  *
  * Delete is disabled — per row and in the header — for any `isSystem`
  * profile (Administrator, Default User): the API itself rejects deleting
  * one with a 409, this just avoids the round trip.
  */
 export function ProfileList({ profiles, total, gridPreference }: ProfileListProps) {
+  const t = useT();
   const router = useRouter();
   const { query, setQuery } = useListNavigation(PROFILE_FILTERABLE_COLUMNS);
   const [isDeleting, startDeleting] = useTransition();
@@ -90,14 +91,14 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
     (profile: ProfileDto): RowAction[] => [
       {
         key: 'edit',
-        label: 'Edit',
+        label: t('erp.profiles.edit'),
         icon: Pencil,
         onSelect: () => router.push(ROUTES.profiles.edit(profile.id)),
         testId: `${TESTID_PREFIX}-row-action-edit`,
       },
       {
         key: 'delete',
-        label: 'Delete',
+        label: t('erp.profiles.delete'),
         icon: Trash2,
         variant: 'destructive',
         disabled: profile.isSystem,
@@ -105,7 +106,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
         testId: `${TESTID_PREFIX}-row-action-delete`,
       },
     ],
-    [router],
+    [router, t],
   );
 
   const columns = useMemo<ColumnDef<ProfileDto>[]>(
@@ -156,13 +157,14 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
 
     startDeleting(async () => {
       const result = await deleteProfileAction(pendingDeleteIds);
+      const message = translateApiMessage(result.message ?? '', t);
 
       if (!result.success) {
-        toast.error(result.message);
+        toast.error(message);
         return;
       }
 
-      toast.success(result.message);
+      toast.success(message);
       table.resetRowSelection();
       setPendingDeleteIds(null);
       router.refresh();
@@ -172,21 +174,19 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
-        title="Profiles"
+        title={t('erp.profiles.title')}
         titleTestId={`${TESTID_PREFIX}-title`}
-        meta={
-          <p className="eyebrow mt-3 text-muted-foreground">
-            <span className="tabular">{formatCount(total)}</span>{' '}
-            {total === 1 ? 'profile' : 'profiles'}
-          </p>
-        }
+        meta={t('erp.profiles.meta', { count: total })}
         actions={
           <>
-            <Button asChild data-testid="profile-button-add">
-              <Link href={ROUTES.profiles.new}>
-                <Plus aria-hidden="true" />
-                Add profile
-              </Link>
+            <Button
+              variant="destructive-soft"
+              data-testid="profile-button-delete"
+              disabled={selectedRows.length === 0 || isDeleting || hasSystemSelected}
+              onClick={() => setPendingDeleteIds(selectedRows.map((row) => row.original.id))}
+            >
+              <Trash2 aria-hidden="true" />
+              {t('erp.profiles.delete')}
             </Button>
             <Button
               variant="outline"
@@ -195,17 +195,13 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
               onClick={handleEdit}
             >
               <Pencil aria-hidden="true" />
-              Edit
+              {t('erp.profiles.edit')}
             </Button>
-            <Button
-              variant="outline"
-              className="text-destructive hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-              data-testid="profile-button-delete"
-              disabled={selectedRows.length === 0 || isDeleting || hasSystemSelected}
-              onClick={() => setPendingDeleteIds(selectedRows.map((row) => row.original.id))}
-            >
-              <Trash2 aria-hidden="true" />
-              Delete
+            <Button asChild data-testid="profile-button-add">
+              <Link href={ROUTES.profiles.new}>
+                <Plus aria-hidden="true" />
+                {t('erp.profiles.add')}
+              </Link>
             </Button>
           </>
         }
@@ -219,13 +215,12 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
+          filterFields={PROFILE_FILTER_FIELDS}
         />
       </div>
 
-      <ActiveFilters table={table} fields={PROFILE_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
-
       <div
-        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="overflow-hidden rounded-xl border border-border bg-surface"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable
@@ -234,20 +229,20 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
           rowActions={getRowActions}
           getRowLabel={(profile) => profile.name}
           emptyState={{
-            title: 'No profiles yet',
-            description: 'Profiles group permissions — create one and link it to an account.',
+            title: t('erp.profiles.empty.title'),
+            description: t('erp.profiles.empty.body'),
             action: (
               <Button asChild data-testid="profile-empty-button-add">
                 <Link href={ROUTES.profiles.new}>
                   <Plus aria-hidden="true" />
-                  Add the first profile
+                  {t('erp.profiles.addFirst')}
                 </Link>
               </Button>
             ),
           }}
         />
-        <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
       </div>
+      <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
 
       <FilterDrawer
         table={table}
@@ -288,22 +283,25 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
           <AlertDialogHeader>
             <AlertDialogTitle>
               {isMultiDelete
-                ? `Delete ${pendingDeleteIds?.length} profiles?`
-                : 'Delete this profile?'}
+                ? t('erp.profiles.deleteDialog.titleMany', { count: pendingDeleteIds?.length ?? 0 })
+                : t('erp.profiles.deleteDialog.titleOne')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Accounts linked to {isMultiDelete ? 'them lose' : 'it loses'} whatever permissions{' '}
-              {isMultiDelete ? 'they' : 'it'} granted. There is no undo.
+              {isMultiDelete
+                ? t('erp.profiles.deleteDialog.bodyMany')
+                : t('erp.profiles.deleteDialog.bodyOne')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="profile-delete-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogCancel variant="ghost" data-testid="profile-delete-cancel">
+              {t('erp.profiles.deleteDialog.cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
               data-testid="profile-delete-confirm"
               onClick={handleConfirmDelete}
             >
-              Delete
+              {t('erp.profiles.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

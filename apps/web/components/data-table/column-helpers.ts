@@ -1,5 +1,6 @@
 import type { ColumnDef, FilterFn } from '@tanstack/react-table';
 import { FILTER_FN_BY_TYPE } from './filter-fns';
+import type { MessageKey } from '@/lib/i18n/translate';
 import type { FilterOption, FilterType } from './types';
 
 /**
@@ -17,11 +18,13 @@ import type { FilterOption, FilterType } from './types';
 export function filterableColumn<TData>(
   filterType: FilterType,
   filterOptions?: FilterOption[] | undefined,
+  /** The column's name, so an active-filter tag can say it even when the column is hidden. */
+  labelKey?: MessageKey | undefined,
 ): Partial<ColumnDef<TData, unknown>> {
   const filterFn = FILTER_FN_BY_TYPE[filterType] as FilterFn<TData> | undefined;
 
   return {
     ...(filterFn ? { filterFn } : {}),
-    meta: { filterType, filterOptions },
+    meta: { filterType, filterOptions, labelKey },
   };
 }

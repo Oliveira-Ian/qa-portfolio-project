@@ -1,14 +1,17 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { getTranslator } from '@/lib/i18n/server';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can, isCompanyAdmin } from '@/lib/permissions';
 import { EditPersonForm } from './_components/edit-person-form';
 import { getAccountForPerson } from '../_data-access/get-account-for-person';
 import { getPerson } from '../_data-access/get-person';
 
-export const metadata: Metadata = {
-  title: 'Edit person',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslator();
+
+  return { title: `${t('erp.people.edit')} · ${t('erp.people.title')}` };
+}
 
 interface EditPersonPageProps {
   params: Promise<{ id: string }>;

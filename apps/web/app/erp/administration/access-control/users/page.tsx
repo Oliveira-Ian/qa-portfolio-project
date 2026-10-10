@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { NoPermission } from '@/components/platform/no-permission';
+import { getTranslator } from '@/lib/i18n/server';
 import { EMPTY_LIST_QUERY, parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
 import { AccountList } from './_components/account-list';
@@ -8,9 +9,11 @@ import { getAccountGridPreference } from './_data-access/get-grid-preferences';
 import { listAccounts } from './_data-access/list-accounts';
 import { listProfiles } from '../profiles/_data-access/list-profiles';
 
-export const metadata: Metadata = {
-  title: 'Users',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslator();
+
+  return { title: t('erp.users.title') };
+}
 
 interface UsersPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -18,7 +21,7 @@ interface UsersPageProps {
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   if (!(await can('profile:manage'))) {
-    redirect('/home');
+    return <NoPermission screen="erp.users.title" />;
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), ACCOUNT_FILTERABLE_COLUMNS);

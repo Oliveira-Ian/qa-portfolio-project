@@ -4,8 +4,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { AccountDto, ProfileDto } from '@oliveira/schemas';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -13,6 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import { linkProfileAction, unlinkProfileAction } from '../_actions/link-profile';
 
 interface ManageProfilesDialogProps {
@@ -39,6 +43,7 @@ export function ManageProfilesDialog({
   open,
   onOpenChange,
 }: ManageProfilesDialogProps) {
+  const t = useT();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [linkedIds, setLinkedIds] = useState(
@@ -62,7 +67,9 @@ export function ManageProfilesDialog({
         : await linkProfileAction(account.id, profileId);
 
       if (!result.success) {
-        toast.error(result.message ?? 'Could not update the profile link');
+        toast.error(
+          result.message ? translateApiMessage(result.message, t) : t('erp.users.linkFailed'),
+        );
         setLinkedIds((current) => {
           const reverted = new Set(current);
           if (linked) {
@@ -88,10 +95,10 @@ export function ManageProfilesDialog({
     >
       <DialogContent data-testid="account-profiles-dialog">
         <DialogHeader>
-          <DialogTitle>Profiles — {account.personName}</DialogTitle>
-          <DialogDescription>
-            The permissions this account has are the union of every profile checked below.
-          </DialogDescription>
+          <DialogTitle className="text-lg leading-6">
+            {t('erp.users.dialog.title', { name: account.personName })}
+          </DialogTitle>
+          <DialogDescription>{t('erp.users.dialog.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-1">
@@ -102,7 +109,7 @@ export function ManageProfilesDialog({
               <label
                 key={profile.id}
                 data-testid="account-profiles-row"
-                className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm text-foreground hover:bg-muted"
+                className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm text-foreground hover:bg-surface-hover"
               >
                 <Checkbox
                   checked={linked}
@@ -112,14 +119,18 @@ export function ManageProfilesDialog({
                 />
                 <span className="flex-1">{profile.name}</span>
                 {profile.isDefault ? (
-                  <span className="eyebrow text-muted-foreground">Default</span>
+                  <span className="olv-overline text-text-3">{t('erp.users.dialog.default')}</span>
                 ) : null}
               </label>
             );
           })}
         </div>
 
-        <DialogFooter showCloseButton />
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">{t('erp.users.dialog.close')}</Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

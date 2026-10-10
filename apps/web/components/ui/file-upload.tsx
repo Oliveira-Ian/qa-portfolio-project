@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { File as FileIcon, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
@@ -45,6 +46,7 @@ export function FileUpload({
   className,
   ...props
 }: FileUploadProps) {
+  const t = useT();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
 
@@ -101,7 +103,8 @@ export function FileUpload({
       >
         <Upload className="size-5 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm text-foreground">
-          <span className="font-medium text-primary">Click to upload</span> or drag and drop
+          <span className="font-medium text-primary">{t('common.uploadClick')}</span>{' '}
+          {t('common.uploadOr')}
         </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
         <input

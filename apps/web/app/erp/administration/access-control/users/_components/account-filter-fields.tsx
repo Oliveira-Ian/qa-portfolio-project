@@ -1,5 +1,6 @@
 import type { FilterDrawerField } from '@/components/data-table/filter-drawer';
 import type { FilterableColumn } from '@/lib/list-query';
+import { ACCOUNT_ROLE_FILTER_OPTIONS } from './account-columns';
 
 /**
  * The curated subset of `account-columns.tsx` shown in the "Filters" side
@@ -7,19 +8,15 @@ import type { FilterableColumn } from '@/lib/list-query';
  * the header, this is just the ones worth surfacing all at once.
  */
 export const ACCOUNT_FILTER_FIELDS: FilterDrawerField[] = [
-  { key: 'personName', label: 'Person', filterType: 'text' },
+  { key: 'personName', labelKey: 'erp.columns.person', filterType: 'text' },
   {
     key: 'role',
-    label: 'Role',
+    labelKey: 'erp.columns.role',
     filterType: 'enum',
-    options: [
-      { label: 'Super admin', value: 'SUPER_ADMIN' },
-      { label: 'User', value: 'USER' },
-      { label: 'System', value: 'SYSTEM' },
-    ],
+    options: ACCOUNT_ROLE_FILTER_OPTIONS,
   },
-  { key: 'active', label: 'Status', filterType: 'boolean' },
-  { key: 'createdAt', label: 'Created', filterType: 'date' },
+  { key: 'active', labelKey: 'erp.columns.status', filterType: 'boolean' },
+  { key: 'createdAt', labelKey: 'erp.columns.created', filterType: 'date' },
 ];
 
 /**

@@ -46,7 +46,7 @@ export function Breadcrumbs({ area }: { area: AreaKey }) {
   }
 
   return (
-    <Breadcrumb className="mb-4" data-testid="breadcrumb-trail">
+    <Breadcrumb className="mb-4" aria-label={t('common.breadcrumb')} data-testid="breadcrumb-trail">
       <BreadcrumbList>
         {crumbs.map((crumb, index) => (
           <Fragment key={`${crumb.label}-${index}`}>

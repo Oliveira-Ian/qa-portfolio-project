@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
 interface ImageInputProps {
@@ -28,6 +29,7 @@ export function ImageInput({
   className,
   ...props
 }: ImageInputProps) {
+  const t = useT();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
 
@@ -117,7 +119,8 @@ export function ImageInput({
 
       <div className="flex flex-col gap-2 pt-1">
         <p className="text-sm text-foreground">
-          <span className="font-medium text-primary">Click to upload</span> or drag and drop
+          <span className="font-medium text-primary">{t('common.uploadClick')}</span>{' '}
+          {t('common.uploadOr')}
         </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
         {previewUrl && !disabled ? (
@@ -129,7 +132,7 @@ export function ImageInput({
             onClick={() => onChange(null)}
           >
             <X aria-hidden="true" />
-            Remove
+            {t('common.remove')}
           </Button>
         ) : null}
       </div>

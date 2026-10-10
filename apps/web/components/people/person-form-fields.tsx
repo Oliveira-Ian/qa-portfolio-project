@@ -8,16 +8,25 @@ import {
   type PersonFormValues,
   type PersonTypeValue,
 } from '@oliveira/schemas';
+import { FormSection } from '@/components/forms/form-section';
 import { PersonTypeBadge } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useT } from '@/lib/i18n/provider';
 import { maskDocument, maskPhone } from '@/lib/masks';
 
 /**
@@ -37,19 +46,21 @@ function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-5 pt-1 sm:grid-cols-2">{children}</div>;
 }
 
-const PERSON_TYPE_OPTIONS: { value: PersonTypeValue; label: string }[] = [
-  { value: 'CLIENT', label: 'Client' },
-  { value: 'SUPPLIER', label: 'Supplier' },
-  { value: 'USER', label: 'User' },
-  { value: 'EMPLOYEE', label: 'Employee' },
-];
+const PERSON_TYPES: PersonTypeValue[] = ['CLIENT', 'SUPPLIER', 'USER', 'EMPLOYEE'];
+
+const PERSON_TYPE_LABEL = {
+  CLIENT: 'erp.personType.client',
+  SUPPLIER: 'erp.personType.supplier',
+  USER: 'erp.personType.user',
+  EMPLOYEE: 'erp.personType.employee',
+} as const;
 
 const DOCUMENT_TYPE_OPTIONS: ComboboxOption[] = [
   { value: 'CPF', label: 'CPF' },
   { value: 'CNPJ', label: 'CNPJ' },
 ];
 
-/** The 26 states plus the Federal District, by their standard two-letter code. */
+/** The 26 states plus the Federal District, by their standard two-letter code — proper names, never translated. */
 const BRAZILIAN_STATES: ComboboxOption[] = [
   { value: 'AC', label: 'Acre' },
   { value: 'AL', label: 'Alagoas' },
@@ -98,7 +109,12 @@ const TAB_ORDER: PersonFormTab[] = ['identification', 'contact', 'address', 'not
  * supplier on the very same record.
  */
 function TypesField({ disabled }: { disabled: boolean }) {
+  const t = useT();
   const form = useFormContext<PersonFormValues>();
+  const options: ComboboxOption[] = PERSON_TYPES.map((type) => ({
+    value: type,
+    label: t(PERSON_TYPE_LABEL[type]),
+  }));
 
   return (
     <FormField
@@ -106,14 +122,16 @@ function TypesField({ disabled }: { disabled: boolean }) {
       name="types"
       render={({ field }) => (
         <FormItem className="sm:col-span-2">
-          <FormLabel data-testid="person-form-label-types">Type</FormLabel>
+          <FormLabel data-testid="person-form-label-types">
+            {t('erp.people.form.fields.type')}
+          </FormLabel>
           <FormControl>
             <MultiSelect
-              options={PERSON_TYPE_OPTIONS}
+              options={options}
               value={field.value}
               onChange={field.onChange}
               disabled={disabled}
-              placeholder="Select…"
+              placeholder={t('erp.people.form.fields.select')}
               renderTag={(option, onRemove) => (
                 <PersonTypeBadge type={option.value as PersonTypeValue} onRemove={onRemove} />
               )}
@@ -134,6 +152,7 @@ function TypesField({ disabled }: { disabled: boolean }) {
  * a visible-but-pointless field invites confusion about whether it matters.
  */
 function DocumentFields({ disabled }: { disabled: boolean }) {
+  const t = useT();
   const form = useFormContext<PersonFormValues>();
   const types = useWatch({ control: form.control, name: 'types' });
   const documentType = useWatch({ control: form.control, name: 'documentType' });
@@ -149,13 +168,15 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         name="documentType"
         render={({ field }) => (
           <FormItem>
-            <FormLabel data-testid="person-form-label-document-type">Document type</FormLabel>
+            <FormLabel data-testid="person-form-label-document-type">
+              {t('erp.people.form.fields.documentType')}
+            </FormLabel>
             <FormControl>
               <Combobox
                 options={DOCUMENT_TYPE_OPTIONS}
                 value={field.value}
                 disabled={disabled}
-                placeholder="Select…"
+                placeholder={t('erp.people.form.fields.select')}
                 onChange={(rawValue: string) => {
                   const value = rawValue as DocumentType;
                   field.onChange(value);
@@ -178,7 +199,9 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         name="document"
         render={({ field }) => (
           <FormItem className="sm:col-span-2">
-            <FormLabel data-testid="person-form-label-document">Document</FormLabel>
+            <FormLabel data-testid="person-form-label-document">
+              {t('erp.people.form.fields.document')}
+            </FormLabel>
             <FormControl>
               <MaskedInput
                 {...field}
@@ -201,6 +224,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
 }
 
 export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
+  const t = useT();
   const form = useFormContext<PersonFormValues>();
   const [activeTab, setActiveTab] = useState<PersonFormTab>('identification');
 
@@ -223,238 +247,281 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as PersonFormTab)}>
-      <TabsList>
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as PersonFormTab)}
+      className="gap-0"
+    >
+      <TabsList className="px-3">
         <TabsTrigger value="identification" data-testid="person-form-tab-identification">
-          Identification
+          {t('erp.people.form.tabs.identification')}
         </TabsTrigger>
         <TabsTrigger value="contact" data-testid="person-form-tab-contact">
-          Contact
+          {t('erp.people.form.tabs.contact')}
         </TabsTrigger>
         <TabsTrigger value="address" data-testid="person-form-tab-address">
-          Address
+          {t('erp.people.form.tabs.address')}
         </TabsTrigger>
         <TabsTrigger value="notes" data-testid="person-form-tab-notes">
-          Notes
+          {t('erp.people.form.tabs.notes')}
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="identification" className="mt-5">
-        <FieldGrid>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel data-testid="person-form-label-name">Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    disabled={disabled}
-                    autoComplete="organization"
-                    placeholder="Construtora Vale Verde"
-                    data-testid="person-form-input-name"
-                  />
-                </FormControl>
-                <FormMessage data-testid="person-form-error-name" />
-              </FormItem>
-            )}
-          />
+      <TabsContent value="identification" className="px-6 py-7">
+        <FormSection
+          title={t('erp.people.form.sections.identification.title')}
+          description={t('erp.people.form.sections.identification.body')}
+        >
+          <FieldGrid>
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel data-testid="person-form-label-name">
+                    {t('erp.people.form.fields.name')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={disabled}
+                      autoComplete="organization"
+                      placeholder="Construtora Vale Verde"
+                      data-testid="person-form-input-name"
+                    />
+                  </FormControl>
+                  <FormDescription>{t('erp.people.form.fields.nameHelp')}</FormDescription>
+                  <FormMessage data-testid="person-form-error-name" />
+                </FormItem>
+              )}
+            />
 
-          <TypesField disabled={disabled} />
-          <DocumentFields disabled={disabled} />
-        </FieldGrid>
+            <TypesField disabled={disabled} />
+            <DocumentFields disabled={disabled} />
+          </FieldGrid>
+        </FormSection>
       </TabsContent>
 
-      <TabsContent value="contact" className="mt-5">
-        <FieldGrid>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-email">Email</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="email"
-                    disabled={disabled}
-                    autoComplete="email"
-                    inputMode="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="contact@example.com"
-                    data-testid="person-form-input-email"
-                  />
-                </FormControl>
-                <FormMessage data-testid="person-form-error-email" />
-              </FormItem>
-            )}
-          />
+      <TabsContent value="contact" className="px-6 py-7">
+        <FormSection
+          title={t('erp.people.form.sections.contact.title')}
+          description={t('erp.people.form.sections.contact.body')}
+        >
+          <FieldGrid>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-email">
+                    {t('erp.people.form.fields.email')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      disabled={disabled}
+                      autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="contact@example.com"
+                      data-testid="person-form-input-email"
+                    />
+                  </FormControl>
+                  <FormMessage data-testid="person-form-error-email" />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-phone">Phone</FormLabel>
-                <FormControl>
-                  <MaskedInput
-                    {...field}
-                    mask={maskPhone}
-                    type="tel"
-                    disabled={disabled}
-                    autoComplete="tel"
-                    inputMode="tel"
-                    className="tabular"
-                    placeholder="(11) 98765-4321"
-                    data-testid="person-form-input-phone"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-phone">
+                    {t('erp.people.form.fields.phone')}
+                  </FormLabel>
+                  <FormControl>
+                    <MaskedInput
+                      {...field}
+                      mask={maskPhone}
+                      type="tel"
+                      disabled={disabled}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      className="tabular"
+                      placeholder="(11) 98765-4321"
+                      data-testid="person-form-input-phone"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="birthdate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-birthdate">Birthdate</FormLabel>
-                <FormControl>
-                  <DatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={disabled}
-                    placeholder="Select a date…"
-                    data-testid="person-form-input-birthdate"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="birthdate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-birthdate">
+                    {t('erp.people.form.fields.birthdate')}
+                  </FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={disabled}
+                      placeholder={t('erp.people.form.fields.pickDate')}
+                      data-testid="person-form-input-birthdate"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="active"
-            render={({ field }) => (
-              <FormItem className="justify-end">
-                <label className="flex w-fit cursor-pointer items-center gap-2.5 py-2 text-sm text-foreground">
-                  <Checkbox
-                    checked={field.value}
-                    disabled={disabled}
-                    data-testid="person-form-checkbox-active"
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                  />
-                  Active record
-                </label>
-              </FormItem>
-            )}
-          />
-        </FieldGrid>
+            <FormField
+              control={form.control}
+              name="active"
+              render={({ field }) => (
+                <FormItem className="justify-end">
+                  <label className="flex w-fit cursor-pointer items-center gap-2.5 py-2 text-sm text-foreground">
+                    <Checkbox
+                      checked={field.value}
+                      disabled={disabled}
+                      data-testid="person-form-checkbox-active"
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                    />
+                    {t('erp.people.form.fields.active')}
+                  </label>
+                </FormItem>
+              )}
+            />
+          </FieldGrid>
+        </FormSection>
       </TabsContent>
 
-      <TabsContent value="address" className="mt-5">
-        <FieldGrid>
-          <FormField
-            control={form.control}
-            name="street"
-            render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel data-testid="person-form-label-street">Street</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    disabled={disabled}
-                    autoComplete="street-address"
-                    data-testid="person-form-input-street"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+      <TabsContent value="address" className="px-6 py-7">
+        <FormSection
+          title={t('erp.people.form.sections.address.title')}
+          description={t('erp.people.form.sections.address.body')}
+        >
+          <FieldGrid>
+            <FormField
+              control={form.control}
+              name="street"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel data-testid="person-form-label-street">
+                    {t('erp.people.form.fields.street')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={disabled}
+                      autoComplete="street-address"
+                      data-testid="person-form-input-street"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-city">City</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    disabled={disabled}
-                    autoComplete="address-level2"
-                    data-testid="person-form-input-city"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-city">
+                    {t('erp.people.form.fields.city')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={disabled}
+                      autoComplete="address-level2"
+                      data-testid="person-form-input-city"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-state">State</FormLabel>
-                <FormControl>
-                  <Combobox
-                    options={BRAZILIAN_STATES}
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={disabled}
-                    placeholder="Select…"
-                    data-testid="person-form-input-state"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="state"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-state">
+                    {t('erp.people.form.fields.state')}
+                  </FormLabel>
+                  <FormControl>
+                    <Combobox
+                      options={BRAZILIAN_STATES}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={disabled}
+                      placeholder={t('erp.people.form.fields.select')}
+                      data-testid="person-form-input-state"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="zipCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel data-testid="person-form-label-zipcode">Zip code</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    disabled={disabled}
-                    autoComplete="postal-code"
-                    inputMode="numeric"
-                    className="tabular"
-                    data-testid="person-form-input-zipcode"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FieldGrid>
+            <FormField
+              control={form.control}
+              name="zipCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel data-testid="person-form-label-zipcode">
+                    {t('erp.people.form.fields.zipCode')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={disabled}
+                      autoComplete="postal-code"
+                      inputMode="numeric"
+                      className="tabular"
+                      data-testid="person-form-input-zipcode"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </FieldGrid>
+        </FormSection>
       </TabsContent>
 
-      <TabsContent value="notes" className="mt-5">
-        <FieldGrid>
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel data-testid="person-form-label-notes">Notes</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    rows={3}
-                    disabled={disabled}
-                    placeholder="Anything the team should know about this record…"
-                    data-testid="person-form-input-notes"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FieldGrid>
+      <TabsContent value="notes" className="px-6 py-7">
+        <FormSection
+          title={t('erp.people.form.sections.notes.title')}
+          description={t('erp.people.form.sections.notes.body')}
+        >
+          <FieldGrid>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel data-testid="person-form-label-notes">
+                    {t('erp.people.form.fields.notes')}
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      rows={3}
+                      disabled={disabled}
+                      placeholder={t('erp.people.form.fields.notesPlaceholder')}
+                      data-testid="person-form-input-notes"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </FieldGrid>
+        </FormSection>
       </TabsContent>
     </Tabs>
   );

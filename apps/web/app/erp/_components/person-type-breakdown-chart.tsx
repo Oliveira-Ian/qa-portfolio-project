@@ -7,6 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { useT } from '@/lib/i18n/provider';
 
 interface PersonTypeBreakdownChartProps {
   clients: number;
@@ -17,14 +18,14 @@ interface PersonTypeBreakdownChartProps {
 /**
  * Reuses existing design tokens rather than inventing chart-specific colors
  * — this app doesn't define `--chart-1..5` (the shadcn default), and three
- * semantically distinct tokens already exist and carry their own dark-mode
- * overrides.
+ * semantically distinct tokens already exist. The series' *names* are the
+ * interface language's, so the config is built where `useT()` is.
  */
-const chartConfig = {
-  Clients: { label: 'Clients', color: 'var(--primary)' },
-  Suppliers: { label: 'Suppliers', color: 'var(--toast-info)' },
-  Inactive: { label: 'Inactive', color: 'var(--muted-foreground)' },
-} satisfies ChartConfig;
+const SERIES_COLOR = {
+  clients: 'var(--primary)',
+  suppliers: 'var(--toast-info)',
+  inactive: 'var(--muted-foreground)',
+} as const;
 
 /**
  * A person's `types` is an array — a record can be both a client and a
@@ -37,10 +38,16 @@ export function PersonTypeBreakdownChart({
   suppliers,
   inactive,
 }: PersonTypeBreakdownChartProps) {
+  const t = useT();
+  const chartConfig = {
+    clients: { label: t('erp.home.stats.clients'), color: SERIES_COLOR.clients },
+    suppliers: { label: t('erp.home.stats.suppliers'), color: SERIES_COLOR.suppliers },
+    inactive: { label: t('erp.home.stats.inactive'), color: SERIES_COLOR.inactive },
+  } satisfies ChartConfig;
   const data = [
-    { category: 'Clients', value: clients, fill: 'var(--color-Clients)' },
-    { category: 'Suppliers', value: suppliers, fill: 'var(--color-Suppliers)' },
-    { category: 'Inactive', value: inactive, fill: 'var(--color-Inactive)' },
+    { category: t('erp.home.stats.clients'), value: clients, fill: 'var(--color-clients)' },
+    { category: t('erp.home.stats.suppliers'), value: suppliers, fill: 'var(--color-suppliers)' },
+    { category: t('erp.home.stats.inactive'), value: inactive, fill: 'var(--color-inactive)' },
   ];
 
   return (

@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { ActiveFilters } from '@/components/data-table/active-filters';
 import { DataTable } from '@/components/data-table/data-table';
 import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
@@ -30,7 +29,9 @@ import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
 import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
-import { formatCount } from '@/lib/format';
+import { Tabs, TabsCount, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { deletePersonsAction } from '../_actions/delete-persons';
 import { savePersonGridPreferenceAction } from '../_actions/save-grid-preferences';
@@ -43,10 +44,19 @@ import { PERSON_FILTER_FIELDS, PERSON_FILTERABLE_COLUMNS } from './person-filter
 
 const TESTID_PREFIX = 'person-list';
 
+type PersonTab = 'all' | 'clients' | 'suppliers' | 'custom';
+
+const TAB_TYPE: Record<'clients' | 'suppliers', string> = {
+  clients: 'CLIENT',
+  suppliers: 'SUPPLIER',
+};
+
 interface PersonListProps {
   people: Person[];
   /** Total rows across every page — `people.length` is just the current page's. */
   total: number;
+  /** The registry's own counts (not the filtered ones) — what the tabs say. */
+  counts: { total: number; clients: number; suppliers: number };
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -64,15 +74,21 @@ interface PersonListProps {
  * only selects it (no row link, no double-click-to-view); selection is a
  * free multi-select (Edit needs exactly one, Delete needs one or more); and
  * View/Edit/Delete live in each row's own action menu, not the row.
+ *
+ * The All / Clients / Suppliers tabs (design S14) are a shortcut to the `Type`
+ * filter, not a second mechanism: choosing one writes `f_types` into the URL like
+ * the drawer would, and any other combination of types shows no tab selected.
  */
 export function PersonList({
   people,
   total,
+  counts,
   canCreate,
   canEdit,
   canDelete,
   gridPreference,
 }: PersonListProps) {
+  const t = useT();
   const router = useRouter();
   const { query, setQuery } = useListNavigation(PERSON_FILTERABLE_COLUMNS);
   const [isDeleting, startDeleting] = useTransition();
@@ -102,7 +118,7 @@ export function PersonList({
       const actions: RowAction[] = [
         {
           key: 'view',
-          label: 'View',
+          label: t('erp.people.view'),
           icon: Eye,
           onSelect: () => router.push(ROUTES.people.view(person.id)),
           testId: `${TESTID_PREFIX}-row-action-view`,
@@ -112,7 +128,7 @@ export function PersonList({
       if (canEdit) {
         actions.push({
           key: 'edit',
-          label: 'Edit',
+          label: t('erp.people.edit'),
           icon: Pencil,
           onSelect: () => router.push(ROUTES.people.edit(person.id)),
           testId: `${TESTID_PREFIX}-row-action-edit`,
@@ -122,7 +138,7 @@ export function PersonList({
       if (canDelete) {
         actions.push({
           key: 'delete',
-          label: 'Delete',
+          label: t('erp.people.delete'),
           icon: Trash2,
           variant: 'destructive',
           onSelect: () => setPendingDeleteIds([person.id]),
@@ -132,7 +148,7 @@ export function PersonList({
 
       return actions;
     },
-    [router, canEdit, canDelete],
+    [router, canEdit, canDelete, t],
   );
 
   const columns = useMemo<ColumnDef<Person>[]>(
@@ -169,6 +185,29 @@ export function PersonList({
   const selectedId = selectedRows.length === 1 ? selectedRows[0]!.original.id : undefined;
   const isMultiDelete = (pendingDeleteIds?.length ?? 0) > 1;
 
+  const typesFilter = query.filters.find((filter) => filter.id === 'types')?.value as
+    string[] | undefined;
+  const activeTab: PersonTab =
+    !typesFilter || typesFilter.length === 0
+      ? 'all'
+      : typesFilter.length === 1 && typesFilter[0] === TAB_TYPE.clients
+        ? 'clients'
+        : typesFilter.length === 1 && typesFilter[0] === TAB_TYPE.suppliers
+          ? 'suppliers'
+          : 'custom';
+
+  function handleTabChange(tab: string) {
+    const others = query.filters.filter((filter) => filter.id !== 'types');
+
+    setQuery({
+      filters:
+        tab === 'clients' || tab === 'suppliers'
+          ? [...others, { id: 'types', value: [TAB_TYPE[tab]] }]
+          : others,
+      page: 1,
+    });
+  }
+
   function handleEdit() {
     if (selectedId) {
       router.push(ROUTES.people.edit(selectedId));
@@ -182,38 +221,42 @@ export function PersonList({
 
     startDeleting(async () => {
       const result = await deletePersonsAction(pendingDeleteIds);
+      const message = translateApiMessage(result.message ?? '', t);
 
       if (!result.success) {
-        toast.error(result.message);
+        toast.error(message);
         return;
       }
 
-      toast.success(result.message);
+      toast.success(message);
       table.resetRowSelection();
       setPendingDeleteIds(null);
       router.refresh();
     });
   }
 
+  const meta =
+    selectedRows.length > 0
+      ? t('erp.people.metaSelected', { count: total, selected: selectedRows.length })
+      : t('erp.people.meta', { count: total });
+
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
-        title="People"
+        title={t('erp.people.title')}
         titleTestId={`${TESTID_PREFIX}-title`}
-        meta={
-          <p className="eyebrow mt-3 text-muted-foreground">
-            <span className="tabular">{formatCount(total)}</span>{' '}
-            {total === 1 ? 'record' : 'records'}
-          </p>
-        }
+        meta={meta}
         actions={
           <>
-            {canCreate ? (
-              <Button asChild data-testid={`${TESTID_PREFIX}-button-add`}>
-                <Link href={ROUTES.people.new}>
-                  <Plus aria-hidden="true" />
-                  Add person
-                </Link>
+            {canDelete ? (
+              <Button
+                variant="destructive-soft"
+                data-testid={`${TESTID_PREFIX}-button-delete`}
+                disabled={selectedRows.length === 0 || isDeleting}
+                onClick={() => setPendingDeleteIds(selectedRows.map((row) => row.original.id))}
+              >
+                <Trash2 aria-hidden="true" />
+                {t('erp.people.delete')}
               </Button>
             ) : null}
             {canEdit ? (
@@ -224,24 +267,37 @@ export function PersonList({
                 onClick={handleEdit}
               >
                 <Pencil aria-hidden="true" />
-                Edit
+                {t('erp.people.edit')}
               </Button>
             ) : null}
-            {canDelete ? (
-              <Button
-                variant="outline"
-                className="text-destructive hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-                data-testid={`${TESTID_PREFIX}-button-delete`}
-                disabled={selectedRows.length === 0 || isDeleting}
-                onClick={() => setPendingDeleteIds(selectedRows.map((row) => row.original.id))}
-              >
-                <Trash2 aria-hidden="true" />
-                Delete
+            {canCreate ? (
+              <Button asChild data-testid={`${TESTID_PREFIX}-button-add`}>
+                <Link href={ROUTES.people.new}>
+                  <Plus aria-hidden="true" />
+                  {t('erp.people.add')}
+                </Link>
               </Button>
             ) : null}
           </>
         }
       />
+
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-5">
+        <TabsList aria-label={t('erp.people.tabs.label')} data-testid={`${TESTID_PREFIX}-tabs`}>
+          <TabsTrigger value="all" data-testid={`${TESTID_PREFIX}-tab-all`}>
+            {t('erp.people.tabs.all')}
+            <TabsCount>{counts.total}</TabsCount>
+          </TabsTrigger>
+          <TabsTrigger value="clients" data-testid={`${TESTID_PREFIX}-tab-clients`}>
+            {t('erp.people.tabs.clients')}
+            <TabsCount>{counts.clients}</TabsCount>
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" data-testid={`${TESTID_PREFIX}-tab-suppliers`}>
+            {t('erp.people.tabs.suppliers')}
+            <TabsCount>{counts.suppliers}</TabsCount>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="mb-4">
         <ToolbarList
@@ -251,13 +307,13 @@ export function PersonList({
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
+          filterFields={PERSON_FILTER_FIELDS}
+          searchPlaceholder={t('erp.people.searchPlaceholder')}
         />
       </div>
 
-      <ActiveFilters table={table} fields={PERSON_FILTER_FIELDS} testIdPrefix={TESTID_PREFIX} />
-
       <div
-        className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-card"
+        className="overflow-hidden rounded-xl border border-border bg-surface"
         data-testid={`${TESTID_PREFIX}-table-card`}
       >
         <DataTable
@@ -266,21 +322,20 @@ export function PersonList({
           rowActions={getRowActions}
           getRowLabel={(person) => person.name}
           emptyState={{
-            title: 'The registry is empty',
-            description:
-              'Clients and suppliers you add here become available to every other part of the system.',
+            title: t('erp.people.empty.title'),
+            description: t('erp.people.empty.body'),
             action: canCreate ? (
               <Button asChild data-testid={`${TESTID_PREFIX}-empty-button-add`}>
                 <Link href={ROUTES.people.new}>
                   <Plus aria-hidden="true" />
-                  Add the first person
+                  {t('erp.people.addFirst')}
                 </Link>
               </Button>
             ) : undefined,
           }}
         />
-        <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
       </div>
+      <Pagination table={table} testIdPrefix={TESTID_PREFIX} />
 
       <FilterDrawer
         table={table}
@@ -320,24 +375,26 @@ export function PersonList({
         <AlertDialogContent data-testid={`${TESTID_PREFIX}-delete-dialog`}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isMultiDelete ? `Delete ${pendingDeleteIds?.length} people?` : 'Delete this person?'}
+              {isMultiDelete
+                ? t('erp.people.deleteDialog.titleMany', { count: pendingDeleteIds?.length ?? 0 })
+                : t('erp.people.deleteDialog.titleOne')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {isMultiDelete
-                ? 'The records and everything on them are removed for good. There is no undo.'
-                : 'The record and everything on it are removed for good. There is no undo.'}
+                ? t('erp.people.deleteDialog.bodyMany')
+                : t('erp.people.deleteDialog.bodyOne')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid={`${TESTID_PREFIX}-delete-cancel`}>
-              Cancel
+            <AlertDialogCancel variant="ghost" data-testid={`${TESTID_PREFIX}-delete-cancel`}>
+              {t('erp.people.deleteDialog.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
               data-testid={`${TESTID_PREFIX}-delete-confirm`}
               onClick={handleConfirmDelete}
             >
-              Delete
+              {t('erp.people.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

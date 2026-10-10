@@ -7,9 +7,9 @@ import type { FilterableColumn } from '@/lib/list-query';
  * header, this is just the ones worth surfacing all at once.
  */
 export const PROFILE_FILTER_FIELDS: FilterDrawerField[] = [
-  { key: 'name', label: 'Name', filterType: 'text' },
-  { key: 'isDefault', label: 'Default', filterType: 'boolean' },
-  { key: 'isSystem', label: 'System', filterType: 'boolean' },
+  { key: 'name', labelKey: 'erp.columns.name', filterType: 'text' },
+  { key: 'isDefault', labelKey: 'erp.columns.default', filterType: 'boolean' },
+  { key: 'isSystem', labelKey: 'erp.columns.system', filterType: 'boolean' },
 ];
 
 /**

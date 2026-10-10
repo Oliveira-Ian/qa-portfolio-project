@@ -10,7 +10,8 @@ import {
 import type { Resolver } from 'react-hook-form';
 import { FormCard, FormCardActions, FormCardHeader } from '@/components/forms/form-card';
 import { useEntityForm } from '@/components/forms/use-entity-form';
-import { ProfileFormFields } from '@/components/profiles/profile-form-fields';
+import { ProfileFormFields, ProfileScopeNote } from '@/components/profiles/profile-form-fields';
+import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { updateProfileAction } from '../_actions/update-profile';
 
@@ -20,6 +21,7 @@ interface EditProfileFormProps {
 }
 
 export function EditProfileForm({ profile, permissions }: EditProfileFormProps) {
+  const t = useT();
   const { form, isPending, onSubmit } = useEntityForm(
     // Same `.default([])` cast `create-profile-form.tsx` needs — see its comment.
     zodResolver(profileWriteSchema) as Resolver<ProfileWriteInput, unknown, ProfileWriteInput>,
@@ -37,29 +39,29 @@ export function EditProfileForm({ profile, permissions }: EditProfileFormProps) 
       formTestId="profile-form"
       form={form}
       onSubmit={onSubmit}
+      errorBodyKey="erp.profiles.form.errorBody"
       header={
-        <FormCardHeader
-          eyebrow="Access control"
-          title="Edit profile"
-          titleTestId="profile-form-title"
-          description={
-            profile.isSystem
-              ? 'This is a system profile — it can be edited, but not deleted.'
-              : undefined
-          }
-        />
+        <>
+          <FormCardHeader
+            title={t('erp.profiles.form.editTitle')}
+            titleTestId="profile-form-title"
+            {...(profile.isSystem ? { description: t('erp.profiles.form.systemNote') } : {})}
+          />
+          <ProfileScopeNote />
+        </>
       }
       footer={
         <FormCardActions
           isPending={isPending}
-          saveLabel="Save profile"
+          saveLabel={t('erp.profiles.form.save')}
           saveTestId="profile-form-button-save"
           cancelHref={ROUTES.profiles.list}
           cancelTestId="profile-form-button-cancel"
+          cancelLabel={t('erp.profiles.form.cancel')}
         />
       }
     >
-      <ProfileFormFields permissions={permissions} />
+      <ProfileFormFields permissions={permissions} code={profile.id} />
     </FormCard>
   );
 }

@@ -14,6 +14,7 @@ import { useEntityForm } from '@/components/forms/use-entity-form';
 import { AccountSection } from '@/components/people/account-section';
 import { PersonFormFields } from '@/components/people/person-form-fields';
 import { PersonStatusBadge, PersonTypeBadges } from '@/components/people/person-badges';
+import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { createAccountAction } from '../_actions/create-account';
 import { updatePersonAction } from '../_actions/update-person';
@@ -25,6 +26,7 @@ interface EditPersonFormProps {
 }
 
 export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFormProps) {
+  const t = useT();
   const { form, isPending, onSubmit } = useEntityForm(
     zodResolver(personFormSchema),
     personToFormValues(person),
@@ -41,9 +43,9 @@ export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFo
       formTestId="person-form"
       form={form}
       onSubmit={onSubmit}
+      errorBodyKey="erp.people.form.errorBody"
       header={
         <FormCardHeader
-          eyebrow="Editing record"
           title={person.name}
           titleTestId="person-form-title"
           actions={
@@ -57,25 +59,24 @@ export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFo
       footer={
         <FormCardActions
           isPending={isPending}
-          saveLabel="Save changes"
+          saveLabel={t('erp.people.form.saveChanges')}
           saveTestId="person-form-button-save"
           cancelHref={ROUTES.people.list}
           cancelTestId="person-form-button-cancel"
+          cancelLabel={t('erp.people.form.cancel')}
         />
       }
       // Outside `<form>`: its own submit button would otherwise nest inside
       // the person form's, which browsers handle unpredictably.
       after={
-        <div className="border-t border-border px-6 py-8 sm:px-8">
-          <AccountSection
-            personId={person.id}
-            types={types}
-            account={account}
-            isCompanyAdmin={isCompanyAdmin}
-            mode="edit"
-            createAccount={createAccountAction}
-          />
-        </div>
+        <AccountSection
+          personId={person.id}
+          types={types}
+          account={account}
+          isCompanyAdmin={isCompanyAdmin}
+          mode="edit"
+          createAccount={createAccountAction}
+        />
       }
     >
       <PersonFormFields />
