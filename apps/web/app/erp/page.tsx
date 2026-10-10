@@ -31,7 +31,6 @@ export default async function HomePage() {
   return (
     <div data-testid="home-page">
       <PageHeader
-        eyebrow="Overview"
         title={`Good to see you, ${firstName}`}
         description="Everything the site depends on, kept in one register."
         titleTestId="home-page-title"

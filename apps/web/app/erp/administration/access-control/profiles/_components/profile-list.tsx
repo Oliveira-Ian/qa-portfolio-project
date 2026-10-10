@@ -172,7 +172,6 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
-        eyebrow="Access control"
         title="Profiles"
         titleTestId={`${TESTID_PREFIX}-title`}
         meta={

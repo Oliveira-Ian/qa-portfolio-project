@@ -175,7 +175,6 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
   return (
     <div data-testid="users-page-container">
       <PageHeader
-        eyebrow="Settings"
         title="Users"
         description="Who can sign in to Oliveira ERP, and what they can do."
         titleTestId="users-page-title"

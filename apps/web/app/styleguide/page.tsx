@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { ButtonsActionsSection } from './_components/buttons-actions-section';
 import { DataDisplaySection } from './_components/data-display-section';
@@ -41,7 +40,6 @@ export default function StyleguidePage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <Button asChild variant="outline" data-testid="styleguide-link-home">
               <Link href="/">
                 <ArrowLeft aria-hidden="true" />

@@ -198,7 +198,6 @@ export function PersonList({
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
-        eyebrow="Records"
         title="People"
         titleTestId={`${TESTID_PREFIX}-title`}
         meta={
