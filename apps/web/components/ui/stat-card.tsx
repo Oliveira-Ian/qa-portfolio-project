@@ -13,7 +13,7 @@ interface StatCardProps {
 }
 
 /**
- * One cell of a KPI row — an eyebrow label, a large tabular value, and an
+ * One cell of a KPI row — a mono overline label, a large tabular value, and an
  * optional icon. Expects a `<dl>` grid wrapper (it renders `dt`/`dd`, not the
  * list itself), the same shape `/home`'s stat row already used by hand.
  */

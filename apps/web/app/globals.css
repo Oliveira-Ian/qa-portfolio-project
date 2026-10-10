@@ -407,7 +407,6 @@
   }
 
   /* Overlines, meta lines: JetBrains Mono 11px, uppercase, +0.12em. */
-  .eyebrow,
   .olv-overline {
     font-family: var(--font-mono);
     font-size: 11px;
