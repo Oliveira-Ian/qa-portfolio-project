@@ -18,10 +18,7 @@ export function StyleguideSection({ id, title, description, children }: Stylegui
       <h2 id={`${id}-heading`} className="font-display text-2xl font-semibold text-foreground">
         {title}
       </h2>
-      {description ? (
-        <p className="mt-2 max-w-prose text-sm text-muted-foreground">{description}</p>
-      ) : null}
-      <div className="measured-rule mt-5" aria-hidden="true" />
+      {description ? <p className="mt-2 max-w-prose text-sm text-text-3">{description}</p> : null}
       <div className="mt-8 flex flex-col gap-10">{children}</div>
     </section>
   );
