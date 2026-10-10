@@ -3,27 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExternalLink, Search, Star } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
-import type { RoutinePath } from '@/lib/navigation/catalog';
+import { useT } from '@/lib/i18n/provider';
 import { useFavorites } from '@/lib/navigation/favorites';
+import type { SearchEntry } from '@/lib/navigation/nav';
 import { cn } from '@/lib/utils';
 
 /**
- * Every screen the account can actually see, not the whole catalog — the
- * caller (`app-header.tsx`) already resolved `filterCatalogForAccount()` for
- * the sidebar, so search reuses the same access rules by only ever being
- * handed routines from that pruned tree.
+ * Every screen the account can actually reach in the area it is in — the shell
+ * builds the entries from the same navigation it renders, so search can never
+ * offer a screen the sidebar hides. Ctrl+Shift+F focuses it from anywhere.
  */
 interface GlobalSearchProps {
-  routines: RoutinePath[];
-}
-
-function matchesQuery(entry: RoutinePath, query: string): boolean {
-  const haystack =
-    `${entry.routine.label} ${entry.group.label} ${entry.module.label}`.toLowerCase();
-  return haystack.includes(query.toLowerCase());
+  entries: SearchEntry[];
+  /** The field collapses to an icon button when space is short (handoff § 6). */
+  className?: string;
 }
 
 /** Wraps the substring of `text` matching `query` (case-insensitive) in a highlight span. */
@@ -41,7 +36,7 @@ function HighlightedLabel({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, index)}
-      <mark className="rounded-xs bg-primary-light text-primary">
+      <mark className="rounded-xs bg-accent-50 text-accent-600">
         {text.slice(index, index + query.length)}
       </mark>
       {text.slice(index + query.length)}
@@ -49,16 +44,32 @@ function HighlightedLabel({ text, query }: { text: string; query: string }) {
   );
 }
 
-export function GlobalSearch({ routines }: GlobalSearchProps) {
+export function GlobalSearch({ entries, className }: GlobalSearchProps) {
+  const t = useT();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const { isFavorite, toggleFavorite } = useFavorites();
 
+  const labelled = useMemo(
+    () =>
+      entries.map((entry) => ({
+        ...entry,
+        label: t(entry.labelKey),
+        context: entry.contextKey ? t(entry.contextKey) : '',
+      })),
+    [entries, t],
+  );
+
   const results = useMemo(
-    () => (query.trim() ? routines.filter((entry) => matchesQuery(entry, query)) : []),
-    [routines, query],
+    () =>
+      query.trim()
+        ? labelled.filter((entry) =>
+            `${entry.label} ${entry.context}`.toLowerCase().includes(query.trim().toLowerCase()),
+          )
+        : [],
+    [labelled, query],
   );
 
   useEffect(() => {
@@ -90,42 +101,44 @@ export function GlobalSearch({ routines }: GlobalSearchProps) {
     <Command className="contents">
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverAnchor asChild>
-          <div className="flex h-10 w-full max-w-3xl items-center gap-2 rounded-md border border-white/15 bg-white/5 px-4 text-header-foreground-muted transition-colors focus-within:bg-white/10 focus-within:text-header-foreground">
+          <div
+            className={cn(
+              'flex h-9 w-full max-w-[520px] items-center gap-2 rounded-md border border-shell-border bg-shell-control px-3 text-shell-text-muted transition-colors duration-100 focus-within:border-shell-focus focus-within:text-white',
+              className,
+            )}
+          >
             <Search className="size-4 shrink-0" aria-hidden="true" />
             {/*
               A plain native input, not cmdk's `CommandInput` — cmdk's own Input
               ties every external `value` change into its internal store, which
               (per its source) re-checks `document.activeElement` and can
-              re-focus itself whenever the highlighted item changes, a heuristic
-              built for Input+List living next to each other, not split across
-              this Popover's portal. That produced an intermittent "stops
-              filtering" freeze. We already do 100% of the filtering ourselves
-              (`shouldFilter={false}` + `results` below), and arrow-key/Enter
-              navigation still works because that `onKeyDown` lives on the root
-              `Command` element, which wraps this input too — so nothing is lost
-              by not using cmdk's own Input here.
+              freeze the list when it lives apart from the Popover's portal.
+              We do 100% of the filtering ourselves (`shouldFilter={false}` +
+              `results` below); arrow-key/Enter navigation still works because
+              that `onKeyDown` lives on the root `Command` element.
             */}
             <input
               ref={inputRef}
               type="text"
-              // No `aria-controls`: it would need cmdk's internally auto-generated
-              // list id, which `CommandList` always overrides and doesn't expose.
+              // No `aria-controls`: it would need cmdk's auto-generated list id,
+              // which `CommandList` always overrides and doesn't expose.
               // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
               role="combobox"
               aria-expanded={open}
               aria-autocomplete="list"
+              aria-label={t('shell.search.label')}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onFocus={() => setOpen(true)}
-              placeholder="Search…"
+              placeholder={t('shell.search.placeholder')}
               data-testid="global-search-input"
-              className="h-auto flex-1 border-none bg-transparent p-0 text-sm text-header-foreground outline-none placeholder:text-header-foreground-muted"
+              className="h-auto min-w-0 flex-1 border-none bg-transparent p-0 text-sm text-white outline-none placeholder:text-shell-text-muted"
             />
-            <kbd className="tabular hidden shrink-0 rounded-sm border border-white/15 bg-white/5 px-1.5 py-0.5 text-[0.6875rem] sm:inline-block">
-              Ctrl+Shift+F
+            <kbd className="olv-data hidden shrink-0 rounded-xs border border-shell-border border-b-2 px-1.5 py-px text-[11px] text-shell-text-muted lg:inline-block">
+              Ctrl Shift F
             </kbd>
           </div>
         </PopoverAnchor>
@@ -139,11 +152,11 @@ export function GlobalSearch({ routines }: GlobalSearchProps) {
         >
           <CommandList data-testid="global-search-results">
             <CommandEmpty>
-              {query.trim() ? 'No screens found.' : 'Start typing to search…'}
+              {query.trim() ? t('shell.search.empty') : t('shell.search.prompt')}
             </CommandEmpty>
 
             {results.map((entry) => {
-              const Icon = entry.module.icon;
+              const Icon = entry.icon;
               const favorite = isFavorite(entry.href);
 
               return (
@@ -153,26 +166,21 @@ export function GlobalSearch({ routines }: GlobalSearchProps) {
                   data-testid="global-search-result"
                   onSelect={() => navigateTo(entry.href)}
                 >
-                  <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <Icon className="size-4 shrink-0 text-text-3" aria-hidden="true" />
                   <span className="min-w-0 flex-1 truncate">
-                    <HighlightedLabel text={entry.routine.label} query={query} />
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {entry.module.label} / {entry.group.label}
-                    </span>
+                    <HighlightedLabel text={entry.label} query={query} />
+                    {entry.context ? (
+                      <span className="ml-2 text-xs text-text-3">{entry.context}</span>
+                    ) : null}
                   </span>
-                  <Badge
-                    variant="outline"
-                    className="eyebrow shrink-0 border-border text-muted-foreground"
-                  >
-                    Screen
-                  </Badge>
+                  <span className="olv-overline shrink-0 rounded-xs bg-neutral-light px-1.5 py-0.5 text-neutral-on">
+                    {t('shell.search.screen')}
+                  </span>
                   <button
                     type="button"
-                    aria-label="Open in new tab"
+                    aria-label={t('shell.search.openNewTab')}
                     data-testid="global-search-result-open-new-tab"
-                    className={cn(
-                      'rounded-sm p-1 text-muted-foreground hover:bg-muted hover:text-foreground',
-                    )}
+                    className="rounded-sm p-1 text-text-3 hover:bg-foreground/5 hover:text-foreground"
                     onClick={(event) => {
                       event.stopPropagation();
                       window.open(entry.href, '_blank', 'noopener,noreferrer');
@@ -183,11 +191,13 @@ export function GlobalSearch({ routines }: GlobalSearchProps) {
                   </button>
                   <button
                     type="button"
-                    aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={
+                      favorite ? t('shell.search.unfavorite') : t('shell.search.favorite')
+                    }
                     data-testid="global-search-result-favorite"
                     className={cn(
-                      'rounded-sm p-1 hover:bg-muted',
-                      favorite ? 'text-signal' : 'text-muted-foreground hover:text-foreground',
+                      'rounded-sm p-1 hover:bg-foreground/5',
+                      favorite ? 'text-warning' : 'text-text-3 hover:text-foreground',
                     )}
                     onClick={(event) => {
                       event.stopPropagation();

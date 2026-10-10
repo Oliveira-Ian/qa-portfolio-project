@@ -7,11 +7,24 @@ const STORAGE_KEY = 'oliveira_favorite_routines';
 const listeners = new Set<() => void>();
 let cachedSnapshot: Set<string> | null = null;
 
+/**
+ * The ERP moved under `/erp` (docs/adr/0019). A favourite saved before that is
+ * keyed by the old path (`/records/people/people`), so it is carried over to the
+ * new one instead of silently losing the user's stars.
+ */
+function withAreaPrefix(href: string): string {
+  return href.startsWith('/records/') || href.startsWith('/administration/') ? `/erp${href}` : href;
+}
+
 function readFromStorage(): Set<string> {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((v): v is string => typeof v === 'string').map(withAreaPrefix)
+        : [],
+    );
   } catch {
     return new Set();
   }

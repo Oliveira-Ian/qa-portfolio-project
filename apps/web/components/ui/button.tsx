@@ -5,38 +5,52 @@ import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 /**
- * Sizes are a step larger than the shadcn preset. This is a back-office people
- * spend hours in, and the stock 32px control is below a comfortable pointer
- * target — `docs/design/components/buttons.md` asks for an appropriate one.
+ * The design's button (handoff § 4, board 04). Sizes: sm 32, md 36 (default),
+ * lg 44 — the touch size, used on auth and mobile. One primary per region,
+ * rightmost; Cancel is `ghost`; a filled `destructive` only inside a
+ * confirmation, everywhere else `destructive-soft`.
  *
- * Focus is `focus-visible`, never `focus`, so a ring appears for the keyboard
- * and not on every click.
+ * The variant names keep shadcn's so call sites didn't change: `outline` is the
+ * design's "secondary", `default` its "primary".
+ *
+ * Focus is `focus-visible`, never `focus`: a 2px gap in the surface colour and a
+ * 2px ring, for the keyboard only. A disabled primary is tinted in the product
+ * accent, not grey.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow] outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-md border border-transparent text-sm font-medium tracking-[-0.005em] whitespace-nowrap transition-[background-color,border-color,color,box-shadow,transform] duration-100 outline-none select-none focus-visible:ring-focus active:translate-y-px disabled:pointer-events-none disabled:translate-y-0 aria-disabled:pointer-events-none aria-busy:cursor-progress [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-button hover:bg-primary-hover',
+        default:
+          'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_1px_2px_rgba(18,21,27,.2)] hover:bg-primary-hover active:bg-primary-active active:shadow-[inset_0_1px_3px_rgba(0,0,0,.28)] disabled:bg-primary-disabled-bg disabled:text-primary-disabled-fg disabled:shadow-none aria-disabled:bg-primary-disabled-bg aria-disabled:text-primary-disabled-fg aria-disabled:shadow-none',
         outline:
-          'border-border bg-card text-foreground hover:border-border-hover hover:bg-muted aria-expanded:bg-muted',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-border',
-        ghost: 'hover:bg-muted hover:text-foreground aria-expanded:bg-muted',
+          'border-border-button bg-surface text-foreground shadow-xs hover:border-border-button-hover hover:bg-surface-2 active:bg-subtle active:shadow-[inset_0_1px_2px_rgba(18,21,27,.1)] aria-expanded:bg-surface-2 disabled:border-border disabled:bg-surface-2 disabled:text-text-disabled disabled:shadow-none',
+        secondary:
+          'bg-subtle text-foreground hover:bg-divider active:bg-border disabled:text-text-disabled',
+        ghost:
+          'text-text-2 hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 aria-expanded:bg-foreground/5 aria-expanded:text-foreground disabled:text-text-disabled',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:border-destructive focus-visible:ring-destructive/30',
-        link: 'text-primary underline underline-offset-4 hover:text-primary-hover',
+          'bg-destructive text-destructive-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_1px_2px_rgba(18,21,27,.2)] hover:bg-destructive-hover active:bg-[var(--olv-danger-800)] active:shadow-[inset_0_1px_3px_rgba(0,0,0,.28)] disabled:bg-danger-border/60 disabled:text-danger-on/60 disabled:shadow-none',
+        'destructive-soft':
+          'border-danger-border bg-surface text-destructive shadow-xs hover:border-destructive/50 hover:bg-danger-light active:bg-danger-light disabled:border-danger-border/50 disabled:text-destructive/40 disabled:shadow-none',
+        link: 'h-auto rounded-xs px-0 py-0.5 font-semibold text-primary underline decoration-transparent decoration-[1.5px] underline-offset-3 shadow-none hover:decoration-current active:translate-y-0 active:text-primary-active disabled:text-text-disabled disabled:no-underline',
+        shell:
+          'border-shell-border bg-shell-control text-shell-text hover:border-[#363C48] hover:bg-shell-control-hover hover:text-white focus-visible:ring-focus-shell',
       },
       size: {
-        default: 'h-10 gap-2 px-4',
+        default: 'h-9 gap-2 px-3.5',
         xs: 'h-7 gap-1 rounded-sm px-2 text-xs [&_svg:not([class*=size-])]:size-3',
-        sm: 'h-9 gap-1.5 px-3 text-[0.8125rem]',
-        lg: 'h-11 gap-2 px-5',
-        icon: 'size-10',
+        sm: 'h-8 gap-1.5 px-2.5 text-[13px]',
+        lg: 'h-11 gap-2 px-[18px] text-[15px] font-semibold',
+        icon: 'size-9',
         'icon-xs': 'size-7 rounded-sm [&_svg:not([class*=size-])]:size-3',
-        'icon-sm': 'size-9',
+        'icon-sm': 'size-8',
         'icon-lg': 'size-11',
       },
     },
+    // A link button is inline text: whatever the size asks for, it has no fixed height or padding.
+    compoundVariants: [{ variant: 'link', className: 'h-auto px-0 py-0.5' }],
     defaultVariants: {
       variant: 'default',
       size: 'default',
