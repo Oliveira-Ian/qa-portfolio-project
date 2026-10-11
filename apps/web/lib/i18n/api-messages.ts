@@ -35,6 +35,8 @@ const EXACT: Record<string, MessageKey> = {
   'At least one column is required': 'api.validation.columnRequired',
   'Invalid grid key': 'api.validation.invalidGridKey',
   'Unknown product': 'api.validation.unknownProduct',
+  'Invalid birth date': 'api.validation.invalidBirthDate',
+  'One or more permissions do not exist': 'api.validation.unknownPermission',
 
   // Auth
   'Please fill in email and password': 'api.auth.missingFields',
@@ -63,6 +65,8 @@ const EXACT: Record<string, MessageKey> = {
   'Cannot remove the last active super admin': 'api.guard.lastSuperAdmin',
   'A super admin cannot remove their own access': 'api.guard.ownSuperAdmin',
   'This profile is protected and cannot be deleted': 'api.guard.protectedProfile',
+  'A person with this document already exists': 'api.guard.documentTaken',
+  'A profile with this name already exists': 'api.guard.profileNameTaken',
 
   // Confirmations a Server Action sends back
   'Person created successfully': 'api.done.personCreated',
