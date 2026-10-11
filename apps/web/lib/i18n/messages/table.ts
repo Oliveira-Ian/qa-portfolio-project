@@ -10,6 +10,11 @@ export const tableEn = {
   selectAll: 'Select all rows on this page',
   selectRow: 'Select {name}',
   rowActions: 'Row actions',
+  noResults: {
+    title: 'No results',
+    body: 'Nothing matches the current search and filters.',
+    clear: 'Clear search and filters',
+  },
   search: { placeholder: 'Search…', clear: 'Clear search' },
   toolbar: {
     export: 'Export',
@@ -42,6 +47,8 @@ export const tableEn = {
     moveUp: 'Move {label} up',
     moveDown: 'Move {label} down',
     confirm: 'Export CSV',
+    scope:
+      'Exports only the {count, plural, one {# row} other {# rows}} on this page, out of {total} in total.',
   },
   customize: {
     title: 'Customize columns',
@@ -60,6 +67,11 @@ export const tablePtBR: DeepString<typeof tableEn> = {
   selectAll: 'Selecionar todas as linhas desta página',
   selectRow: 'Selecionar {name}',
   rowActions: 'Ações da linha',
+  noResults: {
+    title: 'Nenhum resultado',
+    body: 'Nada corresponde à busca e aos filtros atuais.',
+    clear: 'Limpar busca e filtros',
+  },
   search: { placeholder: 'Buscar…', clear: 'Limpar busca' },
   toolbar: {
     export: 'Exportar',
@@ -95,6 +107,8 @@ export const tablePtBR: DeepString<typeof tableEn> = {
     moveUp: 'Mover {label} para cima',
     moveDown: 'Mover {label} para baixo',
     confirm: 'Exportar CSV',
+    scope:
+      'Exporta apenas {count, plural, one {# linha} other {# linhas}} desta página, de um total de {total}.',
   },
   customize: {
     title: 'Personalizar colunas',
