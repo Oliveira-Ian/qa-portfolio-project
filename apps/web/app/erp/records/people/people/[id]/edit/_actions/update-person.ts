@@ -26,7 +26,12 @@ export async function updatePersonAction(
   const result = await requestPersonUpdate(token, id, personFormValuesToPayload(parsed.data));
 
   if (!result.success) {
-    return { success: false, message: result.error };
+    // 409: the document is the only thing a person can collide on.
+    return {
+      success: false,
+      message: result.error,
+      ...(result.status === 409 ? { field: 'document' } : {}),
+    };
   }
 
   // Both the list and this record's own pages hold a copy of what changed.

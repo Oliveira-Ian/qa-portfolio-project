@@ -13,4 +13,10 @@
 export interface ActionResult {
   success: boolean;
   message?: string;
+  /**
+   * On a failure, the field of the submitted form it belongs to — a duplicate
+   * document is the Document field's problem, not the whole form's. The form puts
+   * `message` on that field, next to the usual toast, and moves focus to it.
+   */
+  field?: string;
 }
