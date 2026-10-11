@@ -1,7 +1,12 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../config/prisma.js';
-import { NotFoundError } from '../../shared/errors.js';
-import { RECORD_NOT_FOUND, isPrismaCode } from '../../shared/prisma-errors.js';
+import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors.js';
+import {
+  FOREIGN_KEY_VIOLATION,
+  RECORD_NOT_FOUND,
+  UNIQUE_CONSTRAINT_VIOLATION,
+  isPrismaCode,
+} from '../../shared/prisma-errors.js';
 import { withProfileManagerGuard } from '../company/company-guards.js';
 
 const includePermissions = { permissions: { include: { permission: true } } } as const;
@@ -10,6 +15,27 @@ export interface ProfileWriteData {
   name: string;
   description: string | null;
   permissionIds: number[];
+}
+
+/**
+ * What a failed create/update means to a caller. The name is the profile's only
+ * unique column (the service drops repeated permission ids, so the
+ * `(profile, permission)` key cannot collide), and the one foreign key a write
+ * can break is a permission id that does not exist. Anything else is unexpected
+ * and keeps propagating as a 500.
+ */
+function translateWriteError(error: unknown): unknown {
+  if (isPrismaCode(error, RECORD_NOT_FOUND)) {
+    return new NotFoundError('Profile not found');
+  }
+  if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
+    return new ConflictError('A profile with this name already exists');
+  }
+  if (isPrismaCode(error, FOREIGN_KEY_VIOLATION)) {
+    return new BadRequestError('One or more permissions do not exist');
+  }
+
+  return error;
 }
 
 /**
@@ -44,15 +70,19 @@ export const profileRepository = {
     return prisma.accessProfile.findUnique({ where: { id }, include: includePermissions });
   },
 
-  create(data: ProfileWriteData) {
-    return prisma.accessProfile.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        permissions: { create: data.permissionIds.map((permissionId) => ({ permissionId })) },
-      },
-      include: includePermissions,
-    });
+  async create(data: ProfileWriteData) {
+    try {
+      return await prisma.accessProfile.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          permissions: { create: data.permissionIds.map((permissionId) => ({ permissionId })) },
+        },
+        include: includePermissions,
+      });
+    } catch (error) {
+      throw translateWriteError(error);
+    }
   },
 
   async update(id: number, data: ProfileWriteData) {
@@ -76,10 +106,7 @@ export const profileRepository = {
         });
       });
     } catch (error) {
-      if (isPrismaCode(error, RECORD_NOT_FOUND)) {
-        throw new NotFoundError('Profile not found');
-      }
-      throw error;
+      throw translateWriteError(error);
     }
   },
 

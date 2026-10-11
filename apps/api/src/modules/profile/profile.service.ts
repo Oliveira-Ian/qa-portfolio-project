@@ -143,7 +143,8 @@ export const profileService = {
     const row = await profileRepository.create({
       name: input.name,
       description: input.description ?? null,
-      permissionIds: input.permissionIds,
+      // A repeated id would collide with the (profile, permission) primary key.
+      permissionIds: [...new Set(input.permissionIds)],
     });
 
     return toProfileDto(row);
@@ -153,7 +154,7 @@ export const profileService = {
     const row = await profileRepository.update(id, {
       name: input.name,
       description: input.description ?? null,
-      permissionIds: input.permissionIds,
+      permissionIds: [...new Set(input.permissionIds)],
     });
 
     return toProfileDto(row);
