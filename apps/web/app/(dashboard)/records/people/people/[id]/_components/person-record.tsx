@@ -19,7 +19,7 @@ import { ROUTES } from '@/lib/navigation/routes';
 interface PersonRecordProps {
   person: Person;
   account: AccountDto | null;
-  isAdmin: boolean;
+  isCompanyAdmin: boolean;
 }
 
 /**
@@ -30,7 +30,7 @@ interface PersonRecordProps {
  * There is no Save button at all — a disabled one would suggest the record
  * could be changed from this screen, and it can't.
  */
-export function PersonRecord({ person, account, isAdmin }: PersonRecordProps) {
+export function PersonRecord({ person, account, isCompanyAdmin }: PersonRecordProps) {
   // A form instance purely as a value container; it is never submitted.
   const form = useForm<PersonFormValues>({ defaultValues: personToFormValues(person) });
 
@@ -59,7 +59,7 @@ export function PersonRecord({ person, account, isAdmin }: PersonRecordProps) {
             personId={person.id}
             types={person.types}
             account={account}
-            isAdmin={isAdmin}
+            isCompanyAdmin={isCompanyAdmin}
             mode="view"
           />
         </div>

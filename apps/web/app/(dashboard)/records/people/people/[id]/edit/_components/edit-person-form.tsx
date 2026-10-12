@@ -21,10 +21,10 @@ import { updatePersonAction } from '../_actions/update-person';
 interface EditPersonFormProps {
   person: Person;
   account: AccountDto | null;
-  isAdmin: boolean;
+  isCompanyAdmin: boolean;
 }
 
-export function EditPersonForm({ person, account, isAdmin }: EditPersonFormProps) {
+export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFormProps) {
   const { form, isPending, onSubmit } = useEntityForm(
     zodResolver(personFormSchema),
     personToFormValues(person),
@@ -71,7 +71,7 @@ export function EditPersonForm({ person, account, isAdmin }: EditPersonFormProps
             personId={person.id}
             types={types}
             account={account}
-            isAdmin={isAdmin}
+            isCompanyAdmin={isCompanyAdmin}
             mode="edit"
             createAccount={createAccountAction}
           />

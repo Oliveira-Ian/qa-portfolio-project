@@ -1,8 +1,9 @@
 import type { FastifyRequest } from 'fastify';
 import type { SessionAccount } from '@oliveira/schemas';
 import { UnauthorizedError } from '../../shared/errors.js';
-import { setActor } from '../../shared/request-context.js';
+import { setActor, setCompanyId } from '../../shared/request-context.js';
 import { accountRepository } from '../account/account.repository.js';
+import { companyService, type AccessSnapshot } from '../company/company.service.js';
 import { verifySessionToken } from './token.js';
 
 declare module 'fastify' {
@@ -12,6 +13,8 @@ declare module 'fastify' {
      * database on this request, not copied from the token — see `requireAuth`.
      */
     account?: SessionAccount;
+    /** Set by `requireAuth` too: the caller's company and the products they may enter. */
+    access?: AccessSnapshot;
   }
 }
 
@@ -63,8 +66,19 @@ export async function requireAuth(request: FastifyRequest): Promise<void> {
     role: account.role,
   };
 
+  // Company, contract and seat are read from the database on every request for
+  // the same reason the role is: revoking a seat has to work on the very next
+  // request. It also runs `resolveAccess`'s "more than one company" refusal, so
+  // that state fails here rather than half-working further down.
+  const access = await companyService.resolveAccess(account.id);
+  request.access = access;
+
   // The same caller, for code that has no `request` — the repository layer
   // (`shared/request-context.ts`). Set here and nowhere else, after the account
   // has been loaded and checked.
   setActor({ accountId: account.id, personId: account.personId, role: account.role });
+
+  if (access.membership) {
+    setCompanyId(access.membership.companyId);
+  }
 }

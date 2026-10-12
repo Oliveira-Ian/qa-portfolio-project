@@ -39,14 +39,44 @@ enum PersonTypeValue {
   EMPLOYEE
 }
 
-/// Technical role — controls access to system administration (accounts,
-/// profiles, permission catalog), not what the person does in the business.
-/// That's what AccessProfile is for (added in a later phase). SYSTEM is
+/// Role on the Platform itself (docs/adr/0018) — not what the person does in a
+/// company or in a product. SUPER_ADMIN is the Oliveira team: it administers
+/// companies and contracts and has no access to any product or company data
+/// unless it also holds a membership and a seat like anyone else. A company's
+/// own administrator is a Membership.role, not an AccountRole. SYSTEM is
 /// reserved for integrations/jobs and cannot sign in interactively.
 enum AccountRole {
-  ADMIN
+  SUPER_ADMIN
   USER
   SYSTEM
+}
+
+/// The products the Platform gives access to. A product is code (routes,
+/// screens, guards), so adding one is a migration — an enum, like
+/// DocumentType, rather than a table nothing could fill on its own.
+enum Product {
+  ERP
+  FSM
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum MembershipRole {
+  ADMIN
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ContractStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 model Person {
@@ -114,6 +144,76 @@ model AccessAccount {
 
   profiles        AccountProfile[]
   gridPreferences GridColumnPreference[]
+  memberships     Membership[]
+  grantedAccesses ProductAccess[]        @relation("ProductAccessGrantedBy")
+}
+
+/// A customer company of the Oliveira Platform. Deliberately global for now:
+/// business tables are not company-scoped until the isolation work (#60), so
+/// exactly one company may exist until then and nothing provisions another
+/// (docs/adr/0018).
+model Company {
+  id        String        @id @default(uuid(7))
+  legalName String
+  tradeName String?
+  /// CNPJ. Unique when present.
+  document  String?       @unique
+  status    CompanyStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  memberships Membership[]
+  products    CompanyProduct[]
+}
+
+/// An account's place in a company. `role` is the company's own administrator
+/// flag, independent of AccountRole. Until company switching exists an account
+/// may have only one ACTIVE membership; the API enforces it.
+model Membership {
+  id        String           @id @default(uuid(7))
+  accountId Int
+  account   AccessAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company          @relation(fields: [companyId], references: [id])
+  role      MembershipRole   @default(MEMBER)
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  productAccess ProductAccess[]
+
+  @@unique([accountId, companyId])
+  @@index([companyId])
+}
+
+/// The contract: a product a company may use, and how many members may use it
+/// at once (`seatLimit`, null = unlimited). Written by the Oliveira team, never
+/// by the company's own administrator.
+model CompanyProduct {
+  companyId String
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product   Product
+  status    ContractStatus @default(ACTIVE)
+  seatLimit Int?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@id([companyId, product])
+}
+
+/// A seat: the company's administrator let this member into a product. The
+/// product's own profiles and permissions decide what they do there — nothing
+/// in this table says so.
+model ProductAccess {
+  membershipId String
+  membership   Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  product      Product
+  /// Null when the seed created it.
+  grantedById  Int?
+  grantedBy    AccessAccount? @relation("ProductAccessGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  grantedAt    DateTime       @default(now())
+
+  @@id([membershipId, product])
 }
 
 /// Business permissions, not technical role — "what does this account holder
@@ -129,8 +229,9 @@ model AccessProfile {
   /// System-seeded profiles (Administrator, Default User) can't be deleted
   /// — deleting the only profile a login flow depends on would break it.
   isSystem    Boolean  @default(false)
-  /// The profile self-registration links a new account to. Exactly one
-  /// profile should have this set — enforced by the seed script, not the DB.
+  /// The profile linked to a member the first time they are granted a seat in
+  /// the ERP (registration itself grants nothing). Exactly one profile should
+  /// have this set — enforced by the seed script, not the DB.
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

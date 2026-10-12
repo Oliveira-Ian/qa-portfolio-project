@@ -162,7 +162,7 @@ describe('request context', () => {
   it('has no ambient actor outside a request, and refuses to invent one', () => {
     expect(getActor()).toBeUndefined();
     expect(() => requireActor()).toThrow('No actor in the request context');
-    expect(() => setActor({ accountId: 1, personId: 'person-1', role: 'ADMIN' })).toThrow(
+    expect(() => setActor({ accountId: 1, personId: 'person-1', role: 'SUPER_ADMIN' })).toThrow(
       'No request context',
     );
   });
@@ -180,7 +180,7 @@ describe('request context', () => {
   });
 
   it('isolates nested contexts from each other', () => {
-    const outer: Actor = { accountId: 1, personId: 'person-1', role: 'ADMIN' };
+    const outer: Actor = { accountId: 1, personId: 'person-1', role: 'SUPER_ADMIN' };
     const inner: Actor = { accountId: 2, personId: 'person-2', role: 'USER' };
 
     runWithRequestContext({ actor: outer }, () => {
