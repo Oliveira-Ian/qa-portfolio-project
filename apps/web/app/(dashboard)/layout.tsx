@@ -35,7 +35,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
       userEmail={me.account.email}
       permissions={me.permissions}
     >
-      {hasErpAccess ? children : <NoProductAccess product="ERP" membership={me.membership} />}
+      {hasErpAccess ? (
+        children
+      ) : (
+        // `home-page` is what the one active E2E spec (`tests/e2e/auth.spec.ts`) waits for after
+        // signing in. Until the Platform home exists (Epic #66, Phase 3) `/home` is the ERP
+        // dashboard, so a user with no seat lands here — and the notice is what "home" shows them.
+        <div data-testid="home-page">
+          <NoProductAccess product="ERP" membership={me.membership} />
+        </div>
+      )}
     </DashboardShell>
   );
 }
