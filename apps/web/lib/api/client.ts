@@ -1,5 +1,16 @@
 import 'server-only';
 
+import { redirect } from 'next/navigation';
+
+/**
+ * Where a request lands when the API stops accepting the session's token. A Server
+ * Component or Server Action can `redirect()` but cannot clear a cookie, and
+ * `proxy.ts` would bounce `/login` straight back to `/home` while the cookie is
+ * still there — so the redirect goes through a Route Handler that clears it
+ * (`app/api/session/expire/route.ts`) and then sends the user to `/login`.
+ */
+const SESSION_EXPIRE_PATH = '/api/session/expire';
+
 /**
  * Transport layer for `apps/api`.
  *
@@ -87,6 +98,13 @@ function readEnvelope<T>(payload: unknown, status: number): ApiResult<T> {
  * Never throws on a failed request — callers get a result they can render.
  * Server Actions need the API's message to put back on the form, and an
  * exception would take the whole page down instead.
+ *
+ * The one exception is a `401` to a request that *sent a token*: the session is
+ * over (the token expired past `JWT_EXPIRES_IN`, or the account was deactivated),
+ * and there is no message worth rendering — a form left open past that point used
+ * to answer "Unauthorized" in a toast and leave the user stuck there. It redirects
+ * to `SESSION_EXPIRE_PATH` instead, from a page render and from a Server Action
+ * alike. A `401` without a token (a wrong password at sign-in) is still a result.
  */
 export async function apiRequest<T>(
   path: string,
@@ -114,6 +132,10 @@ export async function apiRequest<T>(
     });
   } catch {
     return { success: false, error: NETWORK_ERROR, status: 0 };
+  }
+
+  if (response.status === 401 && token) {
+    redirect(SESSION_EXPIRE_PATH);
   }
 
   try {

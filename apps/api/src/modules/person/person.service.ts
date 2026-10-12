@@ -19,7 +19,7 @@ import { personRepository } from './person.repository.js';
 
 /**
  * One entry per `personColumns` column the People grid lets a user filter
- * (`apps/web/app/(dashboard)/records/people/people/_components/person-columns.tsx`)
+ * (`apps/web/app/erp/records/people/people/_components/person-columns.tsx`)
  * — the whitelist `buildFiltersWhere` checks `f_*` query params against.
  * `types` is the one array-scalar field (`enumArray`, Prisma's `hasSome`);
  * everything else is a plain column.

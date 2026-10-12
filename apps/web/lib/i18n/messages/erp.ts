@@ -78,12 +78,7 @@ export const erpEn = {
       saveChanges: 'Save changes',
       cancel: 'Cancel',
       errorBody: 'The person wasn’t saved. Fix the highlighted fields and try again.',
-      tabs: {
-        identification: 'Identification',
-        contact: 'Contact',
-        address: 'Address',
-        notes: 'Notes',
-      },
+      optional: 'Optional',
       sections: {
         identification: {
           title: 'Identification',
@@ -96,6 +91,8 @@ export const erpEn = {
       fields: {
         name: 'Name',
         nameHelp: 'Legal or trade name, as it appears on documents.',
+        namePlaceholder: 'Acme Construction',
+        typeHelp: 'Pick every role that applies. Clients and suppliers need a document.',
         type: 'Type',
         select: 'Select…',
         documentType: 'Document type',
@@ -193,6 +190,7 @@ export const erpEn = {
     manageProfiles: 'Manage profiles',
     roleUpdated: 'Role updated',
     roleFailed: 'Could not update the role',
+    superAdminOnly: 'Only a Platform super admin can change this.',
     deactivated: 'Account deactivated',
     activated: 'Account activated',
     accountFailed: 'Could not update the account',
@@ -294,12 +292,7 @@ export const erpPtBR: DeepString<typeof erpEn> = {
       saveChanges: 'Salvar alterações',
       cancel: 'Cancelar',
       errorBody: 'A pessoa não foi salva. Corrija os campos destacados e tente novamente.',
-      tabs: {
-        identification: 'Identificação',
-        contact: 'Contato',
-        address: 'Endereço',
-        notes: 'Observações',
-      },
+      optional: 'Opcional',
       sections: {
         identification: {
           title: 'Identificação',
@@ -312,6 +305,9 @@ export const erpPtBR: DeepString<typeof erpEn> = {
       fields: {
         name: 'Nome',
         nameHelp: 'Razão social ou nome fantasia, como consta nos documentos.',
+        namePlaceholder: 'Construtora Vale Verde',
+        typeHelp:
+          'Escolha todos os papéis que se aplicam. Clientes e fornecedores precisam de documento.',
         type: 'Tipo',
         select: 'Selecione…',
         documentType: 'Tipo de documento',
@@ -411,6 +407,7 @@ export const erpPtBR: DeepString<typeof erpEn> = {
     manageProfiles: 'Gerenciar perfis',
     roleUpdated: 'Papel atualizado',
     roleFailed: 'Não foi possível atualizar o papel',
+    superAdminOnly: 'Só um super admin da Plataforma pode alterar isto.',
     deactivated: 'Conta desativada',
     activated: 'Conta ativada',
     accountFailed: 'Não foi possível atualizar a conta',

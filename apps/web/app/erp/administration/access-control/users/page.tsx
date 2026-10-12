@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { NoPermission } from '@/components/platform/no-permission';
 import { getTranslator } from '@/lib/i18n/server';
 import { EMPTY_LIST_QUERY, parseListQuery, toURLSearchParams } from '@/lib/list-query';
-import { can } from '@/lib/permissions';
+import { can, getMe } from '@/lib/permissions';
 import { AccountList } from './_components/account-list';
 import { ACCOUNT_FILTERABLE_COLUMNS } from './_components/account-filter-fields';
 import { getAccountGridPreference } from './_data-access/get-grid-preferences';
@@ -25,6 +25,9 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), ACCOUNT_FILTERABLE_COLUMNS);
+  // An account's role and active flag are the Platform's to change: the API answers 403 to
+  // anyone but a `SUPER_ADMIN` (`PATCH /api/accounts/:id`), so the controls are offered only to one.
+  const canManageAccountState = (await getMe()).account.role === 'SUPER_ADMIN';
 
   const [accountsResult, profilesResult, gridPreference] = await Promise.all([
     listAccounts(query),
@@ -42,6 +45,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       total={accountsResult.total}
       profiles={profilesResult.items}
       gridPreference={gridPreference}
+      canManageAccountState={canManageAccountState}
     />
   );
 }

@@ -20,7 +20,7 @@ const TYPE_LABEL: Record<PersonTypeValue, MessageKey> = {
   EMPLOYEE: 'erp.personType.employee',
 };
 
-const TYPE_ICON: Record<PersonTypeValue, LucideIcon> = {
+export const PERSON_TYPE_ICON: Record<PersonTypeValue, LucideIcon> = {
   CLIENT: Building2,
   SUPPLIER: Truck,
   USER: User,
@@ -40,7 +40,7 @@ export function PersonTypeBadge({
   removeLabel?: string;
 }) {
   const t = useT();
-  const Icon = TYPE_ICON[type];
+  const Icon = PERSON_TYPE_ICON[type];
   const label = t(TYPE_LABEL[type]);
 
   return (

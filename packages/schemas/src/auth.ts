@@ -30,6 +30,8 @@ export const authMessages = {
   register: {
     missingFields: 'Please fill in all required fields',
     invalidEmail: 'Invalid email',
+    /** API 400 — and the inline error — when the birth date is not a real, past calendar day. */
+    invalidBirthDate: 'Invalid birth date',
     /** Documented as 400, not 409 — see docs/api/http_responses.md. */
     emailTaken: 'Email already exists',
     success: 'User created successfully',
@@ -41,6 +43,31 @@ export const authMessages = {
     },
   },
 } as const;
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A birth date is `YYYY-MM-DD`, a day that exists (not `2026-02-31`), not in the
+ * future and not before 1900. It used to be any non-empty string, so a request
+ * with `abc` reached the database layer and answered 500.
+ *
+ * "Future" has a day of slack: a browser ahead of UTC can legitimately pick a
+ * date that is still tomorrow in UTC terms, and rejecting it would be wrong.
+ */
+export function isValidBirthDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  // `toISOString` round-trips only a real calendar day: `2026-02-31` rolls over to March.
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    return false;
+  }
+
+  return date.getUTCFullYear() >= 1900 && date.getTime() <= Date.now() + DAY_IN_MS;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Transport shapes                                                            */
@@ -85,7 +112,10 @@ export const registerFormSchema = z.object({
   fullName: z.string().trim().min(1, authMessages.register.fields.fullName),
   email: emailField(authMessages.register.fields.email),
   password: z.string().min(1, authMessages.register.fields.password),
-  birthDate: z.string().min(1, authMessages.register.fields.birthDate),
+  birthDate: z
+    .string()
+    .min(1, authMessages.register.fields.birthDate)
+    .refine(isValidBirthDate, { message: authMessages.register.invalidBirthDate }),
 });
 
 export type LoginFormValues = z.input<typeof loginFormSchema>;
@@ -140,6 +170,10 @@ export function validateRegisterRequest(body: unknown): RequestValidation<Regist
 
   if (!isValidEmail(email)) {
     return { success: false, error: authMessages.register.invalidEmail };
+  }
+
+  if (!isValidBirthDate(birthDate)) {
+    return { success: false, error: authMessages.register.invalidBirthDate };
   }
 
   return { success: true, data: { fullName, email, password, birthDate } };

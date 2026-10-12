@@ -20,6 +20,13 @@ const nextConfig: NextConfig = {
   // it — this is a pre-production project, so those paths were dropped rather
   // than kept redirecting forever. Every path a bookmark could still hold
   // redirects permanently.
+  // `/favicon.ico` is the one icon address browsers, crawlers and old bookmarks ask for
+  // without reading the page's `<link rel="icon">` tags; it used to answer 404 (and a red
+  // line in the console). The icons live under `/brand/` (`app/layout.tsx`), so serve it from there.
+  async rewrites() {
+    return [{ source: '/favicon.ico', destination: '/brand/favicon.ico' }];
+  },
+
   async redirects() {
     return [
       {

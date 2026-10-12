@@ -91,12 +91,13 @@ never a generic one. People's instance (`testIdPrefix="person-list"`) is the ref
 - `person-list-container`, `person-list-title`, `person-list-table-card`
 - `person-list-button-add`, `person-list-button-edit`, `person-list-button-delete`
 - `person-list-tabs`, `person-list-tab-all`, `person-list-tab-clients`, `person-list-tab-suppliers` (the type tabs — a shortcut to the `Type` filter, with the registry's counts)
-- `person-list-empty-button-add` (the "Add the first person" action inside the empty state)
+- `person-list-empty-button-add` (the "Add the first person" action inside the empty state — only when nothing is filtered)
+- `{prefix}-no-results-button-clear` (every listing: "Clear search and filters", inside the "No results" state a search or filter that matches nothing shows instead of the empty state), `{prefix}-export-scope` (the Export dialog's note that it writes only the rows on the current page)
 - `person-list-delete-dialog`, `person-list-delete-confirm`, `person-list-delete-cancel` (the delete `AlertDialog` — same dialog for a single row or a multi-select batch, title/description pluralize accordingly)
 - `person-form-container`, `person-form-title`, `person-form`, `person-form-error-summary` (the "Check N fields" alert, after a failed submit)
-- `person-form-tab-{identification|contact|address|notes}`
+- `person-form-section-{identification|contact|address|notes}` (the form is four sections on one page — it used to be four tabs, `person-form-tab-*`, which are gone), `person-form-actions` (the sticky Cancel/Save bar; every `FormCard` form has one, as `{form}-actions`)
 - `person-form-label-{field}`, `person-form-input-{field}`, `person-form-error-{field}` — **now present on all 12 fields**, not only `name`/`document`/`email` (a gap the React Hook Form rewrite closed; a field with no validation rule simply never populates its `-error-` slot)
-- `person-form-multiselect-types` (a person can hold more than one type at once — a searchable multi-select, `components/ui/multi-select.tsx`, with a chip per selected type; replaced the standalone checkbox group), `person-form-error-types`
+- `person-form-types` (the group), `person-form-type-{client|supplier|user|employee}` (a toggle chip each, `aria-pressed` — a person can hold more than one type at once; replaced the multi-select, `person-form-multiselect-types`), `person-form-error-types`
 - `person-form-input-document-type` (select — only rendered when `types` includes `CLIENT` or `SUPPLIER`), `person-form-error-document-type`, `person-form-checkbox-active`
 - `person-form-button-save`, `person-form-button-cancel`
 - `person-record-button-edit`, `person-record-link-back` (the read-only view route)

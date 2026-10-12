@@ -4,8 +4,16 @@ import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
   FOREIGN_KEY_VIOLATION,
   RECORD_NOT_FOUND,
+  UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
+
+/**
+ * A person's only unique constraint is `(document, documentType)`, so a unique
+ * violation on a write can only mean the document is already registered. Two
+ * people without a document never collide: Postgres treats nulls as distinct.
+ */
+const DOCUMENT_TAKEN = 'A person with this document already exists';
 
 /**
  * The boundary where Prisma stops. Its error codes are translated into domain
@@ -49,8 +57,15 @@ export const personRepository = {
     return prisma.person.findUnique({ where: { id } });
   },
 
-  create(data: Prisma.PersonCreateInput): Promise<PersonRow> {
-    return prisma.person.create({ data });
+  async create(data: Prisma.PersonCreateInput): Promise<PersonRow> {
+    try {
+      return await prisma.person.create({ data });
+    } catch (error) {
+      if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
+        throw new ConflictError(DOCUMENT_TAKEN);
+      }
+      throw error;
+    }
   },
 
   async update(id: string, data: Prisma.PersonCreateInput): Promise<PersonRow> {
@@ -59,6 +74,9 @@ export const personRepository = {
     } catch (error) {
       if (isPrismaCode(error, RECORD_NOT_FOUND)) {
         throw new NotFoundError('Person not found');
+      }
+      if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
+        throw new ConflictError(DOCUMENT_TAKEN);
       }
       throw error;
     }

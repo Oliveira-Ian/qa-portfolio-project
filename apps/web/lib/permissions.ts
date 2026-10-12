@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { redirect } from 'next/navigation';
 import type { MeResponse, PermissionKey } from '@oliveira/schemas';
 import { requestMe } from './api/auth';
 import { unwrap } from './api/client';
@@ -17,20 +16,14 @@ import { requireSession } from './session';
  *
  * A 401 here means the cookie is well-formed but the token itself is no
  * longer good (expired past `JWT_EXPIRES_IN`, or the account was deactivated
- * mid-session) — routed through `/api/session/expire` rather than straight to
- * `/login`, because a Server Component can redirect but can't clear the
- * cookie itself, and `proxy.ts` would otherwise see the still-present cookie
- * and bounce `/login` right back to `/home`.
+ * mid-session). `apiRequest` handles that for every call, this one included: it
+ * clears the cookie through `/api/session/expire` and sends the user to `/login`
+ * (`lib/api/client.ts` says why it can't be a plain redirect).
  */
 export const getMe = cache(async (): Promise<MeResponse> => {
   const { token } = await requireSession();
-  const result = await requestMe(token);
 
-  if (!result.success && result.status === 401) {
-    redirect('/api/session/expire');
-  }
-
-  return unwrap(result);
+  return unwrap(await requestMe(token));
 });
 
 /** Whether the caller administers their own company — layer 2 of docs/adr/0018; it grants nothing in a product. */
