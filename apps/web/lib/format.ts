@@ -51,8 +51,22 @@ export function formatDateTime(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? '—' : dateTimeFormatter.format(date);
 }
 
-export function formatCount(value: number): string {
-  return numberFormatter.format(value);
+const countFormatters = new Map<string, Intl.NumberFormat>();
+
+/** A count in the interface language's digits and grouping (`1,234` / `1.234`); pt-BR when none is given. */
+export function formatCount(value: number, locale: string = LOCALE): string {
+  if (locale === LOCALE) {
+    return numberFormatter.format(value);
+  }
+
+  let formatter = countFormatters.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale);
+    countFormatters.set(locale, formatter);
+  }
+
+  return formatter.format(value);
 }
 
 export function formatCurrency(value: number | null | undefined): string {
@@ -118,4 +132,32 @@ export function toIsoDate(date: Date): string {
 /** Falls back to an em dash so an empty cell still reads as deliberate. */
 export function orDash(value: string | null | undefined): string {
   return value?.trim() ? value : '—';
+}
+
+const mediumDateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * "Sep 29, 2026" / "29 de set. de 2026": a date in the **interface** language
+ * (handoff § 7: language is not data — the UI language picks the format). Still
+ * read in UTC, for the same reason as `formatDate`.
+ */
+export function formatDateMedium(value: string | null | undefined, locale: string): string {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  let formatter = mediumDateFormatters.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+    mediumDateFormatters.set(locale, formatter);
+  }
+
+  return formatter.format(date);
 }

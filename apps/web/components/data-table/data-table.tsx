@@ -10,6 +10,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useT } from '@/lib/i18n/provider';
 import {
   Table,
   TableBody,
@@ -59,6 +60,7 @@ export function DataTable<TData>({
   rowActions,
   getRowLabel,
 }: DataTableProps<TData>) {
+  const t = useT();
   const rows = table.getRowModel().rows;
   // Hidden columns don't render a cell, so a `colSpan` that still counted
   // them made the empty-state placeholder wider than the visible table
@@ -70,14 +72,14 @@ export function DataTable<TData>({
 
   return (
     <div className="overflow-x-auto" data-testid={`${testIdPrefix}-table-container`}>
-      <Table data-testid={`${testIdPrefix}-table`}>
+      <Table stacked data-testid={`${testIdPrefix}-table`}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {enableSelection ? (
                 <TableHead className="w-10">
                   <Checkbox
-                    aria-label="Select all rows on this page"
+                    aria-label={t('table.selectAll')}
                     data-testid={`${testIdPrefix}-checkbox-select-all`}
                     checked={isAllSelected ? true : isSomeSelected ? 'indeterminate' : false}
                     onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked === true)}
@@ -85,10 +87,23 @@ export function DataTable<TData>({
                 </TableHead>
               ) : null}
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
+                <TableHead
+                  key={header.id}
+                  aria-sort={
+                    header.column.getIsSorted() === 'asc'
+                      ? 'ascending'
+                      : header.column.getIsSorted() === 'desc'
+                        ? 'descending'
+                        : header.column.getCanSort()
+                          ? 'none'
+                          : undefined
+                  }
+                >
+                  {header.isPlaceholder ? null : header.column.id === 'actions' ? (
+                    <span className="sr-only">{t('table.rowActions')}</span>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
                 </TableHead>
               ))}
             </TableRow>
@@ -141,18 +156,26 @@ export function DataTable<TData>({
                   {enableSelection ? (
                     <TableCell onClick={(event) => event.stopPropagation()}>
                       <Checkbox
-                        aria-label={`Select ${rowLabel}`}
+                        aria-label={t('table.selectRow', { name: rowLabel })}
                         data-testid={`${testIdPrefix}-checkbox-row`}
                         checked={row.getIsSelected()}
                         onCheckedChange={(checked) => row.toggleSelected(checked === true)}
                       />
                     </TableCell>
                   ) : null}
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const labelKey = cell.column.columnDef.meta?.labelKey;
+
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        {...(labelKey ? { 'data-label': t(labelKey) } : {})}
+                        {...(cell.column.id === 'actions' ? { 'data-card-corner': true } : {})}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
 

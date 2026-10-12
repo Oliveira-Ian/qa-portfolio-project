@@ -1,9 +1,11 @@
 import '@tanstack/react-table';
+import type { MessageKey } from '@/lib/i18n/translate';
 
 export type FilterType = 'text' | 'boolean' | 'enum' | 'date' | 'number';
 
 export interface FilterOption {
-  label: string;
+  /** The option's wording, as a catalogue key — a filter is shown in the interface language. */
+  labelKey: MessageKey;
   value: string;
 }
 
@@ -18,7 +20,7 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
     filterType?: FilterType | undefined;
     filterOptions?: FilterOption[] | undefined;
-    /** Shown in `GridCustomizationModal`/`ExportModal` column pickers — falls back to the column id. */
-    label?: string | undefined;
+    /** Catalogue key of the column's name — for active-filter chips; falls back to a humanised column id. */
+    labelKey?: MessageKey | undefined;
   }
 }

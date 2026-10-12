@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/provider';
 
 export interface ComboboxOption {
   value: string;
@@ -39,13 +40,14 @@ export function Combobox({
   options,
   value,
   onChange,
-  placeholder = 'Select…',
-  searchPlaceholder = 'Search…',
-  emptyText = 'No results found.',
+  placeholder,
+  searchPlaceholder,
+  emptyText,
   disabled,
   className,
   ...props
 }: ComboboxProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -76,7 +78,7 @@ export function Combobox({
           {...props}
         >
           <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
-            {selected ? selected.label : placeholder}
+            {selected ? selected.label : (placeholder ?? t('common.select'))}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </button>
@@ -93,11 +95,11 @@ export function Combobox({
               autoFocus
               value={query}
               onValueChange={setQuery}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t('table.search.placeholder')}
             />
           </div>
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>{emptyText ?? t('common.noResults')}</CommandEmpty>
             {results.map((option) => (
               <CommandItem
                 key={option.value}

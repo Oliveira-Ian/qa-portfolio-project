@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/provider';
 
 /** A discreet tint, reusing the same token pairs `PersonTypeBadge` already uses — no new colors. */
 export type MultiSelectTone = 'neutral' | 'primary' | 'signal' | 'success' | 'destructive';
@@ -67,14 +68,15 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = 'Select…',
-  searchPlaceholder = 'Search…',
-  emptyText = 'No results found.',
+  placeholder,
+  searchPlaceholder,
+  emptyText,
   renderTag,
   disabled,
   className,
   ...props
 }: MultiSelectProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -125,7 +127,7 @@ export function MultiSelect({
           {...props}
         >
           {selected.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{placeholder ?? t('common.select')}</span>
           ) : (
             selected.map((option) => {
               const handleRemove = () => remove(option.value);
@@ -170,11 +172,11 @@ export function MultiSelect({
               autoFocus
               value={query}
               onValueChange={setQuery}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t('table.search.placeholder')}
             />
           </div>
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>{emptyText ?? t('common.noResults')}</CommandEmpty>
             {results.map((option) => (
               <CommandItem
                 key={option.value}

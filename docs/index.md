@@ -10,10 +10,12 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 - **Versions, releases, hotfixes, Docker images**: `docs/process/versioning.md` (reasoning:
   `docs/adr/0010`).
 - **HTML/CSS UI**:
-  - Tokens (the "Olival" palette, light + dark): `docs/design/tokens.md`
-  - Typography (Archivo / Inter / IBM Plex Mono): `docs/design/typography.md`
-  - Auth layout (login/register): `docs/design/layouts/auth.md`
-  - Dashboard layout (header/sidebar): `docs/design/layouts/dashboard.md`
+  - Tokens (the Oliveira palette and the three product accents; light only): `docs/design/tokens.md`
+  - Typography (Archivo / JetBrains Mono): `docs/design/typography.md`
+  - Auth layout (sign in / create account): `docs/design/layouts/auth.md`
+  - The shell (global bar / sidebar / breadcrumb / guard states): `docs/design/layouts/dashboard.md`
+  - The Platform (Home, company, members, product access): `docs/design/layouts/platform.md`
+  - Interface language (adding a message, a language, translating API messages): `docs/design/i18n.md`
   - Base components: `docs/design/components/`
   - Listing/table pattern: `docs/design/patterns/listing_pages.md`
   - Accessibility: `docs/design/accessibility.md`
@@ -50,21 +52,25 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 
 ### Auth and access control
 
-Sessions are JWTs (`jose`, 8h expiry) issued by `POST /api/auth/login`, stored in an **httpOnly** cookie by a Server Action — never in `localStorage`, never read by client JavaScript. `apps/web/proxy.ts` (Next 16's renamed convention for `middleware.ts`) redirects unauthenticated visits to `(dashboard)` routes to `/login`; `apps/web/lib/session.ts#requireSession()` in each `layout.tsx` is the actual check. A well-formed cookie whose token the API no longer honors (expired, or the account was deactivated) is routed through `apps/web/app/api/session/expire/route.ts` — the one place outside sign-out that clears the cookie — rather than surfacing a raw "Unauthorized" error.
+Sessions are JWTs (`jose`, 8h expiry) issued by `POST /api/auth/login`, stored in an **httpOnly** cookie by a Server Action — never in `localStorage`, never read by client JavaScript. `apps/web/proxy.ts` (Next 16's renamed convention for `middleware.ts`) redirects unauthenticated visits to `/home`, `/company`, `/erp` and `/fsm` to `/login`; `apps/web/lib/session.ts#requireSession()` in each `layout.tsx` is the actual check. A well-formed cookie whose token the API no longer honors (expired, or the account was deactivated) is routed through `apps/web/app/api/session/expire/route.ts` — the one place outside sign-out that clears the cookie — rather than surfacing a raw "Unauthorized" error.
 
 Every `/api/*` route except `/api/auth/login`, `/api/auth/register` and `/health` requires `Authorization: Bearer <token>`. Authorization has four layers, none of which grants anything in the next (`docs/adr/0018`): the account's role on the Platform (`SUPER_ADMIN`, `requireRole`), its membership in a company (`requireCompanyAdmin`), a seat in a product its company contracted (`requireProductAccess('ERP')`, before every ERP route), and the product's own permissions (`requirePermission('person:view')`, …, granted by profiles — no role is exempt). The token proves identity only: `requireAuth` reads the account's existence, `active` flag and `role`, and its company, contracts and seats, from the database on every request, so a deactivation, a demotion or a revoked seat applies immediately. Passwords are bcrypt-hashed (`apps/api/src/modules/auth/password.ts`). Full model: `docs/product/access_control.md`; specification: `docs/especificacoes/platform-access-model.md`.
 
-`apps/web` has: the auth pages (`/login`, `/register`), a public landing page (`/`) and the design-system reference (`/styleguide`), and the dashboard — `/home` (always accessible) plus every business screen nested under a Module/Group/Category/Routine path from `apps/web/lib/navigation/catalog.ts`:
+`apps/web` is organised in **areas** (`docs/adr/0019`), each with its own layout and its own guard:
 
-- People CRUD: `/records/people/people`, `.../new`, `.../[id]`, `.../[id]/edit` (the edit/view pages also carry the conditional Access Account section for `USER`-typed people).
-- Profiles CRUD: `/administration/access-control/profiles`, `.../new`, `.../[id]/edit`.
-- Access Control (accounts): `/administration/access-control/users` — list accounts, toggle active, change role, manage profile links.
+- the **auth** pages (`/login`, `/register`) and the design-system reference (`/styleguide`); `/` redirects to `/home` or `/login`;
+- the **Platform** (`app/(platform)/`): `/home` — always accessible: the products the company uses and the user's access to each — and, for a company admin, `/company`, `/company/members` (and `/company/members/:id`) and `/company/product-access` (`docs/design/layouts/platform.md`);
+- **Oliveira ERP** (`app/erp/`, behind an ERP seat — without one the user sees the global bar and an explanation): `/erp` (the overview) plus every business screen nested under a Module/Group/Routine path from `apps/web/lib/navigation/catalog.ts`:
+  - People CRUD: `/erp/records/people/people`, `.../new`, `.../[id]`, `.../[id]/edit` (the edit/view pages also carry the conditional Access Account section for `USER`-typed people).
+  - Profiles CRUD: `/erp/administration/access-control/profiles`, `.../new`, `.../[id]/edit`.
+  - Access Control (accounts): `/erp/administration/access-control/users` — list accounts, toggle active, change role, manage profile links.
+- **Oliveira FSM** (`/fsm`): a "coming soon" placeholder.
 
 Every one of these hrefs is a typed reference into `apps/web/lib/navigation/routes.ts#ROUTES`
 (derived from the catalog's Module/Group/Routine slugs — Category stays part of the catalog and the
 breadcrumb, but isn't a URL segment) rather than hand-typed at each call site.
 
-The old flat paths (`/people`, `/profiles`, `/users`) still work, as do the first nested paths this migration used (with a repeated Category segment, e.g. `/cadastros/pessoas/cadastros/pessoas`) and the Portuguese paths the catalog used before the project's Language Standard translated it to English (e.g. `/cadastros/pessoas/pessoas`) — `next.config.ts` permanently redirects every era to today's paths. The sidebar, breadcrumb and global search (`Ctrl+Shift+F`) are all driven by the same catalog, and every page/Server Action reference is a typed `ROUTES.*` value (`apps/web/lib/navigation/routes.ts`) rather than a hand-typed string — nothing hardcodes a nav item or a URL outside those two places. Full layout: `docs/design/layouts/dashboard.md`.
+The ERP's URLs used to live at the root: `/records/...` and `/administration/...` (and, before them, the flat `/people`, `/profiles`, `/users`, the first nested paths with a repeated Category segment, and the Portuguese paths the catalog used before the project's Language Standard translated it to English) — `next.config.ts` permanently redirects every era to today's `/erp/...` paths. The sidebar, breadcrumb and global search (`Ctrl+Shift+F`) are all driven by the same catalog, and every page/Server Action reference is a typed `ROUTES.*` value — nothing hardcodes a nav item or a URL outside those two places. The interface is available in English and Brazilian Portuguese (`docs/design/i18n.md`). Full layout: `docs/design/layouts/dashboard.md`.
 
 ## Quick Start (apps/api)
 

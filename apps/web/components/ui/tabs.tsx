@@ -6,6 +6,12 @@ import { Tabs as TabsPrimitive } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * The design's tabs are one style: an underline in the product accent, with an
+ * optional count pill (`TabsCount`). They scroll horizontally on narrow screens
+ * and never wrap. `variant` is kept so existing call sites still type-check, but
+ * both values render the same underline.
+ */
 function Tabs({
   className,
   orientation = 'horizontal',
@@ -22,12 +28,12 @@ function Tabs({
 }
 
 const tabsListVariants = cva(
-  'group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none',
+  'group/tabs-list flex w-full items-center gap-0.5 overflow-x-auto border-b border-border [scrollbar-width:none] group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col [&::-webkit-scrollbar]:hidden',
   {
     variants: {
       variant: {
-        default: 'bg-muted',
-        line: 'gap-1 bg-transparent',
+        default: '',
+        line: '',
       },
     },
     defaultVariants: {
@@ -56,10 +62,25 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        'group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent',
-        'data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground',
-        'after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100',
+        "group/tab relative -mb-px inline-flex h-[42px] shrink-0 items-center gap-2 border-0 bg-transparent px-3 text-sm font-medium whitespace-nowrap text-text-3 transition-colors duration-100 outline-none hover:text-foreground disabled:pointer-events-none disabled:text-text-disabled aria-disabled:text-text-disabled data-[state=active]:font-semibold data-[state=active]:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        // The hover/focus plate sits inside the tab, the indicator on its bottom edge.
+        'before:absolute before:inset-x-0.5 before:inset-y-[5px] before:rounded-md before:bg-transparent before:transition-colors hover:before:bg-foreground/5 focus-visible:before:ring-2 focus-visible:before:ring-ring',
+        'after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-transparent after:transition-colors data-[state=active]:after:bg-primary',
+        '*:relative *:z-10',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** The number beside a tab's label — mono, in a pill that takes the accent tint when the tab is active. */
+function TabsCount({ className, ...props }: React.ComponentProps<'span'>) {
+  return (
+    <span
+      data-slot="tabs-count"
+      className={cn(
+        'rounded-full bg-subtle px-[7px] py-0.5 font-mono text-[11px] font-medium text-text-3 group-data-[state=active]/tab:bg-primary-light group-data-[state=active]/tab:text-primary',
         className,
       )}
       {...props}
@@ -77,4 +98,4 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
   );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabsCount, tabsListVariants };

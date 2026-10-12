@@ -2,7 +2,7 @@
 
 Standard for pages that list a resource with sorting, filtering, column personalization, export
 and row selection. First implemented by People
-(`apps/web/app/(dashboard)/records/people/people/`), rebuilt on the shared
+(`apps/web/app/erp/records/people/people/`), rebuilt on the shared
 infrastructure in `apps/web/components/data-table/` described below — every listing screen composes
 the same pieces rather than rewriting a table by hand. Profiles
 (`.../administration/access-control/profiles/_components/profile-list.tsx`) and Users

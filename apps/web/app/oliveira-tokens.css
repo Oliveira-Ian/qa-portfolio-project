@@ -1,0 +1,222 @@
+/* =============================================================================
+   Oliveira Platform — Design tokens v1.1
+   Source of truth: the "Oliveira — Design System" canvas (boards 01–07).
+   Light is the only official theme. Dark mode is prepared (semantic layer) but
+   NOT designed or enabled.
+   Scopes:  :root / [data-theme]  = shared by every product (Platform-owned)
+            [data-product=…]      = the only per-product values (accent)
+   Components must read semantic tokens (--olv-bg, --olv-text, --olv-accent-*…),
+   never raw palette values.
+   ========================================================================== */
+
+:root {
+  /* ---------- Palette (raw values; do not use directly in components) ---------- */
+  --olv-navy-600: #1e2c47; /* brand navy — Platform accent */
+  --olv-navy-700: #16223a;
+  --olv-navy-800: #0f182b;
+  --olv-navy-100: #d6dce8;
+  --olv-navy-50: #e9ecf3;
+  --olv-gold-300: #c8ae72; /* brand gold — Platform accent on dark; never text on white */
+  --olv-carmine: #7d2331; /* brand only: logo and brand pieces. NEVER an error or UI state */
+
+  --olv-olive-600: #4f6b3a;
+  --olv-olive-700: #3f5630;
+  --olv-olive-800: #314326;
+  --olv-olive-300: #a3be85;
+  --olv-olive-100: #dce6d0;
+  --olv-olive-50: #edf2e6;
+
+  --olv-terracotta-600: #a4502b;
+  --olv-terracotta-700: #8a4221;
+  --olv-terracotta-800: #71361b;
+  --olv-terracotta-300: #e39a70;
+  --olv-terracotta-100: #f0d8c9;
+  --olv-terracotta-50: #f8ece4;
+
+  /* ---------- Typography ---------- */
+  /* Only change from the handoff: the families come from next/font (self-hosted
+     variable Archivo with wdth, JetBrains Mono), whose CSS variables are set on
+     <html> in app/layout.tsx; the named family stays as the fallback. */
+  --olv-font-sans:
+    var(--font-archivo), 'Archivo', system-ui, sans-serif; /* variable: wght 400–600, wdth 88–118 */
+  --olv-font-mono:
+    var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace; /* 400–500 */
+  --olv-font-display-stretch: 118%; /* display only (Platform: auth + Home greeting) */
+  --olv-font-condensed-stretch: 88%; /* only table headers, sidebar labels, badges when pt-BR overflows */
+
+  --olv-text-display: 600 38px/42px var(--olv-font-sans); /* + font-stretch 118%, letter-spacing -0.02em; mobile 28/31 */
+  --olv-text-title-l: 600 32px/38px var(--olv-font-sans); /* auth titles, -0.015em */
+  --olv-text-h1: 600 28px/34px var(--olv-font-sans); /* page title, -0.01em; mobile 24 */
+  --olv-text-h2: 600 18px/24px var(--olv-font-sans);
+  --olv-text-h3: 600 16px/22px var(--olv-font-sans);
+  --olv-text-body-l: 400 16px/24px var(--olv-font-sans);
+  --olv-text-body: 400 14px/21px var(--olv-font-sans);
+  --olv-text-label: 500 13px/18px var(--olv-font-sans);
+  --olv-text-caption: 400 12.5px/18px var(--olv-font-sans);
+  --olv-text-overline: 500 11px/14px var(--olv-font-mono); /* uppercase via CSS, letter-spacing 0.12em */
+  --olv-text-data: 400 13px/18px var(--olv-font-mono); /* codes, CPF/CNPJ, dates */
+
+  /* ---------- Spacing (4px base) ---------- */
+  --olv-space-1: 4px;
+  --olv-space-2: 8px;
+  --olv-space-3: 12px;
+  --olv-space-4: 16px;
+  --olv-space-5: 20px;
+  --olv-space-6: 24px;
+  --olv-space-8: 32px;
+  --olv-space-10: 40px;
+  --olv-space-12: 48px;
+  --olv-gutter: 48px; /* 32px ≤1279, 16px <768 */
+
+  /* ---------- Sizing ---------- */
+  --olv-control-sm: 32px;
+  --olv-control-md: 36px;
+  --olv-control-lg: 44px;
+  --olv-input-h: 40px;
+  --olv-input-h-lg: 44px;
+  --olv-row-h: 48px;
+  --olv-row-h-avatar: 58px;
+  --olv-row-h-head: 40px;
+  --olv-globalbar-h: 52px;
+  --olv-globalbar-h-mobile: 56px;
+  --olv-sidebar-w: 232px;
+  --olv-rail-w: 64px;
+  --olv-drawer-w: 480px;
+  --olv-modal-w: 520px;
+  --olv-touch-min: 44px;
+
+  /* ---------- Radius ---------- */
+  --olv-radius-xs: 4px; /* status badges, kbd */
+  --olv-radius-sm: 6px; /* buttons, inputs, tabs, nav items */
+  --olv-radius-md: 10px; /* cards, tables, panels, menus */
+  --olv-radius-lg: 12px; /* product cards, modals */
+  --olv-radius-full: 999px; /* tags, switches, avatars */
+
+  /* ---------- Elevation ---------- */
+  --olv-elev-xs: 0 1px 2px rgba(18, 21, 27, 0.06); /* secondary buttons, inputs */
+  --olv-elev-hover:
+    0 1px 2px rgba(18, 21, 27, 0.04), 0 8px 20px rgba(18, 21, 27, 0.08); /* clickable cards on hover + translateY(-2px) */
+  --olv-elev-menu: 0 8px 24px rgba(18, 21, 27, 0.14), 0 1px 2px rgba(18, 21, 27, 0.06);
+  --olv-elev-overlay: 0 16px 40px rgba(18, 21, 27, 0.22), 0 2px 6px rgba(18, 21, 27, 0.1);
+  --olv-scrim: rgba(18, 21, 27, 0.48);
+
+  /* ---------- Motion ---------- */
+  --olv-dur-fast: 120ms; /* colour, border, background */
+  --olv-dur-base: 160ms; /* card lift, switch knob, tab indicator */
+  --olv-delay-tip: 200ms; /* tooltip on hover; immediate on keyboard focus */
+  --olv-ease: ease;
+  --olv-spin: 700ms linear infinite;
+
+  /* ---------- Toast (existing component, restyled) ---------- */
+  --olv-toast-w: 380px; /* mobile: 100% − 2 × 16px */
+  --olv-toast-offset: 24px; /* from viewport edges; mobile 16px + safe area */
+  --olv-toast-gap: 10px;
+  --olv-toast-max-visible: 3; /* mobile: 1 */
+  --olv-toast-in: 200ms; /* rise 8px + fade */
+  --olv-toast-out: 160ms; /* slide 16px + fade */
+  --olv-toast-d-success: 5s; /* keep existing durations if the component defines them */
+  --olv-toast-d-info: 5s;
+  --olv-toast-d-warning: 7s;
+  --olv-toast-d-action-min: 8s;
+  /* danger: no auto-dismiss */
+}
+
+/* ---------- Theme: light (official, default) ---------- */
+:root,
+[data-theme='light'] {
+  --olv-bg: #f4f2ed;
+  --olv-surface: #ffffff;
+  --olv-surface-2: #f8f7f3; /* table header, read-only, footers */
+  --olv-surface-hover: #faf9f6; /* table row hover */
+  --olv-subtle: #eeebe4; /* neutral chips, disabled fill */
+  --olv-divider: #efede7;
+  --olv-border: #e4e0d8; /* decorative: cards, tables */
+  --olv-border-button: #d3cec4; /* secondary buttons */
+  --olv-border-control: #9a958b; /* inputs, checkboxes — ≥ 3:1 on white */
+  --olv-border-control-hover: #6f6b63;
+
+  --olv-text: #16181d;
+  --olv-text-2: #3b3f47;
+  --olv-text-3: #5a5e67; /* help/meta — 5.6:1 on bg */
+  --olv-text-placeholder: #8b8f97;
+  --olv-text-disabled: #9a9da4;
+
+  /* shell (global bar + sidebars) — dark in every theme */
+  --olv-shell: #12151b;
+  --olv-shell-2: #1a1e26;
+  --olv-shell-control: #1f242d;
+  --olv-shell-control-hover: #272d38;
+  --olv-shell-border: #2a2f39;
+  --olv-shell-active: #262a31;
+  --olv-shell-text: #c9ccd3;
+  --olv-shell-text-muted: #9ca0a8;
+  --olv-shell-focus: var(--olv-gold-300);
+
+  /* semantic tones: 600 = icon/border/dot, 50 = fill, on = text on fill */
+  --olv-success-600: #2d7a4f;
+  --olv-success-50: #e6f2ea;
+  --olv-success-on: #1f5e3a;
+  --olv-success-border: #b9dcc5;
+  --olv-warning-600: #9a6412;
+  --olv-warning-50: #f7eedc;
+  --olv-warning-on: #6e470c;
+  --olv-warning-border: #e6cfa3;
+  --olv-danger-600: #b3261e;
+  --olv-danger-50: #f9e7e5;
+  --olv-danger-on: #8c1d17;
+  --olv-danger-border: #e8b4af;
+  --olv-danger-700: #971f18;
+  --olv-danger-800: #7d1913;
+  --olv-info-600: #2f5e9e;
+  --olv-info-50: #e6edf7;
+  --olv-info-on: #244b80;
+  --olv-info-border: #bccde6;
+  --olv-neutral-600: #8b8f97;
+  --olv-neutral-50: #eeebe4;
+  --olv-neutral-on: #3b3f47;
+
+  --olv-focus: var(--olv-navy-600); /* ring: 0 0 0 2px surface, 0 0 0 4px focus */
+}
+
+/* ---------- Theme: dark (RESERVED — not designed, do not enable) ----------
+[data-theme="dark"] {
+  Redefine only the semantic tokens above (--olv-bg … --olv-text-*, --olv-border-*,
+  tones). Keep brand colours. Use --olv-accent-300 as the accent on dark surfaces.
+}
+--------------------------------------------------------------------------- */
+
+/* ---------- Product scopes: the ONLY per-product values ---------- */
+:root,
+[data-product='platform'] {
+  --olv-accent-600: var(--olv-navy-600);
+  --olv-accent-700: var(--olv-navy-700);
+  --olv-accent-800: var(--olv-navy-800);
+  --olv-accent-300: var(--olv-gold-300);
+  --olv-accent-100: var(--olv-navy-100);
+  --olv-accent-50: var(--olv-navy-50);
+  --olv-accent-disabled-bg: #e4e7ee;
+  --olv-accent-disabled-fg: #6c778c;
+}
+[data-product='erp'] {
+  --olv-accent-600: var(--olv-olive-600);
+  --olv-accent-700: var(--olv-olive-700);
+  --olv-accent-800: var(--olv-olive-800);
+  --olv-accent-300: var(--olv-olive-300);
+  --olv-accent-100: var(--olv-olive-100);
+  --olv-accent-50: var(--olv-olive-50);
+  --olv-accent-disabled-bg: #e4eadd;
+  --olv-accent-disabled-fg: #6c7d5f;
+}
+[data-product='fsm'] {
+  --olv-accent-600: var(--olv-terracotta-600);
+  --olv-accent-700: var(--olv-terracotta-700);
+  --olv-accent-800: var(--olv-terracotta-800);
+  --olv-accent-300: var(--olv-terracotta-300);
+  --olv-accent-100: var(--olv-terracotta-100);
+  --olv-accent-50: var(--olv-terracotta-50);
+  --olv-accent-disabled-bg: #f2e6de;
+  --olv-accent-disabled-fg: #946652;
+}
+/* Product ACCESS UI (access badges, product-access switches) always uses the
+   Platform scope — never the product accent — so access never looks like a
+   product permission. */

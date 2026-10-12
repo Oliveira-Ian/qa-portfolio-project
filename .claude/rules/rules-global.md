@@ -23,7 +23,7 @@ are semantic and descriptive (e.g. `person-list.tsx`, `create-profile-form.tsx`,
 `get-grid-preferences.ts`), never a generic name like `content.tsx`:
 
 - app/
-  - (dashboard)/
+  - erp/
     - records/people/people/
       - `_components/` # UI for the routine — e.g. `person-list.tsx`, `person-columns.tsx`
       - `_data-access/` # Data Access Layer (DAL) for the routine
@@ -34,7 +34,7 @@ a leading `_` as a private folder that never becomes a route. This is the one co
 throughout the codebase; a folder without the underscore is not a variant, it's a typo.
 
 Full file tree, per-file responsibilities, and a worked example: `docs/templates/new-routine.md`
-(People — `apps/web/app/(dashboard)/records/people/people/` — is the reference implementation).
+(People — `apps/web/app/erp/records/people/people/` — is the reference implementation).
 The Server Component / Client Component / Server Action / Data Access layering itself — what each
 layer is responsible for, and the request-to-response flow through them — lives in
 `.claude/rules/nextjs-page-pattern.md`, which only loads while working under `apps/web/app/**` or
@@ -62,12 +62,15 @@ values (e.g. profile names). This was already true almost everywhere in the code
 before this rule existed — this section makes it explicit and permanent so it never
 drifts back.
 
-**Display text shown to the user is also English for now.** A future i18n phase may
-introduce a language switcher for end-user-facing text — that is a separate,
-deliberate project, not something to bolt on ad hoc. Until that phase exists, do not
-add Portuguese strings anywhere, including a "just this one label" exception — the
-last time that happened (the navigation catalog), it silently became the only
-Portuguese surface in an otherwise all-English app.
+**Display text shown to the user lives in the message catalogues** (`apps/web/lib/i18n/`, the
+i18n phase this section used to announce — `docs/design/i18n.md`): English is the default and the
+fallback, `pt-BR` the second language, and a language switch exists on the auth screens and in the
+account menu. Portuguese strings belong in `pt-BR.ts` and its sibling catalogue files and **nowhere
+else** — not as a literal in a component, and not as a "just this one label" exception: the last time
+that happened (the navigation catalog), it silently became the only Portuguese surface in an
+otherwise all-English app. A new user-facing string is a catalogue key, in English and in
+Portuguese, used through `useT()` / `getTranslator()`. Product names are proper nouns and are never
+translated.
 
 Portuguese business/domain vocabulary may still appear as prose in comments or docs
 when it's genuinely clearer that way (e.g. explaining a Brazil-specific document
