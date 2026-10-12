@@ -1,5 +1,9 @@
 # 0007 — 4-level navigation catalog, 3-segment URLs
 
+> **Updated by [0019](0019-erp-existing-product-and-product-areas.md).** Products are areas under
+> their own route prefix (`/erp`, `/fsm`); the three segments described here are the part of the URL
+> inside an area, and there is one navigation catalog per area.
+
 ## Context
 
 `apps/web/lib/navigation/catalog.ts` is a sealed catalog, Module → Group → Category → Routine, that
