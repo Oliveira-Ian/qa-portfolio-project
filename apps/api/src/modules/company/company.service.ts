@@ -1,5 +1,17 @@
-import { PRODUCTS, PRODUCT_LABELS, type MeMembership, type Product } from '@oliveira/schemas';
+import {
+  PRODUCTS,
+  PRODUCT_LABELS,
+  type CompanyMemberDto,
+  type CompanyMembersDto,
+  type MeMembership,
+  type MemberAddInput,
+  type MemberUpdateInput,
+  type Product,
+  type SeatChangeDto,
+} from '@oliveira/schemas';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors.js';
+import { requireCompanyId } from '../../shared/request-context.js';
+import { toMemberDto } from './company.mapper.js';
 import { companyRepository } from './company.repository.js';
 
 /** What an account may enter right now — the answer to layers 2 and 3 of docs/adr/0018. */
@@ -64,6 +76,71 @@ export const companyService = {
       isCompanyActive,
       products,
     };
+  },
+
+  /** The caller's company: its contracts with the seats in use, and every member with the seats they hold. */
+  async listMembers(): Promise<CompanyMembersDto> {
+    const companyId = requireCompanyId();
+
+    const [company, contracts, seatsUsed, members] = await Promise.all([
+      companyRepository.findCompany(companyId),
+      companyRepository.findContracts(companyId),
+      companyRepository.countSeatsUsed(companyId),
+      companyRepository.listMembers(companyId),
+    ]);
+
+    if (!company) {
+      throw new NotFoundError('Company not found');
+    }
+
+    return {
+      company: { id: company.id, name: company.tradeName ?? company.legalName },
+      products: contracts.map((contract) => ({
+        product: contract.product,
+        status: contract.status,
+        seatLimit: contract.seatLimit,
+        seatsUsed: seatsUsed.get(contract.product) ?? 0,
+      })),
+      members: members.map(toMemberDto),
+    };
+  },
+
+  /**
+   * Returns the new membership, or `null` when nothing was added. The route
+   * answers the same either way, so the response never says whether an address
+   * has an account (until invitations replace this, docs/adr/0018).
+   */
+  async addMember(input: MemberAddInput): Promise<{ id: string; accountId: number } | null> {
+    const membership = await companyRepository.addMemberByEmail(requireCompanyId(), input.email);
+
+    return membership ? { id: membership.id, accountId: membership.accountId } : null;
+  },
+
+  async updateMember(id: string, input: MemberUpdateInput): Promise<CompanyMemberDto> {
+    return toMemberDto(await companyRepository.updateMember(id, requireCompanyId(), input));
+  },
+
+  /** `changed` is false when the member already held the seat. */
+  async grantSeat(id: string, product: Product, grantedById: number): Promise<SeatChangeDto> {
+    const changed = await companyRepository.grantSeat({
+      membershipId: id,
+      companyId: requireCompanyId(),
+      product,
+      grantedById,
+    });
+
+    return { product, changed };
+  },
+
+  /** `changed` is false when the member held no such seat. */
+  async revokeSeat(id: string, product: Product): Promise<SeatChangeDto> {
+    const changed = await companyRepository.revokeSeat({
+      membershipId: id,
+      companyId: requireCompanyId(),
+      product,
+    });
+
+    return { product, changed };
   },
 
   /**
