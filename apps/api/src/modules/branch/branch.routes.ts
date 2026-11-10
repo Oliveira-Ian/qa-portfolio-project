@@ -3,22 +3,30 @@ import { branchWriteSchema } from '@oliveira/schemas';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import type { WithId } from '../../shared/params.js';
 import { requireAuth } from '../auth/require-auth.js';
-import { requireCompanyAdmin, requireCompanyMember } from '../auth/authorize.js';
+import { requireAnyOf, requirePermission, requireProductAccess } from '../auth/authorize.js';
 import { branchController } from './branch.controller.js';
 
 /**
- * The caller's company's branches (docs/adr/0013, addendum). Any member reads
- * them — a work order may name one, whatever product it lives in; only the
- * company's administrator creates and edits them. No delete: a branch is
- * deactivated, so the records that name it keep their history.
+ * The company's branches (docs/adr/0013, addendum), managed inside a product
+ * with that product's permissions — one table for every product, mounted per
+ * product the way profiles are. Only the FSM mounts it today
+ * (`/api/fsm/branches`); the ERP would mount it with its own `branch:*` keys.
+ *
+ * Reading the list is also open to whoever creates or edits work orders: a
+ * work order may name a branch.
  */
-export async function branchRoutes(app: FastifyInstance) {
+export async function fsmBranchRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireProductAccess('FSM'));
 
   app.get(
     '/',
     {
-      preHandler: requireCompanyMember,
+      preHandler: requireAnyOf(
+        requirePermission('FSM', 'branch:view'),
+        requirePermission('FSM', 'work-order:create'),
+        requirePermission('FSM', 'work-order:edit'),
+      ),
       schema: { tags: ['branches'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to list branches' },
     },
@@ -27,7 +35,7 @@ export async function branchRoutes(app: FastifyInstance) {
   app.get<WithId>(
     '/:id',
     {
-      preHandler: requireCompanyMember,
+      preHandler: requirePermission('FSM', 'branch:view'),
       schema: { tags: ['branches'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to get branch' },
     },
@@ -36,7 +44,7 @@ export async function branchRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      preHandler: requireCompanyAdmin,
+      preHandler: requirePermission('FSM', 'branch:create'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: { tags: ['branches'], body: branchWriteSchema, security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to create branch' },
@@ -46,11 +54,20 @@ export async function branchRoutes(app: FastifyInstance) {
   app.put<WithId>(
     '/:id',
     {
-      preHandler: requireCompanyAdmin,
+      preHandler: requirePermission('FSM', 'branch:edit'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: { tags: ['branches'], body: branchWriteSchema, security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to update branch' },
     },
     branchController.update,
+  );
+  app.delete<WithId>(
+    '/:id',
+    {
+      preHandler: requirePermission('FSM', 'branch:delete'),
+      schema: { tags: ['branches'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to delete branch' },
+    },
+    branchController.remove,
   );
 }

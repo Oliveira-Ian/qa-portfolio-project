@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import {
   useForm,
@@ -15,6 +16,12 @@ import { useT } from '@/lib/i18n/provider';
 import { reportInvalidFields } from './report-invalid-fields';
 
 type SubmitResult = ActionResult | void;
+
+/** What a successful save says and where it goes next. */
+export interface EntityFormSuccess {
+  message: string;
+  href: string;
+}
 
 /**
  * Everything a create/edit form shares: schema-driven validation, the same
@@ -34,13 +41,18 @@ type SubmitResult = ActionResult | void;
  *
  * `useTransition` rather than a `submitting` boolean: React keeps the form
  * interactive while the action runs and the pending flag comes for free.
+ *
+ * `onSuccess`: a save that worked says so in a toast and moves on to
+ * `href` — every save confirms itself, the same way every failure does.
  */
 export function useEntityForm<TValues extends FieldValues>(
   resolver: Resolver<TValues, unknown, TValues>,
   defaultValues: TValues,
   submit: (values: TValues) => Promise<SubmitResult>,
+  onSuccess?: EntityFormSuccess,
 ) {
   const t = useT();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   // All three type args pinned explicitly: left to inference/defaults, a
@@ -60,8 +72,14 @@ export function useEntityForm<TValues extends FieldValues>(
   const onSubmit = form.handleSubmit(
     (values) => {
       startTransition(async () => {
-        // A successful action redirects, so nothing comes back to handle.
         const result = await submit(values);
+
+        if (result?.success && onSuccess) {
+          toast.success(onSuccess.message);
+          router.push(onSuccess.href);
+          router.refresh();
+          return;
+        }
 
         if (result?.success === false) {
           toast.error(translateApiMessage(result.message ?? '', t));

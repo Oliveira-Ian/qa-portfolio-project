@@ -3,15 +3,18 @@
 import { Check } from 'lucide-react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
+  emptyAddressFormValues,
+  emptyContactFormValues,
   requiresDocument,
   type DocumentType,
   type PersonFormValues,
   type PersonTypeValue,
 } from '@oliveira/schemas';
+import { AddressFields } from '@/components/forms/address-fields';
 import { FormSection } from '@/components/forms/form-section';
+import { RepeatableCards } from '@/components/forms/repeatable-cards';
 import { PERSON_TYPE_ICON } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
-import { BRAZILIAN_STATES } from '@/lib/brazilian-states';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -30,7 +33,8 @@ import { maskDocument, maskPhone } from '@/lib/masks';
 import { cn } from '@/lib/utils';
 
 /**
- * The 12 fields of a person record, written once.
+ * A person record's fields — identification, contact (main channels and the
+ * contact people), addresses and notes — written once.
  *
  * Create, edit and view all render this — they differ only in what happens on
  * submit and whether the controls accept input, which is a property of the
@@ -38,10 +42,11 @@ import { cn } from '@/lib/utils';
  * label/input/error blocks that had drifted far enough apart that nine of the
  * twelve fields had no way to show an error at all.
  *
- * The fields are four sections on one page (identification, contact, address,
- * notes), not four tabs: everything a record holds is in sight and one scroll
- * away, an error is never on a tab nobody is looking at, and the save bar
- * (`FormCard`) stays reachable the whole way down.
+ * The fields are sections on one page, not tabs: everything a record holds is
+ * in sight and one scroll away, an error is never on a tab nobody is looking
+ * at, and the save bar (`FormCard`) stays reachable the whole way down.
+ * Addresses and contact people are lists of cards (`RepeatableCards`), each
+ * with one primary.
  */
 interface PersonFormFieldsProps {
   disabled?: boolean;
@@ -244,7 +249,193 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
           </FormItem>
         )}
       />
+
+      {documentType === 'CNPJ' ? <RegistrationFields disabled={disabled} /> : null}
     </>
+  );
+}
+
+/** A company's state and municipal registrations — asked only when the document is a CNPJ. */
+function RegistrationFields({ disabled }: { disabled: boolean }) {
+  const t = useT();
+  const form = useFormContext<PersonFormValues>();
+
+  return (
+    <>
+      <FormField
+        control={form.control}
+        name="stateRegistration"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('erp.people.form.fields.stateRegistration')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                disabled={disabled}
+                className="tabular"
+                data-testid="person-form-input-state-registration"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="municipalRegistration"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('erp.people.form.fields.municipalRegistration')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                disabled={disabled}
+                className="tabular"
+                data-testid="person-form-input-municipal-registration"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  );
+}
+
+/** One contact person: who, what they do there, and how to reach them. */
+function ContactItemFields({ prefix, disabled }: { prefix: string; disabled: boolean }) {
+  const t = useT();
+  const form = useFormContext<PersonFormValues>();
+  const name = (field: string) => `${prefix}${field}` as Parameters<typeof form.register>[0];
+  const testId = (field: string) => `person-form-${prefix.replaceAll('.', '-')}${field}`;
+
+  return (
+    <FieldGrid>
+      <FormField
+        control={form.control}
+        name={name('name')}
+        render={({ field }) => (
+          <FormItem required>
+            <FormLabel>{t('common.contact.name')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={String(field.value ?? '')}
+                disabled={disabled}
+                autoComplete="off"
+                data-testid={testId('name')}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name={name('role')}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('common.contact.role')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={String(field.value ?? '')}
+                disabled={disabled}
+                placeholder={t('common.contact.rolePlaceholder')}
+                data-testid={testId('role')}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name={name('email')}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('common.contact.email')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={String(field.value ?? '')}
+                type="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                disabled={disabled}
+                data-testid={testId('email')}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField
+          control={form.control}
+          name={name('phone')}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('common.contact.phone')}</FormLabel>
+              <FormControl>
+                <MaskedInput
+                  {...field}
+                  value={String(field.value ?? '')}
+                  mask={maskPhone}
+                  type="tel"
+                  inputMode="tel"
+                  className="tabular"
+                  disabled={disabled}
+                  data-testid={testId('phone')}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={name('mobile')}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('common.contact.mobile')}</FormLabel>
+              <FormControl>
+                <MaskedInput
+                  {...field}
+                  value={String(field.value ?? '')}
+                  mask={maskPhone}
+                  type="tel"
+                  inputMode="tel"
+                  className="tabular"
+                  disabled={disabled}
+                  data-testid={testId('mobile')}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <FormField
+        control={form.control}
+        name={name('notes')}
+        render={({ field }) => (
+          <FormItem className="sm:col-span-2">
+            <FormLabel>{t('common.contact.notes')}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={String(field.value ?? '')}
+                disabled={disabled}
+                data-testid={testId('notes')}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </FieldGrid>
   );
 }
 
@@ -281,6 +472,26 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
                   </FormControl>
                   <FormDescription>{t('erp.people.form.fields.nameHelp')}</FormDescription>
                   <FormMessage data-testid="person-form-error-name" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tradeName"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel>{t('erp.people.form.fields.tradeName')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={disabled}
+                      autoComplete="off"
+                      data-testid="person-form-input-trade-name"
+                    />
+                  </FormControl>
+                  <FormDescription>{t('erp.people.form.fields.tradeNameHelp')}</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -361,8 +572,31 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
                       autoComplete="tel"
                       inputMode="tel"
                       className="tabular"
-                      placeholder="(11) 98765-4321"
+                      placeholder="(11) 3456-7890"
                       data-testid="person-form-input-phone"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mobile"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('erp.people.form.fields.mobile')}</FormLabel>
+                  <FormControl>
+                    <MaskedInput
+                      {...field}
+                      mask={maskPhone}
+                      type="tel"
+                      disabled={disabled}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      className="tabular"
+                      placeholder="(11) 98765-4321"
+                      data-testid="person-form-input-mobile"
                     />
                   </FormControl>
                 </FormItem>
@@ -395,97 +629,62 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
 
       <SectionBlock>
         <FormSection
+          id="person-section-contacts"
+          data-testid="person-form-section-contacts"
+          title={t('erp.people.form.sections.contacts.title')}
+          description={t('erp.people.form.sections.contacts.body')}
+          optionalLabel={t('erp.people.form.optional')}
+        >
+          <RepeatableCards<PersonFormValues, 'contacts'>
+            name="contacts"
+            newItem={() => emptyContactFormValues()}
+            titleOf={(item) => item.name}
+            disabled={disabled}
+            testIdPrefix="person-form-contacts"
+            labels={{
+              item: (position) => t('common.contact.list.item', { position }),
+              add: t('common.contact.list.add'),
+              remove: t('common.contact.list.remove'),
+              primary: t('common.contact.list.primary'),
+              makePrimary: t('common.contact.list.makePrimary'),
+              empty: t('common.contact.list.empty'),
+            }}
+            renderItem={(prefix) => <ContactItemFields prefix={prefix} disabled={disabled} />}
+          />
+        </FormSection>
+      </SectionBlock>
+
+      <SectionBlock>
+        <FormSection
           id="person-section-address"
           data-testid="person-form-section-address"
           title={t('erp.people.form.sections.address.title')}
           description={t('erp.people.form.sections.address.body')}
           optionalLabel={t('erp.people.form.optional')}
         >
-          <FieldGrid>
-            <FormField
-              control={form.control}
-              name="street"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel data-testid="person-form-label-street">
-                    {t('erp.people.form.fields.street')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={disabled}
-                      autoComplete="street-address"
-                      data-testid="person-form-input-street"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-city">
-                    {t('erp.people.form.fields.city')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={disabled}
-                      autoComplete="address-level2"
-                      data-testid="person-form-input-city"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="state"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-state">
-                    {t('erp.people.form.fields.state')}
-                  </FormLabel>
-                  <FormControl>
-                    <Combobox
-                      options={BRAZILIAN_STATES}
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={disabled}
-                      placeholder={t('erp.people.form.fields.select')}
-                      data-testid="person-form-input-state"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="zipCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-zipcode">
-                    {t('erp.people.form.fields.zipCode')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={disabled}
-                      autoComplete="postal-code"
-                      inputMode="numeric"
-                      className="tabular"
-                      data-testid="person-form-input-zipcode"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </FieldGrid>
+          <RepeatableCards<PersonFormValues, 'addresses'>
+            name="addresses"
+            newItem={() => emptyAddressFormValues()}
+            titleOf={(item) => item.label}
+            disabled={disabled}
+            testIdPrefix="person-form-addresses"
+            labels={{
+              item: (position) => t('common.address.list.item', { position }),
+              add: t('common.address.list.add'),
+              remove: t('common.address.list.remove'),
+              primary: t('common.address.list.primary'),
+              makePrimary: t('common.address.list.makePrimary'),
+              empty: t('common.address.list.empty'),
+            }}
+            renderItem={(prefix, index) => (
+              <AddressFields<PersonFormValues>
+                prefix={prefix}
+                disabled={disabled}
+                withDetails
+                testIdPrefix={`person-form-address-${index}`}
+              />
+            )}
+          />
         </FormSection>
       </SectionBlock>
 

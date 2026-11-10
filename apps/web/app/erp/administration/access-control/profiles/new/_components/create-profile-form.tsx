@@ -22,6 +22,7 @@ export function CreateProfileForm({ permissions }: { permissions: PermissionDto[
     zodResolver(profileWriteSchema) as Resolver<ProfileWriteInput, unknown, ProfileWriteInput>,
     EMPTY_VALUES,
     createProfileAction,
+    { message: t('erp.profiles.created'), href: ROUTES.profiles.list },
   );
 
   return (

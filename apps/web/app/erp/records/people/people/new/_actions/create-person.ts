@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import {
   personFormSchema,
   personFormValuesToPayload,
@@ -32,5 +31,5 @@ export async function createPersonAction(values: PersonFormValues): Promise<Acti
   }
 
   revalidatePath(ROUTES.people.list);
-  redirect(ROUTES.people.list);
+  return { success: true };
 }

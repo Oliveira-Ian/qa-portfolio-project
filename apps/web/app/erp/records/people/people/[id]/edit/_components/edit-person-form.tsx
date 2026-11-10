@@ -31,6 +31,7 @@ export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFo
     zodResolver(personFormSchema),
     personToFormValues(person),
     (values: PersonFormValues) => updatePersonAction(person.id, values),
+    { message: t('api.done.personUpdated'), href: ROUTES.people.view(person.id) },
   );
   // Reactive to the checkboxes the admin is editing right now, not just the
   // types the record was saved with — checking "User" should surface the

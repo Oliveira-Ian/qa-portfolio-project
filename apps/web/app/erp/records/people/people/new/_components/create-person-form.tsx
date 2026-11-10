@@ -15,6 +15,7 @@ export function CreatePersonForm() {
     zodResolver(personFormSchema),
     emptyPersonFormValues,
     createPersonAction,
+    { message: t('api.done.personCreated'), href: ROUTES.people.list },
   );
 
   return (

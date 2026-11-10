@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormContext, type FieldValues, type Path } from 'react-hook-form';
+import { ADDRESS_TYPES, type AddressType } from '@oliveira/schemas';
 import { Combobox } from '@/components/ui/combobox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,21 @@ interface AddressFieldsProps {
   disabled?: boolean;
   /** Prefix for each control's `data-testid`. */
   testIdPrefix: string;
+  /**
+   * One address among several (a person's): adds its type and label at the top
+   * and a reference point at the bottom. A single address (the company's) has none.
+   */
+  withDetails?: boolean;
 }
+
+export const ADDRESS_TYPE_LABEL: Record<AddressType, `common.address.types.${AddressType}`> = {
+  COMMERCIAL: 'common.address.types.COMMERCIAL',
+  RESIDENTIAL: 'common.address.types.RESIDENTIAL',
+  BILLING: 'common.address.types.BILLING',
+  SERVICE: 'common.address.types.SERVICE',
+  DELIVERY: 'common.address.types.DELIVERY',
+  OTHER: 'common.address.types.OTHER',
+};
 
 /**
  * A Brazilian address — CEP, street, number, complement, district, city and
@@ -27,13 +42,61 @@ export function AddressFields<TValues extends FieldValues>({
   prefix = '',
   disabled = false,
   testIdPrefix,
+  withDetails = false,
 }: AddressFieldsProps) {
   const t = useT();
   const form = useFormContext<TValues>();
   const name = (field: string) => `${prefix}${field}` as Path<TValues>;
+  const typeOptions = ADDRESS_TYPES.map((type) => ({
+    value: type,
+    label: t(ADDRESS_TYPE_LABEL[type]),
+  }));
 
   return (
     <div className="grid gap-5 sm:grid-cols-6">
+      {withDetails ? (
+        <>
+          <FormField
+            control={form.control}
+            name={name('type')}
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2" required>
+                <FormLabel>{t('common.address.type')}</FormLabel>
+                <FormControl>
+                  <Combobox
+                    options={typeOptions}
+                    value={field.value ? String(field.value) : null}
+                    onChange={field.onChange}
+                    placeholder={t('common.address.statePlaceholder')}
+                    disabled={disabled}
+                    data-testid={`${testIdPrefix}-type`}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name={name('label')}
+            render={({ field }) => (
+              <FormItem className="sm:col-span-4">
+                <FormLabel>{t('common.address.label')}</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={String(field.value ?? '')}
+                    placeholder={t('common.address.labelPlaceholder')}
+                    disabled={disabled}
+                    data-testid={`${testIdPrefix}-label`}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      ) : null}
       <FormField
         control={form.control}
         name={name('zipCode')}
@@ -171,6 +234,27 @@ export function AddressFields<TValues extends FieldValues>({
           </FormItem>
         )}
       />
+      {withDetails ? (
+        <FormField
+          control={form.control}
+          name={name('reference')}
+          render={({ field }) => (
+            <FormItem className="sm:col-span-6">
+              <FormLabel>{t('common.address.reference')}</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={String(field.value ?? '')}
+                  placeholder={t('common.address.referencePlaceholder')}
+                  disabled={disabled}
+                  data-testid={`${testIdPrefix}-reference`}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
     </div>
   );
 }

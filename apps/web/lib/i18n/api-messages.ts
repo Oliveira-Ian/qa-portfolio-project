@@ -70,6 +70,9 @@ const EXACT: Record<string, MessageKey> = {
   'A person with this document already exists': 'api.guard.documentTaken',
   'A profile with this name already exists': 'api.guard.profileNameTaken',
   'A branch with this code already exists': 'api.guard.branchCodeTaken',
+  'This branch is in use. Deactivate it instead.': 'api.guard.branchInUse',
+  'An address in use by equipment or work orders cannot be removed': 'api.guard.addressInUse',
+  'Contact name is required': 'api.validation.contactNameRequired',
 
   // Confirmations a Server Action sends back
   'Person created successfully': 'api.done.personCreated',

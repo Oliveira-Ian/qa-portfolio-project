@@ -95,6 +95,11 @@ model Person {
   /// login credential); the two can legitimately diverge.
   email        String?
   phone        String?
+  mobile       String?
+  /// Trade name (nome fantasia) of a company; the legal name is `name`.
+  tradeName    String?
+  stateRegistration     String?
+  municipalRegistration String?
   birthdate    DateTime?
   /// Multiple roles at once (a company can be both a client and a supplier).
   /// The ERP's classification; products never extend it (docs/adr/0011). USER is
@@ -105,16 +110,16 @@ model Person {
   documentType DocumentType?
   document     String?
   active       Boolean           @default(true)
-  street       String?
-  city         String?
-  state        String?
-  zipCode      String?
   notes        String?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
   /// Members of this company whose registry record this is.
   memberships Membership[]
+  /// Its addresses — one primary. For the FSM, also its service locations.
+  addresses   Address[]
+  /// The people to talk to there.
+  contacts    Contact[]
 
   /// Target of composite foreign keys `(companyId, personId)`: a row of one
   /// company can never point at a person of another, even through a bug.
@@ -200,28 +205,97 @@ model Company {
 }
 
 /// A place a company operates from (docs/adr/0013, addendum of 2026-11-10).
-/// Minimal on purpose: no access is restricted by branch and nothing is the
+/// Foundation data shared by every product, managed inside the products with
+/// their own permissions. No access is restricted by branch and nothing is the
 /// session's "active branch" — a later restriction would be a column on
-/// MembershipProfile, not a change here. Company data under row-level security.
-/// Deactivated, never deleted, so the records that name it keep their history.
+/// MembershipProfile. Company data under row-level security. A branch something
+/// points at is deactivated rather than deleted.
 model Branch {
-  id        String   @id @default(uuid(7))
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
+  id                String   @id @default(uuid(7))
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
   /// Short identifier the company chooses ("SP-01"), unique within it.
-  code      String
-  name      String
-  street    String?
-  city      String?
-  state     String?
-  zipCode   String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  code              String
+  name              String
+  /// CNPJ of the branch, when it has its own.
+  document          String?
+  stateRegistration String?
+  email             String?
+  phone             String?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  /// Its address (the forms keep one; the table allows more later).
+  addresses Address[]
 
   @@unique([companyId, id])
   @@unique([companyId, code])
   @@index([companyId, name])
+}
+
+enum AddressType {
+  COMMERCIAL
+  RESIDENTIAL
+  BILLING
+  SERVICE
+  DELIVERY
+  OTHER
+}
+
+/// An address of the company's registry (plan § 2.9, the essential of F-14):
+/// owned by exactly one Person or one Branch (a CHECK in the migration), typed,
+/// one primary per owner (a partial unique index). Updated in place — never
+/// deleted and recreated — so what points at it (equipment, work orders) keeps
+/// pointing at it. Company data under row-level security.
+model Address {
+  id         String      @id @default(uuid(7))
+  companyId  String
+  personId   String?
+  branchId   String?
+  person     Person?     @relation(fields: [companyId, personId], references: [companyId, id], onDelete: Cascade)
+  branch     Branch?     @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Cascade)
+  type       AddressType @default(COMMERCIAL)
+  /// "Head office", "Plant 2" — how the owner tells its addresses apart.
+  label      String?
+  isPrimary  Boolean     @default(false)
+  zipCode    String?
+  street     String?
+  number     String?
+  complement String?
+  district   String?
+  city       String?
+  state      String?
+  /// "Next to the bakery", "gate 3" — for whoever drives there.
+  reference  String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([companyId, id])
+  @@index([companyId, personId])
+  @@index([companyId, branchId])
+}
+
+/// A person to talk to at a customer or supplier, beyond the record's own main
+/// email and phone. Company data under row-level security.
+model Contact {
+  id        String   @id @default(uuid(7))
+  companyId String
+  personId  String
+  person    Person   @relation(fields: [companyId, personId], references: [companyId, id], onDelete: Cascade)
+  name      String
+  /// Job title or department.
+  role      String?
+  email     String?
+  phone     String?
+  mobile    String?
+  isPrimary Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, id])
+  @@index([companyId, personId])
 }
 
 /// An account's place in a company. `role` is the company's own administrator

@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { profileWriteSchema, type ProfileWriteInput } from '@oliveira/schemas';
 import { requestProfileCreate } from '@/lib/api/profiles';
 import type { ActionResult } from '@/lib/actions';
@@ -30,5 +29,5 @@ export async function createProfileAction(values: ProfileWriteInput): Promise<Ac
   }
 
   revalidatePath(ROUTES.profiles.list);
-  redirect(ROUTES.profiles.list);
+  return { success: true };
 }

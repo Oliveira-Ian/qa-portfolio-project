@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { isValidEmail } from './email.js';
+import { addressToFormValues, addressWriteSchema, type AddressDto } from './address.js';
+import { contactToFormValues, contactWriteSchema, type ContactDto } from './contact.js';
+import { maxLengthMessage } from './messages.js';
 import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
+
+/** Optional text in the API's write: `null` or a string within `max`. */
+const optionalText = (max: number) =>
+  z.string().trim().max(max, maxLengthMessage(max)).nullable().optional();
 
 /**
  * A Person can hold more than one role at once — a company can be a client
@@ -53,15 +60,19 @@ export const personCreateSchema = z
     types: z.array(personTypeValueSchema).min(1, 'At least one type is required'),
     documentType: documentTypeSchema.nullable().optional(),
     document: z.string().trim().nullable().optional(),
+    tradeName: optionalText(160),
+    stateRegistration: optionalText(20),
+    municipalRegistration: optionalText(20),
     email: z.string().trim().email('Invalid email').nullable().optional(),
-    phone: z.string().trim().nullable().optional(),
+    phone: optionalText(20),
+    mobile: optionalText(20),
     birthdate: z.coerce.date({ error: 'Invalid birth date' }).nullable().optional(),
     active: z.boolean().optional(),
-    street: z.string().trim().nullable().optional(),
-    city: z.string().trim().nullable().optional(),
-    state: z.string().trim().nullable().optional(),
-    zipCode: z.string().trim().nullable().optional(),
     notes: z.string().trim().nullable().optional(),
+    /** Every address of the record — sent in full, the API syncs the set. */
+    addresses: z.array(addressWriteSchema).default([]),
+    /** Every contact person of the record — sent in full, like `addresses`. */
+    contacts: z.array(contactWriteSchema).default([]),
   })
   .superRefine((data, ctx) => {
     if (!requiresDocument(data.types)) {
@@ -160,18 +171,20 @@ export type PersonListQuery = z.infer<typeof personListQuerySchema>;
 export const personFormSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
+    tradeName: z.string().trim().max(160, maxLengthMessage(160)),
     types: z.array(personTypeValueSchema).min(1, 'At least one type is required'),
     documentType: documentTypeSchema.nullable(),
     document: z.string().trim(),
+    stateRegistration: z.string().trim().max(20, maxLengthMessage(20)),
+    municipalRegistration: z.string().trim().max(20, maxLengthMessage(20)),
     email: z.string().trim(),
     phone: z.string().trim(),
+    mobile: z.string().trim(),
     birthdate: z.string(),
     active: z.boolean(),
-    street: z.string().trim(),
-    city: z.string().trim(),
-    state: z.string().trim(),
-    zipCode: z.string().trim(),
     notes: z.string().trim(),
+    addresses: z.array(addressWriteSchema),
+    contacts: z.array(contactWriteSchema),
   })
   .superRefine((data, ctx) => {
     if (data.email !== '' && !isValidEmail(data.email)) {
@@ -205,37 +218,41 @@ export type PersonFormValues = z.infer<typeof personFormSchema>;
 
 export const emptyPersonFormValues: PersonFormValues = {
   name: '',
+  tradeName: '',
   types: [],
   documentType: null,
   document: '',
+  stateRegistration: '',
+  municipalRegistration: '',
   email: '',
   phone: '',
+  mobile: '',
   birthdate: '',
   active: true,
-  street: '',
-  city: '',
-  state: '',
-  zipCode: '',
   notes: '',
+  addresses: [],
+  contacts: [],
 };
 
 /** Wire record → form values. An absent field is an empty string, never null. */
 export function personToFormValues(person: Person): PersonFormValues {
   return {
     name: person.name,
+    tradeName: person.tradeName ?? '',
     types: person.types,
     documentType: person.documentType,
     document: person.document ?? '',
+    stateRegistration: person.stateRegistration ?? '',
+    municipalRegistration: person.municipalRegistration ?? '',
     email: person.email ?? '',
     phone: person.phone ?? '',
+    mobile: person.mobile ?? '',
     // `<input type="date">` wants the calendar day, not the instant.
     birthdate: person.birthdate ? person.birthdate.slice(0, 10) : '',
     active: person.active,
-    street: person.street ?? '',
-    city: person.city ?? '',
-    state: person.state ?? '',
-    zipCode: person.zipCode ?? '',
     notes: person.notes ?? '',
+    addresses: person.addresses.map(addressToFormValues),
+    contacts: person.contacts.map(contactToFormValues),
   };
 }
 
@@ -248,15 +265,17 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
     types: values.types,
     documentType: requiresDocument(values.types) ? values.documentType : null,
     document: requiresDocument(values.types) ? orNull(values.document) : null,
+    tradeName: orNull(values.tradeName),
+    stateRegistration: orNull(values.stateRegistration),
+    municipalRegistration: orNull(values.municipalRegistration),
     email: orNull(values.email),
     phone: orNull(values.phone),
+    mobile: orNull(values.mobile),
     birthdate: values.birthdate ? new Date(values.birthdate) : null,
     active: values.active,
-    street: orNull(values.street),
-    city: orNull(values.city),
-    state: orNull(values.state),
-    zipCode: orNull(values.zipCode),
     notes: orNull(values.notes),
+    addresses: values.addresses.map((address) => addressWriteSchema.parse(address)),
+    contacts: values.contacts.map((contact) => contactWriteSchema.parse(contact)),
   };
 }
 
@@ -268,18 +287,25 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
 export interface Person {
   id: string;
   name: string;
+  tradeName: string | null;
   email: string | null;
   phone: string | null;
+  mobile: string | null;
   birthdate: string | null;
   types: PersonTypeValue[];
   documentType: DocumentType | null;
   document: string | null;
+  stateRegistration: string | null;
+  municipalRegistration: string | null;
   active: boolean;
-  street: string | null;
+  /** City and state of the primary address — what a list shows; `null` without one. */
   city: string | null;
   state: string | null;
-  zipCode: string | null;
   notes: string | null;
+  /** Every address, primary first. Lists leave them out (`[]`). */
+  addresses: AddressDto[];
+  /** Every contact person, primary first. Lists leave them out (`[]`). */
+  contacts: ContactDto[];
   createdAt: string;
   updatedAt: string;
 }

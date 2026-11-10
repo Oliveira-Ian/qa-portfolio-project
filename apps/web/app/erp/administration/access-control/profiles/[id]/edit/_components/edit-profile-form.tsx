@@ -31,6 +31,7 @@ export function EditProfileForm({ profile, permissions }: EditProfileFormProps) 
       permissionIds: profile.permissions.map((permission) => permission.id),
     },
     (values) => updateProfileAction(profile.id, values),
+    { message: t('erp.profiles.updated'), href: ROUTES.profiles.view(profile.id) },
   );
 
   return (

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { emptyAddressFormValues } from '@oliveira/schemas';
 import { prisma } from '../../apps/api/src/config/prisma.js';
 import { branchRepository } from '../../apps/api/src/modules/branch/branch.repository.js';
 import { ConflictError } from '../../apps/api/src/shared/errors.js';
@@ -11,7 +12,14 @@ const admin = createAdminClient();
 const companyA = { id: '01b00000-0000-7000-8000-0000000000a2', legalName: 'Branches A' };
 const companyB = { id: '01b00000-0000-7000-8000-0000000000b2', legalName: 'Branches B' };
 
-const fields = { street: null, city: null, state: null, zipCode: null, active: true };
+const fields = {
+  document: null,
+  stateRegistration: null,
+  email: null,
+  phone: null,
+  active: true,
+};
+const noAddress = { ...emptyAddressFormValues(true), label: '', type: 'COMMERCIAL' as const };
 let branchOfB = '';
 
 beforeAll(async () => {
@@ -41,7 +49,11 @@ describe('branches', () => {
     await asCompany(companyA.id, async () => {
       expect(await branchRepository.findById(branchOfB)).toBeNull();
       await expect(
-        branchRepository.update(branchOfB, { code: 'HQ', name: 'taken over', ...fields }),
+        branchRepository.update(
+          branchOfB,
+          { code: 'HQ', name: 'taken over', ...fields },
+          noAddress,
+        ),
       ).rejects.toThrow();
     });
 
@@ -53,7 +65,7 @@ describe('branches', () => {
   it('keeps codes unique within a company only', async () => {
     await expect(
       asCompany(companyA.id, () =>
-        branchRepository.create({ code: 'HQ', name: 'Again', ...fields }),
+        branchRepository.create({ code: 'HQ', name: 'Again', ...fields }, noAddress),
       ),
     ).rejects.toBeInstanceOf(ConflictError);
   });

@@ -9,3 +9,5 @@ export * from './grid-preferences.js';
 export * from './branch.js';
 export * from './messages.js';
 export * from './company.js';
+export * from './address.js';
+export * from './contact.js';

@@ -8,7 +8,7 @@ import { loggerOptions } from './config/logger.js';
 import { prisma } from './config/prisma.js';
 import { accountRoutes, productAccountRoutes } from './modules/account/account.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
-import { branchRoutes } from './modules/branch/branch.routes.js';
+import { fsmBranchRoutes } from './modules/branch/branch.routes.js';
 import { companyProfileRoutes } from './modules/company/company-profile.js';
 import { companyRoutes } from './modules/company/company.routes.js';
 import { gridPreferenceRoutes } from './modules/grid-preference/grid-preference.routes.js';
@@ -83,7 +83,6 @@ export function buildApp() {
   app.register(accountRoutes, { prefix: '/api/accounts' });
   app.register(companyRoutes, { prefix: '/api/company' });
   app.register(companyProfileRoutes, { prefix: '/api/company/profile' });
-  app.register(branchRoutes, { prefix: '/api/company/branches' });
   app.register(gridPreferenceRoutes, { prefix: '/api/grid-preferences' });
 
   // One product's profiles, catalog and members' profile links, registered per
@@ -94,6 +93,7 @@ export function buildApp() {
   app.register(profileRoutes, { prefix: '/api/fsm/profiles', product: 'FSM' });
   app.register(permissionRoutes, { prefix: '/api/fsm/permissions', product: 'FSM' });
   app.register(productAccountRoutes, { prefix: '/api/fsm/accounts', product: 'FSM' });
+  app.register(fsmBranchRoutes, { prefix: '/api/fsm/branches' });
 
   app.addHook('onClose', async () => {
     await prisma.$disconnect();

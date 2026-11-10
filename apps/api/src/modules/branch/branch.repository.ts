@@ -1,30 +1,42 @@
-import type { Branch } from '../../generated/prisma/client.js';
-import { prisma } from '../../config/prisma.js';
+import type { AddressWriteInput } from '@oliveira/schemas';
+import type { Address, Branch, Prisma } from '../../generated/prisma/client.js';
+import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
+  FOREIGN_KEY_VIOLATION,
   RECORD_NOT_FOUND,
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
 import { requireCompanyId } from '../../shared/request-context.js';
+import { ADDRESS_ORDER, syncAddresses } from '../address/address-sync.js';
 
 export interface BranchWriteData {
   code: string;
   name: string;
-  street: string | null;
-  city: string | null;
-  state: string | null;
-  zipCode: string | null;
+  document: string | null;
+  stateRegistration: string | null;
+  email: string | null;
+  phone: string | null;
   active: boolean;
 }
 
-/** The only unique column a write can break is the code, within the company. */
+export type BranchRow = Branch & { addresses: Address[] };
+
+const WITH_ADDRESS = {
+  addresses: { orderBy: ADDRESS_ORDER, take: 1 },
+} satisfies Prisma.BranchInclude;
+
+/** The code is unique within the company; a branch something points at can't be deleted. */
 function translateWriteError(error: unknown): unknown {
   if (isPrismaCode(error, RECORD_NOT_FOUND)) {
     return new NotFoundError('Branch not found');
   }
   if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
     return new ConflictError('A branch with this code already exists');
+  }
+  if (isPrismaCode(error, FOREIGN_KEY_VIOLATION)) {
+    return new ConflictError('This branch is in use. Deactivate it instead.');
   }
 
   return error;
@@ -33,40 +45,77 @@ function translateWriteError(error: unknown): unknown {
 /**
  * The caller's company's branches — scoped by the Prisma client and enforced by
  * row-level security (docs/adr/0012); another company's id reads as not found.
+ * A branch keeps one address (`Address`, the registry's shared table).
  */
 export const branchRepository = {
-  findMany(search?: string): Promise<Branch[]> {
+  findMany(options: { search?: string; activeOnly?: boolean } = {}): Promise<BranchRow[]> {
+    const { search, activeOnly = false } = options;
+
     return prisma.branch.findMany({
-      where: search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { code: { contains: search, mode: 'insensitive' } },
-              { city: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : {},
+      where: {
+        ...(activeOnly ? { active: true } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { code: { contains: search, mode: 'insensitive' } },
+                { addresses: { some: { city: { contains: search, mode: 'insensitive' } } } },
+              ],
+            }
+          : {}),
+      },
       orderBy: [{ active: 'desc' }, { name: 'asc' }, { id: 'asc' }],
+      include: WITH_ADDRESS,
     });
   },
 
-  findById(id: string): Promise<Branch | null> {
-    return prisma.branch.findUnique({ where: { id } });
+  findById(id: string): Promise<BranchRow | null> {
+    return prisma.branch.findUnique({ where: { id }, include: WITH_ADDRESS });
   },
 
-  async create(data: BranchWriteData): Promise<Branch> {
+  async create(data: BranchWriteData, address: AddressWriteInput): Promise<BranchRow> {
     try {
-      return await prisma.branch.create({ data: { ...data, companyId: requireCompanyId() } });
+      return await withTransaction(async (tx) => {
+        const companyId = requireCompanyId();
+        const branch = await tx.branch.create({ data: { ...data, companyId } });
+
+        await syncAddresses(tx, companyId, { branchId: branch.id }, addressList(address));
+
+        return tx.branch.findUniqueOrThrow({ where: { id: branch.id }, include: WITH_ADDRESS });
+      });
     } catch (error) {
       throw translateWriteError(error);
     }
   },
 
-  async update(id: string, data: BranchWriteData): Promise<Branch> {
+  async update(id: string, data: BranchWriteData, address: AddressWriteInput): Promise<BranchRow> {
     try {
-      return await prisma.branch.update({ where: { id }, data });
+      return await withTransaction(async (tx) => {
+        await tx.branch.update({ where: { id }, data });
+        await syncAddresses(tx, requireCompanyId(), { branchId: id }, addressList(address));
+
+        return tx.branch.findUniqueOrThrow({ where: { id }, include: WITH_ADDRESS });
+      });
+    } catch (error) {
+      throw translateWriteError(error);
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      await prisma.branch.delete({ where: { id } });
     } catch (error) {
       throw translateWriteError(error);
     }
   },
 };
+
+/** An address with nothing typed in it is no address: the branch is saved without one. */
+function addressList(address: AddressWriteInput): AddressWriteInput[] {
+  const { street, number, district, city, state, zipCode, complement, reference } = address;
+  const isEmpty = [street, number, district, city, state, zipCode, complement, reference].every(
+    (value) => value.trim() === '',
+  );
+
+  return isEmpty ? [] : [{ ...address, isPrimary: true }];
+}
