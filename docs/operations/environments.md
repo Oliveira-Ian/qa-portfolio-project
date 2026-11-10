@@ -33,6 +33,14 @@ PORT=3001 npm run dev -w apps/api
 An existing local database from before tenant isolation needs the new variables in `prisma/.env`
 and `apps/api/.env` (see the examples), then `npm run db:roles` and `npx prisma migrate deploy`.
 
+## Rate limits behind the web server
+
+Every API request comes from the web server, not the browser. The API therefore trusts
+`X-Forwarded-For` from loopback and private networks only (`TRUST_PROXY`, Fastify's `trustProxy`),
+the web server forwards the visitor's address (the last entry its own proxy appended), and the global
+limit is counted per session (a hash of the token) or, without one, per visitor address. Sign-in's
+stricter limit is per visitor too. Set `TRUST_PROXY` to the hosting's proxy network if it differs.
+
 ## Environments
 
 | Environment | Database | Data | Reset |

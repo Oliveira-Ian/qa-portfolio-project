@@ -2,7 +2,8 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
-import { corsOrigins } from './config/env.js';
+import { createHash } from 'node:crypto';
+import { corsOrigins, env } from './config/env.js';
 import { loggerOptions } from './config/logger.js';
 import { prisma } from './config/prisma.js';
 import { accountRoutes, productAccountRoutes } from './modules/account/account.routes.js';
@@ -26,7 +27,7 @@ import { registerTraceIdHeader } from './plugins/trace-id-header.js';
  * be built without a server or a port.
  */
 export function buildApp() {
-  const app = Fastify({ logger: loggerOptions });
+  const app = Fastify({ logger: loggerOptions, trustProxy: env.TRUST_PROXY });
 
   registerErrorHandler(app);
   // Before any route is registered: a hook only reaches the routes added after it.
@@ -48,7 +49,21 @@ export function buildApp() {
   // set their own stricter `config.rateLimit` (see `auth.routes.ts`) — bcrypt
   // makes each login attempt costly enough on its own to be a CPU-exhaustion
   // vector, not just a brute-force one.
-  app.register(rateLimit, { global: true, max: 100, timeWindow: '1 minute' });
+  // Counted per session when there is one (a hash of the token — never the token
+  // itself), otherwise per client address: every request arrives through the web
+  // server, so keying by address alone would make all visitors share one budget.
+  app.register(rateLimit, {
+    global: true,
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: (request) => {
+      const authorization = request.headers.authorization;
+
+      return authorization?.startsWith('Bearer ')
+        ? `session:${createHash('sha256').update(authorization).digest('base64url')}`
+        : `ip:${request.ip}`;
+    },
+  });
 
   // @fastify/cors' default methods list is GET/HEAD/POST only — the person
   // endpoints need PUT/DELETE too, and the account endpoints PATCH, or the

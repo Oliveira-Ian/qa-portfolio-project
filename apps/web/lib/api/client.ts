@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { headers as incomingHeaders } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 /**
@@ -106,6 +107,23 @@ function readEnvelope<T>(payload: unknown, status: number): ApiResult<T> {
  * to `SESSION_EXPIRE_PATH` instead, from a page render and from a Server Action
  * alike. A `401` without a token (a wrong password at sign-in) is still a result.
  */
+/**
+ * The visitor's address, for the API's rate limits (it trusts this header only
+ * from the web server's network — `TRUST_PROXY`). The last `X-Forwarded-For`
+ * entry is the one the hosting's proxy appended; earlier ones are whatever the
+ * client sent and are not trusted. `undefined` outside a request (a build).
+ */
+async function visitorAddress(): Promise<string | undefined> {
+  try {
+    const incoming = await incomingHeaders();
+    const forwarded = incoming.get('x-forwarded-for')?.split(',').at(-1)?.trim();
+
+    return forwarded || incoming.get('x-real-ip') || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   { method = 'GET', body, token, query }: RequestOptions = {},
@@ -118,6 +136,12 @@ export async function apiRequest<T>(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  const clientAddress = await visitorAddress();
+
+  if (clientAddress) {
+    headers['X-Forwarded-For'] = clientAddress;
   }
 
   let response: Response;

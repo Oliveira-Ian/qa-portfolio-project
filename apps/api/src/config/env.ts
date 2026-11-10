@@ -32,6 +32,14 @@ const envSchema = z.object({
    * `origin` option configured at all used to do.
    */
   CORS_ORIGINS: z.string().min(1).default('http://localhost:3000'),
+  /**
+   * Which peers may tell the API the client's address in `X-Forwarded-For`
+   * (Fastify's `trustProxy`). The API sits behind `apps/web`, so every request
+   * comes from the web server; trusting it — on loopback and private networks
+   * only, by default — is what lets rate limits count each visitor rather than
+   * the web server. A request from anywhere else cannot spoof its address.
+   */
+  TRUST_PROXY: z.string().min(1).default('loopback,linklocal,uniquelocal'),
   /** Minimum level the logger writes — see `config/logger.ts`. */
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
