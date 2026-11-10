@@ -2,6 +2,8 @@ import 'server-only';
 
 import type {
   CompanyMemberDto,
+  CompanyProfileDto,
+  CompanyProfileWriteInput,
   CompanyMembersDto,
   MemberAddInput,
   MemberUpdateInput,
@@ -94,4 +96,21 @@ export async function applySeatChanges(
   }
 
   return { success: true };
+}
+
+/** The company's registration — any member may read it. */
+export function requestCompanyProfile(token: string): Promise<ApiResult<CompanyProfileDto>> {
+  return apiRequest<CompanyProfileDto>('/api/company/profile', { token });
+}
+
+/** Company admins only; the legal name and the CNPJ are not part of it. */
+export function requestCompanyProfileUpdate(
+  token: string,
+  input: CompanyProfileWriteInput,
+): Promise<ApiResult<CompanyProfileDto>> {
+  return apiRequest<CompanyProfileDto>('/api/company/profile', {
+    method: 'PUT',
+    token,
+    body: input,
+  });
 }

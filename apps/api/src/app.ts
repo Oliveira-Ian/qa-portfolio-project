@@ -7,6 +7,8 @@ import { loggerOptions } from './config/logger.js';
 import { prisma } from './config/prisma.js';
 import { accountRoutes, productAccountRoutes } from './modules/account/account.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { branchRoutes } from './modules/branch/branch.routes.js';
+import { companyProfileRoutes } from './modules/company/company-profile.js';
 import { companyRoutes } from './modules/company/company.routes.js';
 import { gridPreferenceRoutes } from './modules/grid-preference/grid-preference.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
@@ -65,6 +67,8 @@ export function buildApp() {
   app.register(personRoutes, { prefix: '/api/persons' });
   app.register(accountRoutes, { prefix: '/api/accounts' });
   app.register(companyRoutes, { prefix: '/api/company' });
+  app.register(companyProfileRoutes, { prefix: '/api/company/profile' });
+  app.register(branchRoutes, { prefix: '/api/company/branches' });
   app.register(gridPreferenceRoutes, { prefix: '/api/grid-preferences' });
 
   // One product's profiles, catalog and members' profile links, registered per

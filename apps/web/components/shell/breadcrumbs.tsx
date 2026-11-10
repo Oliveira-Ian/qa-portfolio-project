@@ -78,6 +78,10 @@ function buildCrumbs(area: AreaKey, pathname: string, t: (key: MessageKey) => st
       href: ROUTES.company.overview,
     };
 
+    if (pathname.startsWith(ROUTES.company.edit)) {
+      return [root, companyAdmin, { label: t('company.profile.editTitle'), current: true }];
+    }
+
     if (pathname.startsWith(ROUTES.company.members)) {
       return [root, companyAdmin, { label: t('nav.platform.members'), current: true }];
     }

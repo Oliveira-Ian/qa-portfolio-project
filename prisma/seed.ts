@@ -209,9 +209,11 @@ async function ensureMember(
   return membership.id;
 }
 
+/** Sets the member's one profile in `product` — replacing another, if they had one. */
 async function linkProfile(
   companyId: string,
   membershipId: string,
+  product: Product,
   profileId: number | undefined,
 ): Promise<void> {
   if (!profileId) {
@@ -219,9 +221,9 @@ async function linkProfile(
   }
 
   await prisma.membershipProfile.upsert({
-    where: { membershipId_profileId: { membershipId, profileId } },
-    update: {},
-    create: { companyId, membershipId, profileId },
+    where: { membershipId_product: { membershipId, product } },
+    update: { profileId },
+    create: { companyId, membershipId, product, profileId },
   });
 }
 
@@ -270,6 +272,7 @@ async function seedAdmin(companyId: string, profiles: CompanyProfiles): Promise<
     await linkProfile(
       companyId,
       membershipId,
+      product,
       profiles[product].get(SEED_PROFILE_NAMES.ADMINISTRATOR),
     );
   }
@@ -360,7 +363,12 @@ async function seedTestAccounts(companyId: string, profiles: CompanyProfiles): P
       );
 
       for (const profile of seed.membership.profiles ?? []) {
-        await linkProfile(companyId, membershipId, profiles[profile.product].get(profile.name));
+        await linkProfile(
+          companyId,
+          membershipId,
+          profile.product,
+          profiles[profile.product].get(profile.name),
+        );
       }
     }
   }

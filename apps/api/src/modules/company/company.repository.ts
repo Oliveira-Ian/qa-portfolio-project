@@ -206,9 +206,7 @@ export const companyRepository = {
 
       await tx.productAccess.create({ data: { membershipId, product, grantedById } });
 
-      const profileLinks = await tx.membershipProfile.count({
-        where: { membershipId, profile: { product } },
-      });
+      const profileLinks = await tx.membershipProfile.count({ where: { membershipId, product } });
       const defaultProfile =
         profileLinks === 0
           ? await tx.accessProfile.findFirst({ where: { product, isDefault: true } })
@@ -216,7 +214,7 @@ export const companyRepository = {
 
       if (defaultProfile) {
         await tx.membershipProfile.create({
-          data: { companyId, membershipId, profileId: defaultProfile.id },
+          data: { companyId, membershipId, product, profileId: defaultProfile.id },
         });
       }
 

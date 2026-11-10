@@ -46,7 +46,7 @@ function companyView(product: Product) {
         id: true,
         personId: true,
         profiles: {
-          where: { profile: { product } },
+          where: { product },
           select: { profile: { select: { id: true, name: true } } },
         },
       },
@@ -188,32 +188,32 @@ export const accountRepository = {
   },
 
   /**
-   * Links one of `product`'s profiles to the member's membership in the
-   * caller's company. Idempotent — linking a profile that's already attached is
-   * not an error. 404 for a profile of another product (or company).
+   * Replaces the member's profile in `product` with `profileId`, or removes it
+   * (`null`). Refused (404) for a profile of another product or company, and
+   * (409) if it would leave the company with no one able to manage this
+   * product's profiles.
    */
-  async linkProfile(product: Product, membershipId: string, profileId: number): Promise<void> {
-    await withTransaction(async (tx) => {
-      const profile = await tx.accessProfile.findFirst({ where: { id: profileId, product } });
+  async setProfile(
+    product: Product,
+    membershipId: string,
+    profileId: number | null,
+  ): Promise<void> {
+    await withProfileManagerGuard(product, async (tx) => {
+      if (profileId !== null) {
+        const profile = await tx.accessProfile.findFirst({ where: { id: profileId, product } });
 
-      if (!profile) {
-        throw new NotFoundError('Profile not found');
+        if (!profile) {
+          throw new NotFoundError('Profile not found');
+        }
       }
 
-      await tx.membershipProfile.upsert({
-        where: { membershipId_profileId: { membershipId, profileId } },
-        update: {},
-        create: { companyId: requireCompanyId(), membershipId, profileId },
-      });
-    });
-  },
+      await tx.membershipProfile.deleteMany({ where: { membershipId, product } });
 
-  /** Refused (409) if it would leave the company with no one able to manage `product`'s profiles. */
-  async unlinkProfile(product: Product, membershipId: string, profileId: number): Promise<void> {
-    await withProfileManagerGuard(product, (tx) =>
-      tx.membershipProfile.deleteMany({
-        where: { membershipId, profileId, profile: { product } },
-      }),
-    );
+      if (profileId !== null) {
+        await tx.membershipProfile.create({
+          data: { companyId: requireCompanyId(), membershipId, product, profileId },
+        });
+      }
+    });
   },
 };

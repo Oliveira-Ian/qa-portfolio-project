@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   accountCreateSchema,
   accountListQuerySchema,
-  accountProfileLinkSchema,
+  accountProfileSetSchema,
   accountUpdateSchema,
 } from '@oliveira/schemas';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
@@ -16,11 +16,7 @@ import {
   requireProductAccess,
   requireRole,
 } from '../auth/authorize.js';
-import {
-  accountController,
-  createProductAccountController,
-  type WithProfileLink,
-} from './account.controller.js';
+import { accountController, createProductAccountController } from './account.controller.js';
 
 /**
  * Accounts and their profile links. Different questions share these prefixes,
@@ -99,27 +95,18 @@ export async function productAccountRoutes(app: FastifyInstance, { product }: Pr
     },
     controller.getById,
   );
-  app.post<WithId>(
-    '/:id/profiles',
+  app.put<WithId>(
+    '/:id/profile',
     {
       preHandler: requirePermission(product, 'profile:manage'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: {
         tags: ['accounts'],
-        body: accountProfileLinkSchema,
+        body: accountProfileSetSchema,
         security: [{ bearerAuth: [] }],
       },
-      config: { errorMessage: 'Failed to link profile' },
+      config: { errorMessage: 'Failed to set profile' },
     },
-    controller.linkProfile,
-  );
-  app.delete<WithProfileLink>(
-    '/:id/profiles/:profileId',
-    {
-      preHandler: requirePermission(product, 'profile:manage'),
-      schema: { tags: ['accounts'], security: [{ bearerAuth: [] }] },
-      config: { errorMessage: 'Failed to unlink profile' },
-    },
-    controller.unlinkProfile,
+    controller.setProfile,
   );
 }

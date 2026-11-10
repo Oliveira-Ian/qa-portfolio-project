@@ -13,9 +13,6 @@ export function toAccountDto(row: AccountWithProfiles): AccountDto {
     role: row.role,
     active: row.active,
     createdAt: row.createdAt.toISOString(),
-    profiles: (membership?.profiles ?? []).map((link) => ({
-      id: link.profile.id,
-      name: link.profile.name,
-    })),
+    profile: membership?.profiles[0]?.profile ?? null,
   };
 }

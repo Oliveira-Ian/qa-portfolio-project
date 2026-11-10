@@ -31,7 +31,7 @@ async function requireAccountWithProfiles(product: Product, id: number) {
   return row;
 }
 
-/** `profileCount` (`account.profiles.length`) has no entry — it's computed, not a column; see `list()`'s fallback path below. */
+/** `profile` (the member's profile in the product) is filtered by hand in `list()` — it lives on the membership. */
 const ACCOUNT_FILTER_FIELDS: FilterFieldMap = {
   personName: { field: 'name', kind: 'text' },
   email: { field: 'email', kind: 'text' },
@@ -87,9 +87,9 @@ function buildWhere(
   return { AND: [companyWhere, scopeWhere, searchWhere, columnFiltersWhere] };
 }
 
-function readNumberParam(rawQuery: Record<string, unknown>, key: string): number | undefined {
+function readTextParam(rawQuery: Record<string, unknown>, key: string): string | undefined {
   const value = rawQuery[key];
-  return typeof value === 'string' && value.length > 0 ? Number(value) : undefined;
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 export const accountService = {
@@ -98,73 +98,43 @@ export const accountService = {
     query: AccountListQuery,
     rawQuery: Record<string, unknown>,
   ): Promise<PaginatedResult<AccountDto>> {
-    const where = buildWhere(product, query, rawQuery, requireCompanyId());
-    const profileCountRange = {
-      min: readNumberParam(rawQuery, 'f_profileCount_min'),
-      max: readNumberParam(rawQuery, 'f_profileCount_max'),
+    const companyId = requireCompanyId();
+    const profileFilter = readTextParam(rawQuery, 'f_profile');
+    const where: Prisma.AccessAccountWhereInput = {
+      AND: [
+        buildWhere(product, query, rawQuery, companyId),
+        profileFilter
+          ? {
+              memberships: {
+                some: {
+                  companyId,
+                  profiles: {
+                    some: {
+                      product,
+                      profile: { name: { contains: profileFilter, mode: 'insensitive' } },
+                    },
+                  },
+                },
+              },
+            }
+          : {},
+      ],
     };
-    const hasCountFilter =
-      profileCountRange.min !== undefined || profileCountRange.max !== undefined;
-    const sortsByCount = query.sortBy === 'profileCount';
-
-    if (!hasCountFilter && !sortsByCount) {
-      const orderBy = resolveSort(
-        query.sortBy,
-        query.sortOrder,
-        ACCOUNT_SORT_FIELDS,
-        { createdAt: 'desc' },
-        { id: 'asc' },
-      ) as Prisma.AccessAccountOrderByWithRelationInput[];
-      const { skip, take } = toSkipTake(query);
-
-      const [rows, total] = await Promise.all([
-        accountRepository.findMany(product, where, orderBy, skip, take),
-        accountRepository.count(where),
-      ]);
-
-      return { items: rows.map(toAccountDto), total, page: query.page, pageSize: query.pageSize };
-    }
-
-    // `profileCount` is `account.profiles.length`, not a column — same
-    // computed-value tradeoff as `profile.service.ts`'s `permissionCount`:
-    // fetch every `where`-matched row and handle it in memory. Accounts is
-    // an administration list, not a business table, so this stays bounded.
-    const allRows = await accountRepository.findMany(product, where, [
+    const orderBy = resolveSort(
+      query.sortBy,
+      query.sortOrder,
+      ACCOUNT_SORT_FIELDS,
       { createdAt: 'desc' },
       { id: 'asc' },
-    ]);
-    let dtos = allRows.map(toAccountDto);
-
-    if (hasCountFilter) {
-      dtos = dtos.filter((account) => {
-        const count = account.profiles.length;
-
-        if (profileCountRange.min !== undefined && count < profileCountRange.min) {
-          return false;
-        }
-
-        if (profileCountRange.max !== undefined && count > profileCountRange.max) {
-          return false;
-        }
-
-        return true;
-      });
-    }
-
-    if (sortsByCount) {
-      const direction = query.sortOrder === 'desc' ? -1 : 1;
-      dtos = [...dtos].sort((a, b) => direction * (a.profiles.length - b.profiles.length));
-    }
-
-    const total = dtos.length;
+    ) as Prisma.AccessAccountOrderByWithRelationInput[];
     const { skip, take } = toSkipTake(query);
 
-    return {
-      items: dtos.slice(skip, skip + take),
-      total,
-      page: query.page,
-      pageSize: query.pageSize,
-    };
+    const [rows, total] = await Promise.all([
+      accountRepository.findMany(product, where, orderBy, skip, take),
+      accountRepository.count(where),
+    ]);
+
+    return { items: rows.map(toAccountDto), total, page: query.page, pageSize: query.pageSize };
   },
 
   async getById(product: Product, id: number): Promise<AccountDto> {
@@ -203,19 +173,23 @@ export const accountService = {
     return toAccountDto(await requireAccountWithProfiles('ERP', id));
   },
 
-  /** A product's profiles go only to a member of the caller's company who holds a seat in it. */
-  async linkProfile(product: Product, accountId: number, profileId: number): Promise<AccountDto> {
-    await requireAccountWithProfiles(product, accountId); // 404 before touching the join table
-    const membershipId = await companyService.requireMember(accountId, requireCompanyId(), product);
-    await accountRepository.linkProfile(product, membershipId, profileId);
-
-    return toAccountDto(await requireAccountWithProfiles(product, accountId));
-  },
-
-  async unlinkProfile(product: Product, accountId: number, profileId: number): Promise<AccountDto> {
-    await requireAccountWithProfiles(product, accountId);
-    const membershipId = await companyService.requireMember(accountId, requireCompanyId());
-    await accountRepository.unlinkProfile(product, membershipId, profileId);
+  /**
+   * Sets the member's one profile in `product` (`null` removes it). A profile
+   * goes only to a member of the caller's company who holds a seat in the
+   * product; removing it needs only the membership.
+   */
+  async setProfile(
+    product: Product,
+    accountId: number,
+    profileId: number | null,
+  ): Promise<AccountDto> {
+    await requireAccountWithProfiles(product, accountId); // 404 before touching the link
+    const membershipId = await companyService.requireMember(
+      accountId,
+      requireCompanyId(),
+      profileId === null ? undefined : product,
+    );
+    await accountRepository.setProfile(product, membershipId, profileId);
 
     return toAccountDto(await requireAccountWithProfiles(product, accountId));
   },

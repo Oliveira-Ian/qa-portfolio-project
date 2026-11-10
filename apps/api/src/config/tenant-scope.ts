@@ -20,6 +20,7 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'AccessProfile',
   'ProfilePermission',
   'MembershipProfile',
+  'Branch',
 ]);
 
 type Args = Record<string, unknown>;

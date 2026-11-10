@@ -173,6 +173,22 @@ model Company {
   /// CNPJ. Unique when present.
   document  String?       @unique
   status    CompanyStatus @default(ACTIVE)
+  /// The rest of the registration — central Platform data, edited by the
+  /// company's account administrator on the Platform; legal name and CNPJ
+  /// only by Oliveira (plan § 2.9). One main address, as columns: this table is
+  /// read before any company is in context, outside row-level security.
+  stateRegistration     String?
+  municipalRegistration String?
+  email                 String?
+  phone                 String?
+  website               String?
+  zipCode               String?
+  street                String?
+  number                String?
+  complement            String?
+  district              String?
+  city                  String?
+  state                 String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -180,6 +196,32 @@ model Company {
   products    CompanyProduct[]
   persons     Person[]
   profiles    AccessProfile[]
+  branches    Branch[]
+}
+
+/// A place a company operates from (docs/adr/0013, addendum of 2026-11-10).
+/// Minimal on purpose: no access is restricted by branch and nothing is the
+/// session's "active branch" — a later restriction would be a column on
+/// MembershipProfile, not a change here. Company data under row-level security.
+/// Deactivated, never deleted, so the records that name it keep their history.
+model Branch {
+  id        String   @id @default(uuid(7))
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  /// Short identifier the company chooses ("SP-01"), unique within it.
+  code      String
+  name      String
+  street    String?
+  city      String?
+  state     String?
+  zipCode   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, id])
+  @@unique([companyId, code])
+  @@index([companyId, name])
 }
 
 /// An account's place in a company. `role` is the company's own administrator
@@ -267,6 +309,8 @@ model AccessProfile {
   members     MembershipProfile[]
 
   @@unique([companyId, id])
+  /// Target of MembershipProfile's key: the link carries the profile's product.
+  @@unique([companyId, id, product])
   @@unique([companyId, product, name])
   @@index([companyId, product])
 }
@@ -302,21 +346,25 @@ model ProfilePermission {
   @@index([companyId])
 }
 
-/// A member's profile in a company — per membership, not per account, so the
-/// same login can do different things in different companies. Kept as its own
-/// entity so scoping a profile further (to a branch, later) is a column here,
-/// without touching Membership or AccessProfile.
+/// A member's profile in one product of a company — per membership, not per
+/// account, so the same login can do different things in different companies;
+/// **one per product** (`@@unique([membershipId, product])`). `product` repeats
+/// the profile's and is part of the foreign key, so the database itself refuses
+/// a link whose product disagrees with its profile. Kept as its own entity so
+/// scoping a profile further (to a branch, later) is a column here, without
+/// touching Membership or AccessProfile.
 model MembershipProfile {
   id           String            @id @default(uuid(7))
   companyId    String
   membershipId String
+  product      Product
   profileId    Int
   membership   Membership        @relation(fields: [companyId, membershipId], references: [companyId, id], onDelete: Cascade)
-  profile      AccessProfile     @relation(fields: [companyId, profileId], references: [companyId, id], onDelete: Cascade)
+  profile      AccessProfile     @relation(fields: [companyId, profileId, product], references: [companyId, id, product], onDelete: Cascade)
   assignedAt   DateTime          @default(now())
 
   @@unique([companyId, id])
-  @@unique([membershipId, profileId])
+  @@unique([membershipId, product])
   @@index([companyId, profileId])
 }
 

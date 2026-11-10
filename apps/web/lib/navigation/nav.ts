@@ -1,4 +1,4 @@
-import { Building2, Home, LayoutDashboard, Users, Blocks, type LucideIcon } from 'lucide-react';
+import { Blocks, Building2, Home, LayoutDashboard, Users, type LucideIcon } from 'lucide-react';
 import type { Product, ProductPermissions } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 import { filterCatalogForAccount, flattenRoutines, type RoutinePath } from './catalog';

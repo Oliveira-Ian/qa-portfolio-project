@@ -2,16 +2,14 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   accountCreateSchema,
   accountListQuerySchema,
-  accountProfileLinkSchema,
+  accountProfileSetSchema,
   accountUpdateSchema,
   type Product,
 } from '@oliveira/schemas';
 import { sendSuccess } from '../../shared/http.js';
-import { parseId, type WithId, type WithParams } from '../../shared/params.js';
+import { parseId, type WithId } from '../../shared/params.js';
 import { parseOrThrow } from '../../shared/validation.js';
 import { accountService } from './account.service.js';
-
-export type WithProfileLink = WithParams<'id' | 'profileId'>;
 
 /** Creating a login and changing its Platform role/status — not tied to a product's profiles. */
 export const accountController = {
@@ -55,22 +53,12 @@ export function createProductAccountController(product: Product) {
       );
     },
 
-    async linkProfile(request: FastifyRequest<WithId>, reply: FastifyReply) {
-      const input = parseOrThrow(accountProfileLinkSchema, request.body);
-      const account = await accountService.linkProfile(
+    async setProfile(request: FastifyRequest<WithId>, reply: FastifyReply) {
+      const input = parseOrThrow(accountProfileSetSchema, request.body);
+      const account = await accountService.setProfile(
         product,
         parseId(request.params.id),
         input.profileId,
-      );
-
-      return sendSuccess(reply, 200, account);
-    },
-
-    async unlinkProfile(request: FastifyRequest<WithProfileLink>, reply: FastifyReply) {
-      const account = await accountService.unlinkProfile(
-        product,
-        parseId(request.params.id),
-        parseId(request.params.profileId),
       );
 
       return sendSuccess(reply, 200, account);

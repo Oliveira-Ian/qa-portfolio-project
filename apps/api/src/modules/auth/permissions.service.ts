@@ -17,7 +17,7 @@ export async function getEffectivePermissions<P extends Product>(
   product: P,
 ): Promise<Set<ProductPermissionKey<P>>> {
   const links = await prisma.membershipProfile.findMany({
-    where: { membershipId, profile: { product } },
+    where: { membershipId, product },
     select: {
       profile: {
         select: {

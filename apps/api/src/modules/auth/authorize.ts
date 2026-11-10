@@ -73,6 +73,21 @@ export const requireCompanyAdmin: RouteGuard = async function requireCompanyAdmi
   }
 };
 
+/**
+ * Layer 2, read side: the caller is a member of an active company — for
+ * company data every member may read whatever product they work in (the
+ * company's branches). Must run after `requireAuth`.
+ */
+export const requireCompanyMember: RouteGuard = async function requireCompanyMember(request) {
+  if (!request.account) {
+    throw new UnauthorizedError();
+  }
+
+  if (!request.access?.membership || !request.access.isCompanyActive) {
+    throw new ForbiddenError();
+  }
+};
+
 /** Lets the request through if **any** guard does — a refusal is a `ForbiddenError`; anything else propagates. */
 export function requireAnyOf(...guards: RouteGuard[]): RouteGuard {
   return async function requireAnyOfHook(request: FastifyRequest): Promise<void> {

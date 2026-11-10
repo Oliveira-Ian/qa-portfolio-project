@@ -20,6 +20,7 @@ export const ROUTES = {
   /** The Platform's company administration (company admins only). */
   company: {
     overview: '/company',
+    edit: '/company/edit',
     members: '/company/members',
     member: (membershipId: string) => `/company/members/${membershipId}`,
     productAccess: (product?: string) =>
@@ -39,6 +40,7 @@ export const ROUTES = {
   profiles: {
     list: '/erp/administration/access-control/profiles',
     new: '/erp/administration/access-control/profiles/new',
+    view: (id: number) => `/erp/administration/access-control/profiles/${id}`,
     edit: (id: number) => `/erp/administration/access-control/profiles/${id}/edit`,
   },
   accounts: {

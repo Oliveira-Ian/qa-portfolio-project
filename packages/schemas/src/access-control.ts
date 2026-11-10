@@ -80,11 +80,27 @@ export const accountUpdateSchema = z
 
 export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
 
-export const accountProfileLinkSchema = z.object({
-  profileId: z.number().int().positive(),
+/**
+ * A member's profile in one product — one per product (decided 2026-11-10):
+ * setting it replaces the previous one, `null` removes it. The product is the
+ * route's (`/api/accounts` is the ERP's, `/api/fsm/accounts` the FSM's).
+ */
+export const accountProfileSetSchema = z.object({
+  profileId: z.number().int().positive().nullable(),
 });
 
-export type AccountProfileLinkInput = z.infer<typeof accountProfileLinkSchema>;
+export type AccountProfileSetInput = z.infer<typeof accountProfileSetSchema>;
+
+/** The profile picker's value: a profile id as text, or an empty string for "no profile". */
+export const accountProfileFormSchema = z.object({ profileId: z.string() });
+
+export type AccountProfileFormValues = z.infer<typeof accountProfileFormSchema>;
+
+export function accountProfileFormToPayload(
+  values: AccountProfileFormValues,
+): AccountProfileSetInput {
+  return { profileId: values.profileId === '' ? null : Number(values.profileId) };
+}
 
 export interface AccountDto {
   id: number;
@@ -99,7 +115,8 @@ export interface AccountDto {
   role: AccountRole;
   active: boolean;
   createdAt: string;
-  profiles: { id: number; name: string }[];
+  /** The member's profile in this product, or `null` when they have none. */
+  profile: { id: number; name: string } | null;
 }
 
 /**

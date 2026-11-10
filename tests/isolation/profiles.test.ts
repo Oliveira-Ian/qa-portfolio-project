@@ -71,12 +71,14 @@ beforeAll(async () => {
         id: crypto.randomUUID(),
         companyId: companyA.id,
         membershipId: membership.id,
+        product: 'ERP',
         profileId: ids.erpProfileA,
       },
       {
         id: crypto.randomUUID(),
         companyId: companyA.id,
         membershipId: membership.id,
+        product: 'FSM',
         profileId: ids.fsmProfileA,
       },
     ],
@@ -115,7 +117,12 @@ describe('profiles are company data', () => {
   it('refuses a membership link to a profile of another company, even bypassing RLS', async () => {
     await expect(
       admin.membershipProfile.create({
-        data: { companyId: companyA.id, membershipId: ids.membershipA, profileId: ids.erpProfileB },
+        data: {
+          companyId: companyA.id,
+          membershipId: ids.membershipA,
+          product: 'ERP',
+          profileId: ids.erpProfileB,
+        },
       }),
     ).rejects.toThrow();
   });
