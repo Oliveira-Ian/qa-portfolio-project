@@ -180,8 +180,12 @@ a persisted, queryable trail belongs to F-15 (#7).
   editors and routes are separate: `/api/profiles`, `/api/permissions`, `/api/accounts` are the ERP's;
   `/api/fsm/profiles`, `/api/fsm/permissions`, `/api/fsm/accounts` the FSM's. The product comes from
   the route, never from the request body.
-- A member's profiles are linked to the **membership** (`MembershipProfile`), so the same login can do
-  different things in different companies. A later branch restriction would be a column there.
+- A member holds **one profile per product** (`MembershipProfile`, unique per membership and product,
+  decided 2026-11-10), linked to the **membership**, so the same login can do different things in
+  different companies. `PUT /api/accounts/:id/profile` (ERP) and `/api/fsm/accounts/:id/profile` (FSM)
+  set or clear it. It is set on each product's Users screen and on the Platform's member page — there
+  only for someone who manages that product's profiles, through the same product API. A later branch
+  restriction would be a column on the link.
 - Reference profiles (`prisma/reference-profiles.ts`) are copied into a company for each product it
   contracts: ERP — Administrator, Manager, Finance, Cashier, Default User; FSM — Administrator,
   Manager, Technician. The company edits, duplicates (`POST …/profiles/:id/duplicate`) and adds to

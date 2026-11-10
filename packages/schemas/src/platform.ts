@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AccountRole } from './auth.js';
 
 /**
  * What the Platform knows about a product, shared by the API (which guards it)
@@ -53,6 +54,23 @@ export const memberUpdateSchema = z
 
 export type MemberUpdateInput = z.infer<typeof memberUpdateSchema>;
 
+/**
+ * The member's edit page, as one form: their role in the company account and
+ * which products they may open (the Platform's), the profile they hold in each
+ * product (each product's own, offered only to whoever may manage it there),
+ * and — for a `SUPER_ADMIN` only — the account's Platform role and active flag.
+ * `profiles` is a profile id as text, `''` for none.
+ */
+export const memberEditFormSchema = z.object({
+  role: membershipRoleSchema,
+  seats: z.object({ ERP: z.boolean(), FSM: z.boolean() }),
+  profiles: z.object({ ERP: z.string(), FSM: z.string() }),
+  platformRole: z.enum(['SUPER_ADMIN', 'USER']),
+  accountActive: z.boolean(),
+});
+
+export type MemberEditFormValues = z.infer<typeof memberEditFormSchema>;
+
 /** One member of the caller's company. `id` is the membership's, not the account's. */
 export interface CompanyMemberDto {
   id: string;
@@ -61,6 +79,10 @@ export interface CompanyMemberDto {
   email: string;
   role: MembershipRole;
   status: MembershipStatus;
+  /** The account's role on the Platform — changed only by a `SUPER_ADMIN`. */
+  accountRole: AccountRole;
+  /** Whether the account can sign in at all — the Platform's, not the company's. */
+  accountActive: boolean;
   /** The seats this member holds — meaningful only while the membership is active. */
   products: Product[];
   createdAt: string;

@@ -49,11 +49,15 @@ now (the API has no `skip`/`take` yet; swapping to server-side pagination later 
 hook). `DataTable` renders the resulting `Table` instance over the existing `components/ui/table.tsx`
 primitives: a leading selection-checkbox column (header selects the current page, not every filtered
 row), the routine's own columns via `flexRender`, `EmptyState` in place of the body when there are no
-rows, and — when a `rowActions` prop is given — wraps each row in a right-click `ContextMenu` (see
-`RowActionsMenu` below).
+rows.
 
-**Row click only selects.** Per the spec ("clicking a row only selects the record"), `DataTable` has
-no click/double-click navigation. Viewing/editing/deleting a row is `RowActionsMenu`'s job.
+**A click selects; a double click opens** (decided 2026-11-10). A click (or Space on a focused row)
+toggles the row's selection; a double click (or Enter) calls `onRowOpen`, which goes to the record's
+read-only view. There is **no action on each row** — no "⋮" menu, no right-click menu: Add, Edit,
+Delete (and any other action, such as Duplicate) live in the page header and act on the selection.
+This replaces the earlier rule ("clicking a row only selects; per-row actions menu"). Records are
+never created, viewed or edited in a drawer: each has its own page (`new`, `[id]`, `[id]/edit`); a
+drawer is for filters and quick details only.
 
 ### Selection model
 A plain multi-select: any row's checkbox toggles independently (no more "selecting a new row clears

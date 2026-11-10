@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ArrowDown, ArrowUp, ChevronsUpDown, MoreHorizontal, Plus, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowDown, ArrowUp, ChevronsUpDown, Pencil, Plus, Search } from 'lucide-react';
 import {
   PRODUCT_LABELS,
-  type CompanyMemberDto,
+  PRODUCTS,
   type CompanyMembersDto,
   type MembershipRole,
   type MembershipStatus,
@@ -15,14 +15,9 @@ import { AccessBadge, SoonChip } from '@/components/platform/access-badge';
 import { MemberIdentity, MembershipStatusBadge, RoleTag } from '@/components/platform/member-parts';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ListPagination } from '@/components/ui/list-pagination';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -34,43 +29,30 @@ import {
 import { formatDateMedium } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
-import { AddMemberDialog } from './add-member-dialog';
+import { PRODUCT_AVAILABILITY } from '@/lib/products';
 import { FilterMenu } from './filter-menu';
-import { MemberDrawer } from './member-drawer';
 
 type RoleFilter = 'all' | MembershipRole;
 type StatusFilter = 'all' | MembershipStatus;
 type SortKey = 'name' | 'joined';
-
-const MEMBERS_PREFIX = `${ROUTES.company.members}/`;
-
-/** The membership id in `/company/members/:id`, or `null` on the list itself. */
-function selectedIdFrom(pathname: string): string | null {
-  return pathname.startsWith(MEMBERS_PREFIX)
-    ? decodeURIComponent(pathname.slice(MEMBERS_PREFIX.length).split('/')[0] ?? '') || null
-    : null;
-}
 
 interface MemberListProps {
   company: CompanyMembersDto;
 }
 
 /**
- * The company's members (design S10): search, role and status filters, a table
- * with each member's role, state and product access, and the drawer of whichever
- * member `/company/members/:id` names.
+ * The company's members (design S10): search, role and status filters, and a
+ * table with each member's role, state and product access. A click selects a
+ * member, a double click (or Enter) opens their page, and Add and Edit live in
+ * the header (docs/design/patterns/listing_pages.md) — no per-row menu.
  *
  * The API returns every member at once, so searching, filtering, sorting and
- * paging happen here. Opening a member pushes the drawer's URL with the History
- * API — Next syncs `usePathname` with it, so the drawer follows the address, the
- * back button closes it, and the list (with its search and page) is never
- * remounted. A pasted `/company/members/:id` renders the same list with the
- * drawer already open.
+ * paging happen here.
  */
 export function MemberList({ company }: MemberListProps) {
   const t = useT();
   const locale = useLocale();
-  const pathname = usePathname();
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<RoleFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -80,10 +62,7 @@ export function MemberList({ company }: MemberListProps) {
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [isAdding, setAdding] = useState(false);
-
-  const selectedId = selectedIdFrom(pathname);
-  const selectedMember = company.members.find((member) => member.id === selectedId);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const visibleMembers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -108,12 +87,8 @@ export function MemberList({ company }: MemberListProps) {
   const currentPage = Math.min(page, pageCount);
   const pageMembers = visibleMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  function handleOpen(member: CompanyMemberDto) {
-    window.history.pushState(null, '', ROUTES.company.member(member.id));
-  }
-
-  function handleClose() {
-    window.history.pushState(null, '', ROUTES.company.members);
+  function handleToggle(id: string) {
+    setSelectedId((current) => (current === id ? null : id));
   }
 
   function handleSortChange(key: SortKey) {
@@ -137,10 +112,23 @@ export function MemberList({ company }: MemberListProps) {
         titleTestId="company-members-title"
         meta={t('company.members.meta', { count: company.members.length })}
         actions={
-          <Button onClick={() => setAdding(true)} data-testid="company-members-add">
-            <Plus aria-hidden="true" />
-            {t('company.members.add')}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              disabled={selectedId === null}
+              onClick={() => selectedId && router.push(ROUTES.company.memberEdit(selectedId))}
+              data-testid="company-members-edit"
+            >
+              <Pencil aria-hidden="true" />
+              {t('company.members.edit')}
+            </Button>
+            <Button asChild data-testid="company-members-add">
+              <Link href={ROUTES.company.memberNew}>
+                <Plus aria-hidden="true" />
+                {t('company.members.add')}
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -215,6 +203,9 @@ export function MemberList({ company }: MemberListProps) {
         <Table stacked data-testid="company-members-table">
           <TableHeader>
             <TableRow className="h-10 hover:bg-transparent">
+              <TableHead className="w-10">
+                <span className="sr-only">{t('company.members.columns.select')}</span>
+              </TableHead>
               <TableHead aria-sort={ariaSortOf('name')}>
                 <SortButton
                   label={t('company.members.columns.member')}
@@ -225,15 +216,14 @@ export function MemberList({ company }: MemberListProps) {
               </TableHead>
               <TableHead>{t('company.members.columns.role')}</TableHead>
               <TableHead>{t('company.members.columns.status')}</TableHead>
-              <TableHead>
-                <span translate="no">{PRODUCT_LABELS.ERP}</span>
-              </TableHead>
-              <TableHead>
-                <span className="inline-flex items-center gap-2">
-                  <span translate="no">{PRODUCT_LABELS.FSM}</span>
-                  <SoonChip />
-                </span>
-              </TableHead>
+              {PRODUCTS.map((product) => (
+                <TableHead key={product}>
+                  <span className="inline-flex items-center gap-2">
+                    <span translate="no">{PRODUCT_LABELS[product]}</span>
+                    {!PRODUCT_AVAILABILITY[product].available ? <SoonChip /> : null}
+                  </span>
+                </TableHead>
+              ))}
               <TableHead aria-sort={ariaSortOf('joined')}>
                 <SortButton
                   label={t('company.members.columns.joined')}
@@ -242,16 +232,13 @@ export function MemberList({ company }: MemberListProps) {
                   testId="company-members-sort-joined"
                 />
               </TableHead>
-              <TableHead className="w-12">
-                <span className="sr-only">{t('company.members.columns.actions')}</span>
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageMembers.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={7}
+                  colSpan={4 + PRODUCTS.length}
                   className="h-24 text-center text-text-3"
                   data-testid="company-members-empty"
                 >
@@ -262,32 +249,37 @@ export function MemberList({ company }: MemberListProps) {
               pageMembers.map((member) => (
                 <TableRow
                   key={member.id}
-                  className="h-[58px]"
+                  className="h-[58px] cursor-pointer focus-visible:-outline-offset-2 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                  tabIndex={0}
+                  aria-selected={member.id === selectedId}
                   data-state={member.id === selectedId ? 'selected' : undefined}
+                  onClick={() => handleToggle(member.id)}
+                  onDoubleClick={() => router.push(ROUTES.company.member(member.id))}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) {
+                      return;
+                    }
+
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      router.push(ROUTES.company.member(member.id));
+                    } else if (event.key === ' ') {
+                      event.preventDefault();
+                      handleToggle(member.id);
+                    }
+                  }}
                   data-testid={`company-member-row-${member.id}`}
                 >
+                  <TableCell onClick={(event) => event.stopPropagation()}>
+                    <Checkbox
+                      checked={member.id === selectedId}
+                      onCheckedChange={() => handleToggle(member.id)}
+                      aria-label={t('company.members.select', { name: member.name })}
+                      data-testid={`company-member-select-${member.id}`}
+                    />
+                  </TableCell>
                   <TableCell>
-                    <Link
-                      href={ROUTES.company.member(member.id)}
-                      scroll={false}
-                      onClick={(event) => {
-                        if (
-                          event.metaKey ||
-                          event.ctrlKey ||
-                          event.shiftKey ||
-                          event.button !== 0
-                        ) {
-                          return;
-                        }
-
-                        event.preventDefault();
-                        handleOpen(member);
-                      }}
-                      className="rounded-sm focus-visible:ring-focus"
-                      data-testid={`company-member-open-${member.id}`}
-                    >
-                      <MemberIdentity member={member} />
-                    </Link>
+                    <MemberIdentity member={member} />
                   </TableCell>
                   <TableCell data-label={t('company.members.columns.role')}>
                     <RoleTag role={member.role} />
@@ -295,40 +287,22 @@ export function MemberList({ company }: MemberListProps) {
                   <TableCell data-label={t('company.members.columns.status')}>
                     <MembershipStatusBadge status={member.status} />
                   </TableCell>
-                  <TableCell data-label={PRODUCT_LABELS.ERP}>
-                    {member.status === 'ACTIVE' ? (
-                      <AccessBadge state={member.products.includes('ERP') ? 'granted' : 'none'} />
-                    ) : (
-                      <span className="text-text-3">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell data-label={PRODUCT_LABELS.FSM}>
-                    <span className="text-text-3">—</span>
-                  </TableCell>
+                  {PRODUCTS.map((product) => (
+                    <TableCell key={product} data-label={PRODUCT_LABELS[product]}>
+                      {member.status === 'ACTIVE' && PRODUCT_AVAILABILITY[product].available ? (
+                        <AccessBadge
+                          state={member.products.includes(product) ? 'granted' : 'none'}
+                        />
+                      ) : (
+                        <span className="text-text-3">—</span>
+                      )}
+                    </TableCell>
+                  ))}
                   <TableCell
                     className="olv-data text-text-2"
                     data-label={t('company.members.columns.joined')}
                   >
                     {formatDateMedium(member.createdAt, locale)}
-                  </TableCell>
-                  <TableCell className="text-right" data-card-corner>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t('company.members.rowActions', { name: member.name })}
-                          data-testid={`company-member-actions-${member.id}`}
-                        >
-                          <MoreHorizontal aria-hidden="true" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleOpen(member)}>
-                          {t('company.members.viewDetails')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -347,23 +321,6 @@ export function MemberList({ company }: MemberListProps) {
           setPage(1);
         }}
         testIdPrefix="company-members"
-      />
-
-      {selectedMember ? (
-        <MemberDrawer
-          // A saved change comes back as new props: remount so the form shows the server's truth.
-          key={`${selectedMember.id}:${selectedMember.role}:${selectedMember.status}:${selectedMember.products.join(',')}`}
-          member={selectedMember}
-          companyName={company.company.name}
-          contracts={company.products}
-          onClose={handleClose}
-        />
-      ) : null}
-
-      <AddMemberDialog
-        open={isAdding}
-        onOpenChange={setAdding}
-        companyName={company.company.name}
       />
     </div>
   );

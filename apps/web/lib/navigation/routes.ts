@@ -23,6 +23,8 @@ export const ROUTES = {
     edit: '/company/edit',
     members: '/company/members',
     member: (membershipId: string) => `/company/members/${membershipId}`,
+    memberEdit: (membershipId: string) => `/company/members/${membershipId}/edit`,
+    memberNew: '/company/members/new',
     productAccess: (product?: string) =>
       product ? `/company/product-access/${product}` : '/company/product-access',
   },
