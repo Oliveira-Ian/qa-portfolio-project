@@ -30,7 +30,6 @@ export function CreateProfileForm({ permissions }: { permissions: PermissionDto[
       formTestId="profile-form"
       form={form}
       onSubmit={onSubmit}
-      errorBodyKey="erp.profiles.form.errorBody"
       header={
         <>
           <FormCardHeader

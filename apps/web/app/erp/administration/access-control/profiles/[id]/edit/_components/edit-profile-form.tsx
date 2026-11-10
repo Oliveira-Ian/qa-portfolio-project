@@ -39,7 +39,6 @@ export function EditProfileForm({ profile, permissions }: EditProfileFormProps) 
       formTestId="profile-form"
       form={form}
       onSubmit={onSubmit}
-      errorBodyKey="erp.profiles.form.errorBody"
       header={
         <>
           <FormCardHeader

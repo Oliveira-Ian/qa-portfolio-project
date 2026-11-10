@@ -12,23 +12,9 @@ import { toast } from 'sonner';
 import type { ActionResult } from '@/lib/actions';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
+import { reportInvalidFields } from './report-invalid-fields';
 
 type SubmitResult = ActionResult | void;
-
-/**
- * A form is one long page of sections, so the first invalid field may be below the
- * fold. react-hook-form focuses the ones that forward their ref; this also covers
- * the custom controls that do not (a chip group, a combobox) and brings the field
- * into the middle of the screen rather than leaving it under the sticky actions.
- */
-function scrollToFirstInvalidField() {
-  requestAnimationFrame(() => {
-    const field = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
-
-    field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    field?.focus({ preventScroll: true });
-  });
-}
 
 /**
  * Everything a create/edit form shares: schema-driven validation, the same
@@ -92,9 +78,8 @@ export function useEntityForm<TValues extends FieldValues>(
         }
       });
     },
-    () => {
-      toast.error(t('common.fixErrors'));
-      scrollToFirstInvalidField();
+    (errors) => {
+      reportInvalidFields(Object.keys(errors).length, t);
     },
   );
 

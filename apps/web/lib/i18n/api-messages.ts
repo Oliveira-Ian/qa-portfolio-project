@@ -37,6 +37,7 @@ const EXACT: Record<string, MessageKey> = {
   'Unknown product': 'api.validation.unknownProduct',
   'Invalid birth date': 'api.validation.invalidBirthDate',
   'One or more permissions do not exist': 'api.validation.unknownPermission',
+  'Code is required': 'api.validation.codeRequired',
 
   // Auth
   'Please fill in email and password': 'api.auth.missingFields',
@@ -60,6 +61,7 @@ const EXACT: Record<string, MessageKey> = {
   'Person not found': 'api.notFound.person',
   'One or more people were not found': 'api.notFound.people',
   'Profile not found': 'api.notFound.profile',
+  'Branch not found': 'api.notFound.branch',
   'The company must keep at least one administrator': 'api.guard.lastCompanyAdmin',
   'At least one member must keep the ability to manage profiles': 'api.guard.lastProfileManager',
   'Cannot remove the last active super admin': 'api.guard.lastSuperAdmin',
@@ -67,6 +69,7 @@ const EXACT: Record<string, MessageKey> = {
   'This profile is protected and cannot be deleted': 'api.guard.protectedProfile',
   'A person with this document already exists': 'api.guard.documentTaken',
   'A profile with this name already exists': 'api.guard.profileNameTaken',
+  'A branch with this code already exists': 'api.guard.branchCodeTaken',
 
   // Confirmations a Server Action sends back
   'Person created successfully': 'api.done.personCreated',
@@ -105,6 +108,11 @@ const PATTERNS: readonly MessagePattern[] = [
   },
   { pattern: /^(\d+) people deleted$/, key: 'api.done.peopleDeleted', vars: countVars },
   { pattern: /^(\d+) profiles deleted$/, key: 'api.done.profilesDeleted', vars: countVars },
+  {
+    pattern: /^Use at most (\d+) characters$/,
+    key: 'api.validation.tooLong',
+    vars: (match) => ({ max: Number(match[1]) }),
+  },
 ];
 
 /** The message in the user's language, or the original when it isn't one the app knows. */

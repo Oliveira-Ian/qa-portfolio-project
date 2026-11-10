@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
 import { addMemberAction } from '../../_actions/add-member';
+import { reportInvalidFields } from '@/components/forms/report-invalid-fields';
 
 interface AddMemberDialogProps {
   open: boolean;
@@ -92,7 +93,9 @@ export function AddMemberDialog({ open, onOpenChange, companyName }: AddMemberDi
         <Form {...form}>
           <form
             className="grid gap-4"
-            onSubmit={form.handleSubmit(handleValid)}
+            onSubmit={form.handleSubmit(handleValid, (errors) =>
+              reportInvalidFields(Object.keys(errors).length, t),
+            )}
             noValidate
             data-testid="company-add-member-form"
           >

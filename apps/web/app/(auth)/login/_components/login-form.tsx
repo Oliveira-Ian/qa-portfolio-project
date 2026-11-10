@@ -23,6 +23,7 @@ import { ROUTES } from '@/lib/navigation/routes';
 import { PLATFORM_NAME } from '@/lib/products';
 import { EmailInput, PasswordInput } from '../../_components/auth-fields';
 import { loginAction } from '../_actions/login';
+import { reportInvalidFields } from '@/components/forms/report-invalid-fields';
 
 const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
@@ -82,14 +83,17 @@ export function LoginForm({ next }: LoginFormProps) {
     });
   }
 
-  function handleInvalid() {
-    // The inline messages already name each field; the toast is the global
-    // "you submitted an empty form" signal documented in auth_rules.md.
+  function handleInvalid(errors: Record<string, unknown>) {
+    // An empty form gets the one sentence documented in auth_rules.md; any other
+    // failure names the field in a toast — fields only turn red, never grow text.
     const { email, password } = form.getValues();
 
     if (!email || !password) {
       toast.error(translateApiMessage(authMessages.login.missingFields, t));
+      return;
     }
+
+    reportInvalidFields(Object.keys(errors).length, t);
   }
 
   return (

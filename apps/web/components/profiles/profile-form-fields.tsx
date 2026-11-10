@@ -267,7 +267,7 @@ export function ProfileFormFields({ permissions, disabled = false, code }: Profi
           control={form.control}
           name="name"
           render={({ field }) => (
-            <FormItem>
+            <FormItem required>
               <FormLabel data-testid="profile-form-label-name">
                 {t('erp.profiles.form.name')}
               </FormLabel>

@@ -43,7 +43,6 @@ export function EditPersonForm({ person, account, isCompanyAdmin }: EditPersonFo
       formTestId="person-form"
       form={form}
       onSubmit={onSubmit}
-      errorBodyKey="erp.people.form.errorBody"
       header={
         <FormCardHeader
           title={person.name}

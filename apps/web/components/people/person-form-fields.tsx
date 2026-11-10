@@ -11,6 +11,7 @@ import {
 import { FormSection } from '@/components/forms/form-section';
 import { PERSON_TYPE_ICON } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
+import { BRAZILIAN_STATES } from '@/lib/brazilian-states';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -67,37 +68,6 @@ const PERSON_TYPE_LABEL = {
 const DOCUMENT_TYPE_OPTIONS: ComboboxOption[] = [
   { value: 'CPF', label: 'CPF' },
   { value: 'CNPJ', label: 'CNPJ' },
-];
-
-/** The 26 states plus the Federal District, by their standard two-letter code — proper names, never translated. */
-const BRAZILIAN_STATES: ComboboxOption[] = [
-  { value: 'AC', label: 'Acre' },
-  { value: 'AL', label: 'Alagoas' },
-  { value: 'AP', label: 'Amapá' },
-  { value: 'AM', label: 'Amazonas' },
-  { value: 'BA', label: 'Bahia' },
-  { value: 'CE', label: 'Ceará' },
-  { value: 'DF', label: 'Distrito Federal' },
-  { value: 'ES', label: 'Espírito Santo' },
-  { value: 'GO', label: 'Goiás' },
-  { value: 'MA', label: 'Maranhão' },
-  { value: 'MT', label: 'Mato Grosso' },
-  { value: 'MS', label: 'Mato Grosso do Sul' },
-  { value: 'MG', label: 'Minas Gerais' },
-  { value: 'PA', label: 'Pará' },
-  { value: 'PB', label: 'Paraíba' },
-  { value: 'PR', label: 'Paraná' },
-  { value: 'PE', label: 'Pernambuco' },
-  { value: 'PI', label: 'Piauí' },
-  { value: 'RJ', label: 'Rio de Janeiro' },
-  { value: 'RN', label: 'Rio Grande do Norte' },
-  { value: 'RS', label: 'Rio Grande do Sul' },
-  { value: 'RO', label: 'Rondônia' },
-  { value: 'RR', label: 'Roraima' },
-  { value: 'SC', label: 'Santa Catarina' },
-  { value: 'SP', label: 'São Paulo' },
-  { value: 'SE', label: 'Sergipe' },
-  { value: 'TO', label: 'Tocantins' },
 ];
 
 interface TypeChipsProps extends Omit<React.ComponentProps<'div'>, 'onChange'> {
@@ -180,7 +150,7 @@ function TypesField({ disabled }: { disabled: boolean }) {
       control={form.control}
       name="types"
       render={({ field }) => (
-        <FormItem className="sm:col-span-2">
+        <FormItem className="sm:col-span-2" required>
           <FormLabel data-testid="person-form-label-types">
             {t('erp.people.form.fields.type')}
           </FormLabel>
@@ -222,7 +192,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         control={form.control}
         name="documentType"
         render={({ field }) => (
-          <FormItem>
+          <FormItem required>
             <FormLabel data-testid="person-form-label-document-type">
               {t('erp.people.form.fields.documentType')}
             </FormLabel>
@@ -253,7 +223,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         control={form.control}
         name="document"
         render={({ field }) => (
-          <FormItem>
+          <FormItem required>
             <FormLabel data-testid="person-form-label-document">
               {t('erp.people.form.fields.document')}
             </FormLabel>
@@ -296,7 +266,7 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="sm:col-span-2">
+                <FormItem className="sm:col-span-2" required>
                   <FormLabel data-testid="person-form-label-name">
                     {t('erp.people.form.fields.name')}
                   </FormLabel>

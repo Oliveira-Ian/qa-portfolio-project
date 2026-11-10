@@ -139,6 +139,9 @@ export const erpEn = {
     addFirst: 'Add the first profile',
     edit: 'Edit',
     delete: 'Delete',
+    duplicate: 'Duplicate',
+    duplicated: 'Profile duplicated — adjust the copy and save',
+    record: { back: 'Back', edit: 'Edit profile' },
     empty: {
       title: 'No profiles yet',
       body: 'Profiles group permissions — create one and link it to an account.',
@@ -354,6 +357,9 @@ export const erpPtBR: DeepString<typeof erpEn> = {
     addFirst: 'Adicionar o primeiro perfil',
     edit: 'Editar',
     delete: 'Excluir',
+    duplicate: 'Duplicar',
+    duplicated: 'Perfil duplicado — ajuste a cópia e salve',
+    record: { back: 'Voltar', edit: 'Editar perfil' },
     empty: {
       title: 'Ainda não há perfis',
       body: 'Perfis agrupam permissões — crie um e vincule a uma conta.',

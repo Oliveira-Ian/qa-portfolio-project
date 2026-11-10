@@ -24,8 +24,22 @@ export const ptBR: Messages = {
     breadcrumb: 'Trilha de navegação',
     uploadClick: 'Clique para enviar',
     uploadOr: 'ou arraste e solte',
-    fixErrors: 'Corrija os erros acima',
+    fixErrors: 'Corrija os campos destacados',
+    moreFieldErrors:
+      '{count, plural, one {Mais # campo precisa de atenção} other {Mais # campos precisam de atenção}}',
     checkFields: '{count, plural, one {Confira # campo} other {Confira # campos}}',
+    address: {
+      zipCode: 'CEP',
+      street: 'Logradouro',
+      number: 'Número',
+      complement: 'Complemento',
+      district: 'Bairro',
+      city: 'Cidade',
+      state: 'UF',
+      statePlaceholder: 'Selecione…',
+      stateSearch: 'Buscar UF…',
+      stateEmpty: 'Nenhuma UF encontrada',
+    },
   },
 
   breadcrumb: {
@@ -115,6 +129,47 @@ export const ptBR: Messages = {
     },
   },
 
+  accessControl: {
+    users: {
+      title: 'Usuários',
+      meta: '{count, plural, one {# usuário} other {# usuários}}',
+      lead: 'O perfil de cada pessoa no {product}. Quem pode abrir o {product} é definido em Oliveira Platform › Acesso ao produto.',
+      edit: 'Editar',
+      search: 'Buscar por nome ou e-mail',
+      noProfile: 'Sem perfil',
+      active: 'Ativo',
+      inactive: 'Inativo',
+      columns: {
+        name: 'Nome',
+        email: 'E-mail',
+        profile: 'Perfil',
+        status: 'Status',
+        created: 'Membro desde',
+      },
+      empty: {
+        title: 'Nenhum usuário ainda',
+        body: 'As pessoas aparecem aqui quando são membros da sua empresa com acesso ao {product}.',
+      },
+      record: {
+        back: 'Voltar',
+        edit: 'Editar perfil',
+        profileIn: 'Perfil no {product}',
+      },
+      form: {
+        lead: 'Escolha o que esta pessoa pode fazer no {product}.',
+        section: 'Perfil no {product}',
+        sectionHelp:
+          'Um perfil por pessoa. As permissões dele são editadas na tela Perfis de acesso.',
+        help: 'Sem perfil, a pessoa abre o produto mas não consegue fazer nada nele.',
+        search: 'Buscar perfis…',
+        noMatch: 'Nenhum perfil encontrado',
+        save: 'Salvar',
+        cancel: 'Cancelar',
+      },
+      saved: 'Perfil atualizado',
+    },
+  },
+
   home: {
     greeting: 'Olá, {name}.',
     role: { admin: 'Admin', member: 'Membro' },
@@ -184,6 +239,35 @@ export const ptBR: Messages = {
       statusSuspended: 'Suspenso',
       manageMembers: 'Gerenciar membros',
       manageAccess: 'Gerenciar acesso aos produtos',
+      editCompany: 'Editar empresa',
+    },
+    profile: {
+      heading: 'Cadastro',
+      note: 'Compartilhado por todos os produtos Oliveira que sua empresa usa.',
+      editTitle: 'Editar empresa',
+      lead: 'A razão social e o CNPJ são alterados pela Oliveira — fale com o suporte para atualizá-los.',
+      sections: {
+        identification: 'Identificação',
+        identificationHelp: 'Como a sua empresa está registrada.',
+        contact: 'Contato',
+        contactHelp: 'Como clientes e a Oliveira falam com a empresa.',
+        address: 'Endereço principal',
+        addressHelp: 'O endereço registrado da sede.',
+      },
+      fields: {
+        legalName: 'Razão social',
+        document: 'CNPJ',
+        tradeName: 'Nome fantasia',
+        stateRegistration: 'Inscrição estadual',
+        municipalRegistration: 'Inscrição municipal',
+        email: 'E-mail',
+        phone: 'Telefone',
+        website: 'Site',
+        address: 'Endereço',
+      },
+      save: 'Salvar empresa',
+      cancel: 'Cancelar',
+      saved: 'Empresa atualizada',
     },
     members: {
       title: 'Membros',
@@ -350,6 +434,8 @@ export const ptBR: Messages = {
       unknownProduct: 'Produto desconhecido',
       invalidBirthDate: 'Data de nascimento inválida',
       unknownPermission: 'Uma ou mais permissões não existem',
+      codeRequired: 'O código é obrigatório',
+      tooLong: 'Use no máximo {max} caracteres',
     },
     auth: {
       missingFields: 'Preencha o e-mail e a senha',
@@ -380,6 +466,7 @@ export const ptBR: Messages = {
       person: 'Pessoa não encontrada',
       people: 'Uma ou mais pessoas não foram encontradas',
       profile: 'Perfil não encontrado',
+      branch: 'Filial não encontrada',
     },
     guard: {
       lastCompanyAdmin: 'A empresa precisa manter pelo menos um administrador',
@@ -389,6 +476,7 @@ export const ptBR: Messages = {
       protectedProfile: 'Este perfil é protegido e não pode ser excluído',
       documentTaken: 'Já existe uma pessoa com este documento',
       profileNameTaken: 'Já existe um perfil com este nome',
+      branchCodeTaken: 'Já existe uma filial com este código',
     },
     done: {
       personCreated: 'Pessoa criada com sucesso',

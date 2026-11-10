@@ -31,8 +31,22 @@ export const en = {
     breadcrumb: 'Breadcrumb',
     uploadClick: 'Click to upload',
     uploadOr: 'or drag and drop',
-    fixErrors: 'Please fix the errors above',
+    fixErrors: 'Fix the highlighted fields',
+    moreFieldErrors:
+      '{count, plural, one {# more field needs attention} other {# more fields need attention}}',
     checkFields: '{count, plural, one {Check # field} other {Check # fields}}',
+    address: {
+      zipCode: 'CEP',
+      street: 'Street',
+      number: 'Number',
+      complement: 'Complement',
+      district: 'District',
+      city: 'City',
+      state: 'State',
+      statePlaceholder: 'Select…',
+      stateSearch: 'Search states…',
+      stateEmpty: 'No state found',
+    },
   },
 
   breadcrumb: {
@@ -122,6 +136,48 @@ export const en = {
     },
   },
 
+  /** Screens every product shares for its own access control — the product is passed in. */
+  accessControl: {
+    users: {
+      title: 'Users',
+      meta: '{count, plural, one {# user} other {# users}}',
+      lead: 'The profile each person holds in {product}. Who can open {product} is set in Oliveira Platform › Product access.',
+      edit: 'Edit',
+      search: 'Search by name or email',
+      noProfile: 'No profile',
+      active: 'Active',
+      inactive: 'Inactive',
+      columns: {
+        name: 'Name',
+        email: 'Email',
+        profile: 'Profile',
+        status: 'Status',
+        created: 'Member since',
+      },
+      empty: {
+        title: 'No users yet',
+        body: 'People appear here once they are members of your company with access to {product}.',
+      },
+      record: {
+        back: 'Back',
+        edit: 'Edit profile',
+        profileIn: 'Profile in {product}',
+      },
+      form: {
+        lead: 'Choose what this person can do in {product}.',
+        section: 'Profile in {product}',
+        sectionHelp:
+          'One profile per person. Its permissions are edited on the Access profiles screen.',
+        help: 'Without a profile the person can open the product but do nothing in it.',
+        search: 'Search profiles…',
+        noMatch: 'No profile matches',
+        save: 'Save',
+        cancel: 'Cancel',
+      },
+      saved: 'Profile updated',
+    },
+  },
+
   home: {
     greeting: 'Hello, {name}.',
     role: { admin: 'Admin', member: 'Member' },
@@ -191,6 +247,35 @@ export const en = {
       statusSuspended: 'Suspended',
       manageMembers: 'Manage members',
       manageAccess: 'Manage product access',
+      editCompany: 'Edit company',
+    },
+    profile: {
+      heading: 'Registration',
+      note: 'Shared by every Oliveira product your company uses.',
+      editTitle: 'Edit company',
+      lead: 'The legal name and the CNPJ are changed by Oliveira — contact support to update them.',
+      sections: {
+        identification: 'Identification',
+        identificationHelp: 'How your company is registered.',
+        contact: 'Contact',
+        contactHelp: 'How customers and Oliveira reach the company.',
+        address: 'Main address',
+        addressHelp: 'The registered address of the head office.',
+      },
+      fields: {
+        legalName: 'Legal name',
+        document: 'CNPJ',
+        tradeName: 'Trade name',
+        stateRegistration: 'State registration',
+        municipalRegistration: 'Municipal registration',
+        email: 'Email',
+        phone: 'Phone',
+        website: 'Website',
+        address: 'Address',
+      },
+      save: 'Save company',
+      cancel: 'Cancel',
+      saved: 'Company updated',
     },
     members: {
       title: 'Members',
@@ -361,6 +446,8 @@ export const en = {
       unknownProduct: 'Unknown product',
       invalidBirthDate: 'Invalid birth date',
       unknownPermission: 'One or more permissions do not exist',
+      codeRequired: 'Code is required',
+      tooLong: 'Use at most {max} characters',
     },
     auth: {
       missingFields: 'Please fill in email and password',
@@ -390,6 +477,7 @@ export const en = {
       person: 'Person not found',
       people: 'One or more people were not found',
       profile: 'Profile not found',
+      branch: 'Branch not found',
     },
     guard: {
       lastCompanyAdmin: 'The company must keep at least one administrator',
@@ -399,6 +487,7 @@ export const en = {
       protectedProfile: 'This profile is protected and cannot be deleted',
       documentTaken: 'A person with this document already exists',
       profileNameTaken: 'A profile with this name already exists',
+      branchCodeTaken: 'A branch with this code already exists',
     },
     done: {
       personCreated: 'Person created successfully',

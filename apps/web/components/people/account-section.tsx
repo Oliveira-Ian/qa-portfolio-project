@@ -26,6 +26,7 @@ import type { ActionResult } from '@/lib/actions';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
+import { reportInvalidFields } from '@/components/forms/report-invalid-fields';
 
 const createAccountFormSchema = z.object({
   email: z.string().trim().email('Invalid email'),
@@ -96,19 +97,22 @@ function CreateAccountForm({
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    startTransition(async () => {
-      const result = await createAccount(personId, values);
+  const onSubmit = form.handleSubmit(
+    (values) => {
+      startTransition(async () => {
+        const result = await createAccount(personId, values);
 
-      if (!result.success) {
-        toast.error(translateApiMessage(result.message ?? '', t));
-        return;
-      }
+        if (!result.success) {
+          toast.error(translateApiMessage(result.message ?? '', t));
+          return;
+        }
 
-      toast.success(t('erp.people.account.created'));
-      router.refresh();
-    });
-  });
+        toast.success(t('erp.people.account.created'));
+        router.refresh();
+      });
+    },
+    (errors) => reportInvalidFields(Object.keys(errors).length, t),
+  );
 
   return (
     <Form {...form}>
