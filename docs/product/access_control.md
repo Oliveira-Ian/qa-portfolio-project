@@ -68,7 +68,7 @@ Server Actions are public endpoints, so the API is the boundary.
 
 ## Where the truth is read
 
-**The token proves identity only.** The session token carries `{ sub, personId, name, email, role }`, but
+**The token proves identity only.** The session token carries `{ sub, name, email, role }`, but
 the API trusts it for exactly one thing: _which account is calling_. On every request `requireAuth`
 (`apps/api/src/modules/auth/require-auth.ts`) reads that account from the database and rejects it with
 `401` if it no longer exists or is deactivated; the `role` is the database's. It then reads the
@@ -92,8 +92,8 @@ one is refused with `403`; the API never picks one silently.
 
 ## Registration and joining a company
 
-`POST /api/auth/register` creates the `Person` and the `AccessAccount` together, in one transaction
-(`accountRepository.createWithPerson`) — and **nothing else**: no membership, no seat, no profile. The
+`POST /api/auth/register` creates the `AccessAccount` (`accountRepository.create`) — and **nothing
+else**: no `Person` either, since a person record belongs to a company's registry: no membership, no seat, no profile. The
 new user can sign in and sees that they have no access yet.
 
 To get in, a company administrator either:
@@ -103,7 +103,8 @@ To get in, a company administrator either:
   account with no company. This stands in for invitations, which replace it before a second company
   exists; or
 - gives a person of the registry a login (`POST /api/accounts`,
-  `accountRepository.createForPerson`) — the login becomes a member of the administrator's company.
+  `accountRepository.createForPerson`) — the login takes the person's name and becomes a member of the
+  administrator's company, linked to that person (`Membership.personId`).
 
 Then the administrator grants a seat (`PUT /api/company/members/:id/products/ERP`). **The first ERP seat
 of an account with no profile links the `isDefault` profile**; an account that already holds profiles
@@ -148,10 +149,9 @@ a persisted, queryable trail belongs to F-15 (#7).
 
 ## What's deliberately not here
 
-- **Isolation of business data between companies.** `Person`, profiles and the rest are not yet
-  company-scoped; that is #60 (`docs/adr/0012`). Until it lands there is exactly one company and
-  nothing provisions another. The accounts listing and profile links are already scoped to the caller's
-  company; the business tables are not.
+- **Isolation of profiles between companies.** `Person` is company data under row-level security
+  (#60, `docs/adr/0012`); profiles and their links are still global and become company- and
+  product-scoped next. Nothing in the UI provisions a second company yet.
 - **Invitations, company switching, contracts/plans/billing, branches, support access for
   `SUPER_ADMIN`.** See ADR 0018's "What this does not decide".
 - **Password reset for existing accounts.** `AccountUpdateInput` only covers `active`/`role`.

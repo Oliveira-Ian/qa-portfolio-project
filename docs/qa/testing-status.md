@@ -10,6 +10,11 @@ build" below).
 - `tests/unit/*.test.ts` (Vitest) — pure logic, no auth/UI drift possible. Healthy.
 - `tests/api/auth.spec.ts` — matches the current `/api/auth/*` contract (messages, status codes).
 - `tests/e2e/auth.spec.ts` — matches the current login/register UI (testids, redirect targets).
+- `tests/isolation/*.test.ts` (Vitest, `npm run test:isolation`) — tenant isolation against a real
+  PostgreSQL (docs/adr/0012's required tests, the approved exception to "no tests unless asked").
+  `global-setup.ts` drops and recreates `oliveira_test` (it refuses any name not ending in `_test`),
+  runs `npm run db:roles` and every migration, then the suite runs the API's own Prisma client and
+  repositories as two companies. Its own CI job. Locally it needs the Compose Postgres on 5432.
 - `tests/unit/observability.test.ts` (Vitest) — the `x-trace-id` header names the trace the request
   was recorded in, and the API's log lines carry no query string, client address or credential. No
   collector or database needed.

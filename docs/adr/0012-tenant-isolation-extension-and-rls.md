@@ -101,3 +101,37 @@ Automated isolation tests against a real PostgreSQL, run in CI, covering at leas
 - Phase 2 (tenancy) starts with the spike, and the migration is not written until it passes.
 - Every future table with company data gets a policy in its own migration, by rule.
 - `prisma/seed.ts`, company provisioning and jobs move onto the bypass connection.
+
+## Spike results and what was built (2026-11-10, #60)
+
+The spike ran against PostgreSQL 16 with Prisma 7.10 and `@prisma/adapter-pg` (two companies, 50,000
+rows each, a pool of 10). Every direction above held; nothing in the design changed.
+
+| Direction | Result |
+|---|---|
+| Transaction-local `set_config` + query in one batch transaction | Works; the setting never outlives it. On a single pooled connection, after a successful and a failed transaction, `current_setting` is `''` and the table reads as empty. |
+| Fail closed | No setting (or `''`) matches no row; an insert is refused by `WITH CHECK`. |
+| Interactive unit of work | Works when the operations run on the transaction's own client with the setting applied once; the extension skips its per-operation wrap while a flag in the request context says it is inside one. A bare `prisma.$transaction` would put each operation on another connection — forbidden by an ESLint rule. |
+| Concurrency | 400 interleaved requests of both companies, some in interactive transactions with random delays: 8,000 rows checked, no leak. |
+| Database layer alone | Raw SQL and an unextended client as the application role see nothing without the setting, and only their own company with it; a cross-company insert fails. |
+| Application role cannot turn it off | `DISABLE`/`NO FORCE ROW LEVEL SECURITY` and `DROP POLICY` fail (not the owner); `SET row_security = off` errors; no `SUPERUSER`/`BYPASSRLS`. |
+| Composite foreign keys `(companyId, id)` | Refuse a cross-company reference even for the `BYPASSRLS` role. |
+| Cost | ~2.6 ms per `findUnique` with the wrap against ~1.0 ms without, locally: two extra statements in the same round of the batch. |
+| Trigram search | **Not index-assisted under the policy.** `ILIKE` (`texticlike`) is not leakproof, so the planner cannot use the GIN index before the policy and falls back to a scan of the company's rows (24 ms on 100k rows, against 10 ms without RLS). Marking the function `LEAKPROOF` restores the index but changes a system function for the whole cluster and needs a superuser, which a managed database may not allow — not done. Searches stay correct; revisit if a single company's table grows large enough to matter. |
+
+Also found: a Prisma query promise only starts when awaited, so the request context must be open
+where it is awaited, not only where it is created ([0016](0016-request-context.md) already says so).
+
+**Built in `feat/60-tenant-isolation`:** roles `oliveira_app` / `oliveira_admin` created by
+`prisma/setup-roles.ts` (`npm run db:roles`) from the connection strings themselves; three URLs
+(`MIGRATION_DATABASE_URL`, `DATABASE_URL`, `ADMIN_DATABASE_URL`); the extension and
+`withTransaction` in `apps/api/src/config/prisma.ts`, the scoping rules in `config/tenant-scope.ts`;
+the API refuses to boot on a role that bypasses RLS; `Person` is the first company-scoped table
+(migration `20261110120000_tenant_isolation`). The required tests are `tests/isolation/`
+(`npm run test:isolation`, a CI job), including the check that every table with a `companyId` column
+has a forced `company_isolation` policy and agrees with `TENANT_MODELS`.
+
+**Still open:** the narrower policies for the identity tables (`Membership`, `CompanyProduct`,
+`ProductAccess`, `AccessAccount`) — they are filtered explicitly in their repositories for now — and
+switching the active company (there is none to switch yet). A database per company remains possible
+later: every row carries its company and every connection is made in one place.

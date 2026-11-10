@@ -40,13 +40,20 @@ layer is responsible for, and the request-to-response flow through them — live
 `.claude/rules/nextjs-page-pattern.md`, which only loads while working under `apps/web/app/**` or
 `apps/web/components/**`.
 
-**Platform access model (ADR 0018/0019), in progress:** `Company`, `Membership`, `CompanyProduct` and
-`ProductAccess` are being introduced now (`docs/especificacoes/platform-access-model.md`) — the
-Oliveira ERP is an existing product served under `/erp`, and no role bypasses a permission check.
-The rest of the identity restructuring is **still pending**: the 1:1 `Person`/`AccessAccount` link,
-company-scoped business tables and RLS (#60) and the `User`/`Person` decoupling (ADR 0013). `Person`
-remains the current, real model described above and in `docs/templates/new-routine.md`. Don't build
-against those pending pieces yet.
+**Platform access model (ADR 0018/0019):** `Company`, `Membership`, `CompanyProduct` and
+`ProductAccess` (`docs/especificacoes/platform-access-model.md`) — the Oliveira ERP is an existing
+product served under `/erp`, and no role bypasses a permission check.
+
+**Tenant isolation (ADR 0012, #60) is in place:** every business table has a NOT NULL `companyId`,
+a forced row-level security policy, and is listed in `TENANT_MODELS`
+(`apps/api/src/config/tenant-scope.ts`). The API connects as a role RLS applies to; the company
+comes only from the request context (`requireAuth`), never from the client. A new company-scoped
+table therefore needs, in its own migration, the `company_isolation` policy (ENABLE + FORCE), a
+`@@unique([companyId, id])` for composite foreign keys, company-first indexes, and an entry in
+`TENANT_MODELS` — `npm run test:isolation` fails otherwise. A unit of work goes through
+`withTransaction()` from `config/prisma.ts`, never `prisma.$transaction` (an ESLint rule enforces
+it). `AccessAccount` is the identity (it has its own `name`); a member's `Person` is linked per
+company from `Membership.personId` (ADR 0013 addendum).
 
 # Language Standard — English for Everything Technical
 
@@ -88,7 +95,8 @@ in the codebase.
 
 # Testing Strategy:
 
-This project uses **Vitest** (`tests/unit/`, pure logic) and **Playwright** (`tests/api/`,
+This project uses **Vitest** (`tests/unit/`, pure logic; `tests/isolation/`, tenant isolation
+against a real database — the approved exception, ADR 0012) and **Playwright** (`tests/api/`,
 `tests/e2e/`) — not Jest or React Testing Library. See `docs/qa/testing-status.md` for what's
 currently active versus temporarily disabled, and do not write or repair automated tests unless
 explicitly asked to — the full testing strategy is a deliberate, separate phase of this project.

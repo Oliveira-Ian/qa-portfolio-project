@@ -29,3 +29,12 @@ company scope still enforced.
   timestamp, so every row created within about a minute shares the same "code". Any identifier shown
   to a user needs its own human-readable value, not a slice of the key; sequential account and
   profile numbers that users quote today have the same need.
+
+## Status (2026-11-10)
+
+Partly applied with the first tenancy migration (#60): `Person` now defaults to `uuid(7)` (its
+existing v4 ids stay valid — same column type), and every table created from here on is born with
+a v7 key. The integer keys of `AccessAccount`, `AccessProfile`, `Permission` and their join tables are
+**not** converted in this window, against what the decision above planned: nothing needs them as
+UUIDs yet, and the change touches every route and screen that carries those ids. Converting them is
+a separate change when a consumer appears (a client-generated id, an offline flow).
