@@ -1,10 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GridColumnPreferenceDto, ProfileDto } from '@oliveira/schemas';
 import {
@@ -23,7 +22,6 @@ import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
 import { GridCustomizationModal } from '@/components/data-table/grid-customization-modal';
 import { Pagination } from '@/components/data-table/pagination';
-import { RowActionsMenu, type RowAction } from '@/components/data-table/row-actions-menu';
 import { ToolbarList } from '@/components/data-table/toolbar-list';
 import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
@@ -33,6 +31,7 @@ import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { deleteProfileAction } from '../_actions/delete-profile';
+import { duplicateProfileAction } from '../_actions/duplicate-profile';
 import { saveProfileGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
   PROFILE_CUSTOMIZABLE_COLUMNS,
@@ -85,48 +84,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
     saveGridPreferenceAction: saveProfileGridPreferenceAction,
   });
 
-  // Shared by the "⋮" column cell and `DataTable`'s `rowActions` (right-click
-  // menu) — declared once so both paths always show the identical list.
-  const getRowActions = useCallback(
-    (profile: ProfileDto): RowAction[] => [
-      {
-        key: 'edit',
-        label: t('erp.profiles.edit'),
-        icon: Pencil,
-        onSelect: () => router.push(ROUTES.profiles.edit(profile.id)),
-        testId: `${TESTID_PREFIX}-row-action-edit`,
-      },
-      {
-        key: 'delete',
-        label: t('erp.profiles.delete'),
-        icon: Trash2,
-        variant: 'destructive',
-        disabled: profile.isSystem,
-        onSelect: () => setPendingDeleteIds([profile.id]),
-        testId: `${TESTID_PREFIX}-row-action-delete`,
-      },
-    ],
-    [router, t],
-  );
-
-  const columns = useMemo<ColumnDef<ProfileDto>[]>(
-    () => [
-      ...profileColumns,
-      {
-        id: 'actions',
-        header: '',
-        enableSorting: false,
-        enableHiding: false,
-        cell: ({ row }) => (
-          <RowActionsMenu
-            actions={getRowActions(row.original)}
-            testId={`${TESTID_PREFIX}-row-actions-trigger`}
-          />
-        ),
-      },
-    ],
-    [getRowActions],
-  );
+  const columns = profileColumns;
 
   const table = useDataTable({
     data: profiles,
@@ -148,6 +106,25 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
     if (selectedId) {
       router.push(ROUTES.profiles.edit(selectedId));
     }
+  }
+
+  /** A copy of the selected profile, opened for editing — the usual way to start a new one. */
+  function handleDuplicate() {
+    if (!selectedId) {
+      return;
+    }
+
+    startDeleting(async () => {
+      const result = await duplicateProfileAction(selectedId);
+
+      if (!result.success || result.id === undefined) {
+        toast.error(translateApiMessage(result.message ?? '', t));
+        return;
+      }
+
+      toast.success(t('erp.profiles.duplicated'));
+      router.push(ROUTES.profiles.edit(result.id));
+    });
   }
 
   function handleConfirmDelete() {
@@ -190,6 +167,15 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
             </Button>
             <Button
               variant="outline"
+              data-testid="profile-button-duplicate"
+              disabled={!selectedId || isDeleting}
+              onClick={handleDuplicate}
+            >
+              <Copy aria-hidden="true" />
+              {t('erp.profiles.duplicate')}
+            </Button>
+            <Button
+              variant="outline"
               data-testid="profile-button-edit"
               disabled={!selectedId}
               onClick={handleEdit}
@@ -226,7 +212,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
         <DataTable
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          rowActions={getRowActions}
+          onRowOpen={(profile) => router.push(ROUTES.profiles.view(profile.id))}
           getRowLabel={(profile) => profile.name}
           emptyState={{
             title: t('erp.profiles.empty.title'),
