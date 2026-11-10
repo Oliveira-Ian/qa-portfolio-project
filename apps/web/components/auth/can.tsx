@@ -1,8 +1,9 @@
-import type { PermissionKey } from '@oliveira/schemas';
+import type { Product, ProductPermissionKey } from '@oliveira/schemas';
 import { can } from '@/lib/permissions';
 
-interface CanProps {
-  permission: PermissionKey;
+interface CanProps<P extends Product> {
+  product: P;
+  permission: ProductPermissionKey<P>;
   children: React.ReactNode;
   /** Rendered instead when the permission is missing. Defaults to nothing. */
   fallback?: React.ReactNode;
@@ -17,6 +18,11 @@ interface CanProps {
  * `lib/permissions.ts#getMe()` directly instead — `<Can>` only understands
  * the business-permission catalog, not the technical role.
  */
-export async function Can({ permission, children, fallback = null }: CanProps) {
-  return (await can(permission)) ? children : fallback;
+export async function Can<P extends Product>({
+  product,
+  permission,
+  children,
+  fallback = null,
+}: CanProps<P>) {
+  return (await can(product, permission)) ? children : fallback;
 }

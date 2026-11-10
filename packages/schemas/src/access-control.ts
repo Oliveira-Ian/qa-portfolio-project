@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { accountRoleSchema, type AccountRole } from './auth.js';
 import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
+import type { Product } from './platform.js';
 
 /* -------------------------------------------------------------------------- */
 /* Permissions (read-only from the API's point of view)                        */
@@ -8,6 +9,7 @@ import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
 
 export interface PermissionDto {
   id: number;
+  product: Product;
   resource: string;
   action: string;
   label: string | null;
@@ -19,9 +21,10 @@ export interface PermissionDto {
 
 /**
  * `isSystem`/`isDefault` are deliberately absent from the writable shape —
- * they're seed-managed concepts (which profiles are protected from deletion,
- * which one self-registration links to), not something the admin UI sets
- * per-edit. The API still reports them on every `ProfileDto` it returns.
+ * they're provisioning concepts (which profiles are protected from deletion,
+ * which one a first seat links), not something the admin UI sets per edit. The
+ * product is absent too: it is the route's (`/api/profiles` is the ERP's,
+ * `/api/fsm/profiles` the FSM's), never the client's to choose.
  */
 export const profileWriteSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
@@ -33,6 +36,7 @@ export type ProfileWriteInput = z.infer<typeof profileWriteSchema>;
 
 export interface ProfileDto {
   id: number;
+  product: Product;
   name: string;
   description: string | null;
   isSystem: boolean;

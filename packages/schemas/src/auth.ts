@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isValidEmail } from './email.js';
-import type { PermissionKey } from './permissions.js';
+import type { ProductPermissions } from './permissions.js';
 import type { MeMembership, Product } from './platform.js';
 
 /**
@@ -220,13 +220,13 @@ export type SessionAccount = z.infer<typeof sessionAccountSchema>;
  *   account has none).
  * - `products` are the products the caller may enter right now: contracted by
  *   their company and granted to them.
- * - `permissions` is what the caller's `AccessProfile` links grant inside the
- *   ERP, and is empty without an ERP seat. No role widens it — there is no
- *   administrator exemption (docs/adr/0018).
+ * - `permissions` is, per product, what the caller's profiles in their company
+ *   grant there — empty for a product they hold no seat in. No role widens it:
+ *   there is no administrator exemption (docs/adr/0018).
  */
 export interface MeResponse {
   account: { id: number; name: string; email: string; role: AccountRole; active: boolean };
   membership: MeMembership | null;
   products: Product[];
-  permissions: PermissionKey[];
+  permissions: ProductPermissions;
 }

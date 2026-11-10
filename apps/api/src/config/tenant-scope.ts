@@ -15,7 +15,12 @@
  * forced row-level security policy in its migration; `tests/isolation` fails if
  * this list and the database ever disagree.
  */
-export const TENANT_MODELS: ReadonlySet<string> = new Set(['Person']);
+export const TENANT_MODELS: ReadonlySet<string> = new Set([
+  'Person',
+  'AccessProfile',
+  'ProfilePermission',
+  'MembershipProfile',
+]);
 
 type Args = Record<string, unknown>;
 

@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewProfilePage() {
-  if (!(await can('profile:manage'))) {
+  if (!(await can('ERP', 'profile:manage'))) {
     return <NoPermission screen="erp.profiles.title" />;
   }
 

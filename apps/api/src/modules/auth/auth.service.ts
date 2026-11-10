@@ -3,7 +3,8 @@ import {
   authMessages,
   type LoginInput,
   type MeResponse,
-  type PermissionKey,
+  type Product,
+  type ProductPermissionKey,
   type RegisterInput,
   type SessionAccount,
 } from '@oliveira/schemas';
@@ -89,11 +90,15 @@ export const authService = {
       throw new UnauthorizedError();
     }
 
-    // The profiles' permissions are the ERP's; without an ERP seat they grant
-    // nothing, so none are reported (docs/adr/0018).
-    const permissions = access.products.has('ERP')
-      ? await getEffectivePermissions(accountId)
-      : new Set<PermissionKey>();
+    // Per product, and only for a product the caller holds a seat in: without
+    // one, that product's profiles grant nothing (docs/adr/0018).
+    const membershipId = access.membership?.id;
+    const permissionsIn = async <P extends Product>(
+      product: P,
+    ): Promise<ProductPermissionKey<P>[]> =>
+      membershipId && access.products.has(product)
+        ? [...(await getEffectivePermissions(membershipId, product))]
+        : [];
 
     return {
       account: {
@@ -105,7 +110,7 @@ export const authService = {
       },
       membership: access.membership,
       products: PRODUCTS.filter((product) => access.products.has(product)),
-      permissions: [...permissions],
+      permissions: { ERP: await permissionsIn('ERP'), FSM: await permissionsIn('FSM') },
     };
   },
 };

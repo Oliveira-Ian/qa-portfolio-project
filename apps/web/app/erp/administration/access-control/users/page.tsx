@@ -20,7 +20,7 @@ interface UsersPageProps {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  if (!(await can('profile:manage'))) {
+  if (!(await can('ERP', 'profile:manage'))) {
     return <NoPermission screen="erp.users.title" />;
   }
 

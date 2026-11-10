@@ -31,7 +31,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.get(
     '/',
     {
-      preHandler: requirePermission('person:view'),
+      preHandler: requirePermission('ERP', 'person:view'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: {
         tags: ['persons'],
@@ -48,7 +48,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.get(
     '/summary',
     {
-      preHandler: requirePermission('person:view'),
+      preHandler: requirePermission('ERP', 'person:view'),
       schema: { tags: ['persons'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to load registry summary' },
     },
@@ -57,7 +57,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.get<WithId>(
     '/:id',
     {
-      preHandler: requirePermission('person:view'),
+      preHandler: requirePermission('ERP', 'person:view'),
       schema: { tags: ['persons'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to get person' },
     },
@@ -66,7 +66,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      preHandler: requirePermission('person:create'),
+      preHandler: requirePermission('ERP', 'person:create'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: { tags: ['persons'], body: personCreateSchema, security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to create person' },
@@ -76,7 +76,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.put<WithId>(
     '/:id',
     {
-      preHandler: requirePermission('person:edit'),
+      preHandler: requirePermission('ERP', 'person:edit'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: { tags: ['persons'], body: personUpdateSchema, security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to update person' },
@@ -86,7 +86,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.delete<WithId>(
     '/:id',
     {
-      preHandler: requirePermission('person:delete'),
+      preHandler: requirePermission('ERP', 'person:delete'),
       schema: { tags: ['persons'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to delete person' },
     },
@@ -97,7 +97,7 @@ export async function personRoutes(app: FastifyInstance) {
   app.delete(
     '/',
     {
-      preHandler: requirePermission('person:delete'),
+      preHandler: requirePermission('ERP', 'person:delete'),
       validatorCompiler: docsOnlyValidatorCompiler,
       schema: { tags: ['persons'], body: personDeleteManySchema, security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to delete people' },

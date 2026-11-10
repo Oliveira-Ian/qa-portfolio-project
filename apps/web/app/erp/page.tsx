@@ -31,7 +31,7 @@ export default async function ErpOverviewPage() {
     getTranslator(),
     getLocale(),
     getSessionAccount(),
-    can('person:view'),
+    can('ERP', 'person:view'),
   ]);
 
   const firstName = account?.name.trim().split(' ')[0] ?? '';

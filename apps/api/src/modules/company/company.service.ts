@@ -146,9 +146,9 @@ export const companyService = {
   /**
    * 404 unless the account is a member of the company — the company's own data
    * (its accounts) is invisible from outside it, and "not found" doesn't say
-   * whether the account exists elsewhere.
+   * whether the account exists elsewhere. Returns the membership's id.
    */
-  async requireMember(accountId: number, companyId: string, product?: Product): Promise<void> {
+  async requireMember(accountId: number, companyId: string, product?: Product): Promise<string> {
     const membership = await companyRepository.findMembership(accountId, companyId);
 
     if (!membership) {
@@ -158,5 +158,7 @@ export const companyService = {
     if (product && !membership.productAccess.some((seat) => seat.product === product)) {
       throw new ConflictError(`This account has no access to ${PRODUCT_LABELS[product]}`);
     }
+
+    return membership.id;
   },
 };

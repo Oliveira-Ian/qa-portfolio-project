@@ -38,7 +38,7 @@ interface PeoplePageProps {
  * hand over the answer.
  */
 export default async function PeoplePage({ searchParams }: PeoplePageProps) {
-  if (!(await can('person:view'))) {
+  if (!(await can('ERP', 'person:view'))) {
     return <NoPermission screen="nav.erp.people" />;
   }
 
@@ -47,9 +47,9 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
   const [result, summary, canCreate, canEdit, canDelete, gridPreference] = await Promise.all([
     listPersons(query),
     getRegistrySummary(),
-    can('person:create'),
-    can('person:edit'),
-    can('person:delete'),
+    can('ERP', 'person:create'),
+    can('ERP', 'person:edit'),
+    can('ERP', 'person:delete'),
     getPersonGridPreference(),
   ]);
 

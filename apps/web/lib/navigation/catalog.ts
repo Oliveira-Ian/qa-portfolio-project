@@ -1,5 +1,5 @@
 import { Contact, Database, KeyRound, Settings, Users, type LucideIcon } from 'lucide-react';
-import type { PermissionKey } from '@oliveira/schemas';
+import type { ErpPermissionKey } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 
 /**
@@ -21,8 +21,8 @@ export interface RoutineDefinition {
   slug: string;
   labelKey: MessageKey;
   icon: LucideIcon;
-  /** Permission required, if any — checked against `MeResponse.permissions`. */
-  permission?: PermissionKey;
+  /** ERP permission required, if any — checked against `MeResponse.permissions.ERP`. */
+  permission?: ErpPermissionKey;
 }
 
 export interface CategoryDefinition {
@@ -157,7 +157,7 @@ export function flattenRoutines(
 
 /** Access the caller's session carries — the same shape `lib/permissions.ts#getMe()` resolves. */
 export interface AccessContext {
-  permissions: readonly PermissionKey[];
+  permissions: readonly ErpPermissionKey[];
 }
 
 function canSeeRoutine(routine: RoutineDefinition, access: AccessContext): boolean {

@@ -158,7 +158,6 @@ model AccessAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profiles        AccountProfile[]
   gridPreferences GridColumnPreference[]
   memberships     Membership[]
   grantedAccesses ProductAccess[]        @relation("ProductAccessGrantedBy")
@@ -180,6 +179,7 @@ model Company {
   memberships Membership[]
   products    CompanyProduct[]
   persons     Person[]
+  profiles    AccessProfile[]
 }
 
 /// An account's place in a company. `role` is the company's own administrator
@@ -202,8 +202,10 @@ model Membership {
   updatedAt DateTime         @updatedAt
 
   productAccess ProductAccess[]
+  profiles      MembershipProfile[]
 
   @@unique([accountId, companyId])
+  @@unique([companyId, id])
   @@unique([companyId, personId])
   @@index([companyId])
 }
@@ -238,67 +240,84 @@ model ProductAccess {
   @@id([membershipId, product])
 }
 
-/// Business permissions, not technical role — "what does this account holder
-/// do", as opposed to AccountRole's "is this a system administrator". A
-/// company defines its own profiles (Administrator, Manager, Finance,
-/// Cashier…); AccountRole.ADMIN bypasses this check entirely (see
-/// docs/product/access_control.md), so a profile named "Administrator" is a
-/// *business* role, not the same thing as an ADMIN account.
+/// What a member may do inside one product — the fourth authorization layer
+/// (docs/adr/0018). Each company has its own profiles per product: the
+/// reference ones are copied in when the company contracts the product
+/// (`prisma/reference-profiles.ts`), and the company edits, duplicates and adds
+/// to them. An ERP profile only ever holds ERP permissions, an FSM profile FSM
+/// ones. Company data, under row-level security (docs/adr/0012).
 model AccessProfile {
   id          Int      @id @default(autoincrement())
-  name        String   @unique
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  product     Product
+  name        String
   description String?
-  /// System-seeded profiles (Administrator, Default User) can't be deleted
-  /// — deleting the only profile a login flow depends on would break it.
+  /// Reference profiles that can't be deleted — the product's Administrator,
+  /// and the default profile a first seat links.
   isSystem    Boolean  @default(false)
   /// The profile linked to a member the first time they are granted a seat in
-  /// the ERP (registration itself grants nothing). Exactly one profile should
-  /// have this set — enforced by the seed script, not the DB.
+  /// this product (registration itself grants nothing). One per company and
+  /// product — enforced by the provisioning, not the DB.
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   permissions ProfilePermission[]
-  accounts    AccountProfile[]
+  members     MembershipProfile[]
+
+  @@unique([companyId, id])
+  @@unique([companyId, product, name])
+  @@index([companyId, product])
 }
 
 /// The permission catalog is sealed — rows here only ever come from the
 /// system's own catalog (packages/schemas/src/permissions.ts), seeded by
 /// prisma/seed.ts. Nothing in the product ever lets a user create one; they
-/// only attach existing permissions to a profile.
+/// only attach existing permissions to a profile. Global: the same catalog for
+/// every company, one section per product.
 model Permission {
   id       Int     @id @default(autoincrement())
+  product  Product
   resource String
   action   String
   label    String?
 
   profiles ProfilePermission[]
 
-  @@unique([resource, action])
+  @@unique([product, resource, action])
 }
 
+/// Carries the company too, so its row-level security policy is a plain
+/// column comparison, and its composite key ties it to a profile of the same
+/// company.
 model ProfilePermission {
+  companyId    String
   profileId    Int
   permissionId Int
-  profile      AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile      AccessProfile @relation(fields: [companyId, profileId], references: [companyId, id], onDelete: Cascade)
   permission   Permission    @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([profileId, permissionId])
+  @@index([companyId])
 }
 
-/// The account↔profile link kept as its own entity ("Access Control")
-/// rather than an implicit many-to-many — the extension point for scoping
-/// access later (per company/branch/department) without touching Person or
-/// AccessProfile at all, just adding a column here.
-model AccountProfile {
-  id         Int           @id @default(autoincrement())
-  accountId  Int
-  profileId  Int
-  account    AccessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  profile    AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  assignedAt DateTime      @default(now())
+/// A member's profile in a company — per membership, not per account, so the
+/// same login can do different things in different companies. Kept as its own
+/// entity so scoping a profile further (to a branch, later) is a column here,
+/// without touching Membership or AccessProfile.
+model MembershipProfile {
+  id           String            @id @default(uuid(7))
+  companyId    String
+  membershipId String
+  profileId    Int
+  membership   Membership        @relation(fields: [companyId, membershipId], references: [companyId, id], onDelete: Cascade)
+  profile      AccessProfile     @relation(fields: [companyId, profileId], references: [companyId, id], onDelete: Cascade)
+  assignedAt   DateTime          @default(now())
 
-  @@unique([accountId, profileId])
+  @@unique([companyId, id])
+  @@unique([membershipId, profileId])
+  @@index([companyId, profileId])
 }
 
 /// A listing screen's column show/hide + order, saved per account. `gridKey`

@@ -1,5 +1,5 @@
 import { Building2, Home, LayoutDashboard, Users, Blocks, type LucideIcon } from 'lucide-react';
-import type { PermissionKey, Product } from '@oliveira/schemas';
+import type { Product, ProductPermissions } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 import { filterCatalogForAccount, flattenRoutines, type RoutinePath } from './catalog';
 import { ROUTES } from './routes';
@@ -37,7 +37,7 @@ export interface NavSection {
 }
 
 export interface NavAccess {
-  permissions: readonly PermissionKey[];
+  permissions: ProductPermissions;
   isCompanyAdmin: boolean;
 }
 
@@ -112,7 +112,7 @@ export function buildNavigation(area: AreaKey, access: NavAccess): NavSection[] 
 
     // The catalog is hierarchical (Module → Group → Category → Routine, ADR 0007);
     // the sidebar shows a Module as an overline and its routines as items.
-    for (const catalogModule of filterCatalogForAccount({ permissions: access.permissions })) {
+    for (const catalogModule of filterCatalogForAccount({ permissions: access.permissions.ERP })) {
       const routines = flattenRoutines([catalogModule]);
 
       sections.push({

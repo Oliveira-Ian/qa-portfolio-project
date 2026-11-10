@@ -17,7 +17,7 @@ interface EditProfilePageProps {
 }
 
 export default async function EditProfilePage({ params }: EditProfilePageProps) {
-  if (!(await can('profile:manage'))) {
+  if (!(await can('ERP', 'profile:manage'))) {
     return <NoPermission screen="erp.profiles.title" />;
   }
 

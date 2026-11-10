@@ -24,7 +24,7 @@ interface ProfilesPageProps {
  * of being sent home (design S09); the API refuses the data either way.
  */
 export default async function ProfilesPage({ searchParams }: ProfilesPageProps) {
-  if (!(await can('profile:manage'))) {
+  if (!(await can('ERP', 'profile:manage'))) {
     return <NoPermission screen="erp.profiles.title" />;
   }
 
