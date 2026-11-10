@@ -9,6 +9,10 @@ import { prisma } from './config/prisma.js';
 import { accountRoutes, productAccountRoutes } from './modules/account/account.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { fsmBranchRoutes } from './modules/branch/branch.routes.js';
+import { catalogItemRoutes } from './modules/fsm/catalog-item/catalog-item.module.js';
+import { customerRoutes } from './modules/fsm/customer/customer.module.js';
+import { equipmentRoutes } from './modules/fsm/equipment/equipment.module.js';
+import { workOrderTypeRoutes } from './modules/fsm/work-order-type/work-order-type.module.js';
 import { companyProfileRoutes } from './modules/company/company-profile.js';
 import { companyRoutes } from './modules/company/company.routes.js';
 import { gridPreferenceRoutes } from './modules/grid-preference/grid-preference.routes.js';
@@ -94,6 +98,10 @@ export function buildApp() {
   app.register(permissionRoutes, { prefix: '/api/fsm/permissions', product: 'FSM' });
   app.register(productAccountRoutes, { prefix: '/api/fsm/accounts', product: 'FSM' });
   app.register(fsmBranchRoutes, { prefix: '/api/fsm/branches' });
+  app.register(customerRoutes, { prefix: '/api/fsm/customers' });
+  app.register(equipmentRoutes, { prefix: '/api/fsm/equipment' });
+  app.register(catalogItemRoutes, { prefix: '/api/fsm/catalog-items' });
+  app.register(workOrderTypeRoutes, { prefix: '/api/fsm/work-order-types' });
 
   app.addHook('onClose', async () => {
     await prisma.$disconnect();

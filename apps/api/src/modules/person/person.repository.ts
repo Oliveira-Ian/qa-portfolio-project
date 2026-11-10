@@ -26,12 +26,12 @@ export interface PersonLists {
 const NO_LISTS: PersonLists = { addresses: [], contacts: [] };
 
 /** What a list needs of each person: the primary address, for its city and state. */
-const PRIMARY_ADDRESS = {
+export const PRIMARY_ADDRESS = {
   addresses: { where: { isPrimary: true }, take: 1 },
 } satisfies Prisma.PersonInclude;
 
 /** A record: both lists, primary first. */
-const FULL_RECORD = {
+export const FULL_RECORD = {
   addresses: { orderBy: ADDRESS_ORDER },
   contacts: { orderBy: CONTACT_ORDER },
 } satisfies Prisma.PersonInclude;

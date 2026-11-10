@@ -1,5 +1,6 @@
 import {
   PERMISSION_CATALOG,
+  REFERENCE_WORK_ORDER_TYPES,
   SEED_PROFILE_NAMES,
   permissionKey,
   type Product,
@@ -186,4 +187,25 @@ export async function provisionProductProfiles(
   }
 
   return idByName;
+}
+
+/**
+ * The FSM's reference data besides profiles: the work order types a company
+ * starts with (plan § 2.5). Copied once by name; then the company's to change —
+ * only a company with no type at all gets them, so a renamed or deleted
+ * one is never brought back.
+ */
+export async function provisionFsmReferenceData(
+  prisma: PrismaClient,
+  companyId: string,
+): Promise<void> {
+  const existing = await prisma.workOrderType.count({ where: { companyId } });
+
+  if (existing > 0) {
+    return;
+  }
+
+  await prisma.workOrderType.createMany({
+    data: REFERENCE_WORK_ORDER_TYPES.map((type) => ({ companyId, ...type })),
+  });
 }

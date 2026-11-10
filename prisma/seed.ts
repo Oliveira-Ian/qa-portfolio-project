@@ -6,7 +6,11 @@ import bcrypt from 'bcryptjs';
 import { config as loadEnv } from 'dotenv';
 import { PRODUCTS, SEED_PROFILE_NAMES, type Product } from '@oliveira/schemas';
 import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
-import { provisionProductProfiles, seedPermissionCatalog } from './reference-profiles.js';
+import {
+  provisionFsmReferenceData,
+  provisionProductProfiles,
+  seedPermissionCatalog,
+} from './reference-profiles.js';
 
 // `npm run db:seed` runs this from the repo root, but the connection strings and
 // the admin-bootstrap vars live in prisma/.env (the same file prisma.config.ts
@@ -175,6 +179,10 @@ async function seedReferenceProfiles(
 
   for (const { companyId, product } of contracts) {
     const profiles = await provisionProductProfiles(prisma, companyId, product, catalogs[product]);
+
+    if (product === 'FSM') {
+      await provisionFsmReferenceData(prisma, companyId);
+    }
 
     if (companyId === bootstrapCompanyId) {
       bootstrap[product] = profiles;
