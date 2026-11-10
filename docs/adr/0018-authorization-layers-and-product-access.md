@@ -89,3 +89,18 @@ F-15 (#7), which absorbs these events.
 - The session cookie is renamed in the same change: a leftover cookie carrying `role: "ADMIN"` would
   otherwise fail validation after `proxy.ts` accepted its shape, and loop between `/login` and `/home`.
 - A user without access to any product is a normal state, not an error.
+
+## Addendum (2026-11-10): the product dimension
+
+The FSM has its permissions, so the catalog gained its product dimension, together with the tenancy
+work of [0012](0012-tenant-isolation-extension-and-rls.md):
+
+- `Permission.product`: the catalog has one section per product (`PERMISSION_CATALOG.ERP`, `.FSM`).
+- `AccessProfile` belongs to a company and a product; a profile holds only its product's permissions,
+  checked by the API on every write.
+- Profile links move from the account to the membership (`MembershipProfile`), so the same login can
+  hold different profiles in different companies.
+- `requirePermission(product, key)` reads only that product's profiles; `/me` reports permissions per
+  product. The ERP's and the FSM's profiles have separate routes and editors.
+- The FSM's profiles are editable by the company like the ERP's — reference ones (Administrator,
+  Manager, Technician) are copied in and are the company's from then on. No role is exempt, as before.
