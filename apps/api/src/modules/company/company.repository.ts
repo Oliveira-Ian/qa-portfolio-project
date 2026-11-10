@@ -3,7 +3,6 @@ import type {
   Company,
   CompanyProduct,
   Membership,
-  Person,
   ProductAccess,
 } from '../../generated/prisma/client.js';
 import {
@@ -12,7 +11,7 @@ import {
   type MembershipStatus,
   type Product,
 } from '@oliveira/schemas';
-import { prisma } from '../../config/prisma.js';
+import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import { countCompanyAdmins, countProfileManagers, lockCompany } from './company-guards.js';
 
@@ -22,12 +21,12 @@ export type MembershipWithAccess = Membership & {
 };
 
 export type MemberRow = Membership & {
-  account: AccessAccount & { person: Person };
+  account: AccessAccount;
   productAccess: ProductAccess[];
 };
 
 const memberInclude = {
-  account: { include: { person: true } },
+  account: true,
   productAccess: true,
 } as const;
 
@@ -115,7 +114,7 @@ export const companyRepository = {
       ...(data.role === undefined ? {} : { role: data.role }),
     };
 
-    return prisma.$transaction(async (tx) => {
+    return withTransaction(async (tx) => {
       await lockCompany(tx, companyId);
 
       const current = await tx.membership.findFirst({ where: { id, companyId } });
@@ -156,7 +155,7 @@ export const companyRepository = {
   }): Promise<boolean> {
     const { membershipId, companyId, product, grantedById } = input;
 
-    return prisma.$transaction(async (tx) => {
+    return withTransaction(async (tx) => {
       await lockCompany(tx, companyId);
 
       const membership = await tx.membership.findFirst({
@@ -232,7 +231,7 @@ export const companyRepository = {
   }): Promise<boolean> {
     const { membershipId, companyId, product } = input;
 
-    return prisma.$transaction(async (tx) => {
+    return withTransaction(async (tx) => {
       await lockCompany(tx, companyId);
 
       const membership = await tx.membership.findFirst({ where: { id: membershipId, companyId } });
@@ -259,7 +258,7 @@ export const companyRepository = {
    * (docs/especificacoes/platform-access-model.md, rule 7).
    */
   addMemberByEmail(companyId: string, email: string): Promise<Membership | null> {
-    return prisma.$transaction(async (tx) => {
+    return withTransaction(async (tx) => {
       await lockCompany(tx, companyId);
 
       const account = await tx.accessAccount.findUnique({

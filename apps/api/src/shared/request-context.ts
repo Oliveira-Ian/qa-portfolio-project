@@ -9,13 +9,12 @@ import type { SessionAccount } from '@oliveira/schemas';
  *
  * The actor, and the caller's active company. The company is set in the same
  * place as the actor, after `requireAuth` has read the caller's membership from
- * the database (docs/adr/0018) — the tenancy work (#60) is the consumer that
- * turns it into a query filter; until then it scopes the company's own data
- * (members, the accounts listing).
+ * the database (docs/adr/0018) — never from anything the client sent. The
+ * Prisma client (`config/prisma.ts`) reads it to scope every query to that
+ * company and to set it for row-level security (docs/adr/0012).
  */
 export interface Actor {
   accountId: SessionAccount['id'];
-  personId: SessionAccount['personId'];
   role: SessionAccount['role'];
 }
 
@@ -23,6 +22,12 @@ export interface RequestContext {
   actor?: Actor;
   /** Absent for an account with no active membership. */
   companyId?: string;
+  /**
+   * True inside `withCompanyTransaction`: the company setting is already on the
+   * transaction's connection, so each operation runs as is instead of opening
+   * its own (`config/prisma.ts`).
+   */
+  inCompanyTransaction?: boolean;
 }
 
 const storage = new AsyncLocalStorage<RequestContext>();
@@ -90,6 +95,26 @@ export function requireCompanyId(): string {
   }
 
   return companyId;
+}
+
+/** Whether the current code runs inside `withCompanyTransaction` (`config/prisma.ts`). */
+export function isInCompanyTransaction(): boolean {
+  return storage.getStore()?.inCompanyTransaction === true;
+}
+
+/**
+ * Runs `callback` in a copy of the current context marked as inside a company
+ * transaction. A copy, so the mark ends with the callback — the request's own
+ * context is never changed.
+ */
+export function runInCompanyTransactionScope<T>(callback: () => T): T {
+  const context = storage.getStore();
+
+  if (!context) {
+    throw new Error('No request context to open a company transaction in');
+  }
+
+  return storage.run({ ...context, inCompanyTransaction: true }, callback);
 }
 
 /** Called by `requireAuth` alongside `setActor`, and only when the caller has a membership. */

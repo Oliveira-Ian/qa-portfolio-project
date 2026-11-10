@@ -5,10 +5,15 @@ import { defineConfig } from 'prisma/config';
 
 /**
  * Prisma 7 no longer reads a `.env` on its own, and no longer takes the
- * connection URL from `schema.prisma`. `DATABASE_URL` and the seed's admin
- * bootstrap variables live in `prisma/.env` (`prisma/.env.example`), the same
- * file `prisma/seed.ts` reads — resolved from this file's own location so the
- * CLI behaves the same whatever directory it is run from.
+ * connection URL from `schema.prisma`. The connection strings and the seed's
+ * admin bootstrap variables live in `prisma/.env` (`prisma/.env.example`), the
+ * same file `prisma/seed.ts` reads — resolved from this file's own location so
+ * the CLI behaves the same whatever directory it is run from.
+ *
+ * The CLI (migrate, studio) connects as the role that owns the tables,
+ * `MIGRATION_DATABASE_URL` — not as the API's `DATABASE_URL`, which cannot
+ * create or alter tables and is subject to row-level security (docs/adr/0012).
+ * `DATABASE_URL` is the fallback for a database that predates the split.
  *
  * dotenv never overrides a variable that is already set, which is what lets CI
  * and Docker inject `DATABASE_URL` without a file. `process.env` is read
@@ -20,7 +25,7 @@ const prismaDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'prism
 
 loadEnv({ path: path.join(prismaDir, '.env') });
 
-const databaseUrl = process.env['DATABASE_URL'];
+const databaseUrl = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
 
 export default defineConfig({
   schema: path.join(prismaDir, 'schema.prisma'),

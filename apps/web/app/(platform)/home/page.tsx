@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function HomePage() {
   const [t, me] = await Promise.all([getTranslator(), getMe()]);
-  const firstName = me.person.name.trim().split(/\s+/)[0] ?? me.person.name;
+  const firstName = me.account.name.trim().split(/\s+/)[0] ?? me.account.name;
   const membership = me.membership;
   const isCompanyAdmin = membership?.role === 'ADMIN';
 

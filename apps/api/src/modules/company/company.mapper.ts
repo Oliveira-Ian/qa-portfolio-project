@@ -5,7 +5,7 @@ export function toMemberDto(row: MemberRow): CompanyMemberDto {
   return {
     id: row.id,
     accountId: row.accountId,
-    name: row.account.person.name,
+    name: row.account.name,
     email: row.account.email,
     role: row.role,
     status: row.status,

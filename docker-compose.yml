@@ -20,7 +20,14 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oliveira_erp
+      # Three roles (docs/adr/0012). The entrypoint migrates as the owner,
+      # creates the other two (npm run db:roles) and seeds through the BYPASSRLS
+      # one; the API itself connects as oliveira_app, which row-level security
+      # applies to. Passwords are local-compose defaults — override them in the
+      # host shell before running this file anywhere it needs to be trusted.
+      MIGRATION_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oliveira_erp
+      DATABASE_URL: postgresql://oliveira_app:${APP_DB_PASSWORD:-oliveira_app_dev}@postgres:5432/oliveira_erp
+      ADMIN_DATABASE_URL: postgresql://oliveira_admin:${ADMIN_DB_PASSWORD:-oliveira_admin_dev}@postgres:5432/oliveira_erp
       PORT: 3000
       # Passed through from the host shell if set (`ADMIN_EMAIL=... docker
       # compose up`) so the entrypoint's `db:seed` step can bootstrap an

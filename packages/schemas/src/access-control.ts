@@ -52,9 +52,10 @@ export type ProfileListQuery = z.infer<typeof profileListQuerySchema>;
 /* -------------------------------------------------------------------------- */
 
 /**
- * Admin-initiated account creation, for an existing Person — distinct from
- * self-registration (`registerSchema` in auth.ts), which creates the Person
- * too. The person must not already have an account.
+ * Admin-initiated account creation, for a Person of the caller's company —
+ * distinct from self-registration (`registerSchema` in auth.ts). The new login
+ * takes the person's name and joins the company as a member linked to that
+ * person (docs/adr/0013); the person must not already be linked to a member.
  */
 export const accountCreateSchema = z.object({
   personId: z.string().trim().min(1, 'Person is required'),
@@ -83,7 +84,12 @@ export type AccountProfileLinkInput = z.infer<typeof accountProfileLinkSchema>;
 
 export interface AccountDto {
   id: number;
-  personId: string;
+  /** The person this member is linked to in the caller's company, if any. */
+  personId: string | null;
+  /**
+   * The account's display name. Still called `personName` because it is a
+   * column key the Users grid's saved preferences and filters already use.
+   */
   personName: string;
   email: string;
   role: AccountRole;
@@ -94,9 +100,9 @@ export interface AccountDto {
 
 /**
  * `GET /api/accounts`'s query contract — pagination, sort, a global `search`
- * (person name/email contains), plus the existing `personId` scoping filter
+ * (name/email contains), plus the existing `personId` scoping filter
  * (Person's edit page uses this alone, without pagination, to check whether
- * a person already has an account).
+ * a person is already linked to a member's login).
  */
 export const accountListQuerySchema = paginationQuerySchema.extend(sortQuerySchema.shape).extend({
   search: z.string().trim().optional(),

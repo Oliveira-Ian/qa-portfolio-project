@@ -84,7 +84,7 @@ function buildApp() {
 
   app.addHook('preHandler', async (request) => {
     const accountId = Number(request.headers['x-account-id']);
-    setActor({ accountId, personId: `person-${accountId}`, role: 'USER' });
+    setActor({ accountId, role: 'USER' });
   });
 
   app.post<{ Body: EchoBody }>('/echo', async (request): Promise<EchoResult> => {
@@ -131,7 +131,6 @@ describe('request context', () => {
         const accountId = accountIds[index];
         const expected: Actor = {
           accountId: accountId!,
-          personId: `person-${accountId}`,
           role: 'USER',
         };
         const result = body as EchoResult;
@@ -162,13 +161,11 @@ describe('request context', () => {
   it('has no ambient actor outside a request, and refuses to invent one', () => {
     expect(getActor()).toBeUndefined();
     expect(() => requireActor()).toThrow('No actor in the request context');
-    expect(() => setActor({ accountId: 1, personId: 'person-1', role: 'SUPER_ADMIN' })).toThrow(
-      'No request context',
-    );
+    expect(() => setActor({ accountId: 1, role: 'SUPER_ADMIN' })).toThrow('No request context');
   });
 
   it('lets a seed or a job establish a context explicitly, and keeps it from leaking', () => {
-    const actor: Actor = { accountId: 7, personId: 'person-7', role: 'SYSTEM' };
+    const actor: Actor = { accountId: 7, role: 'SYSTEM' };
 
     const inside = runWithRequestContext({}, () => {
       setActor(actor);
@@ -180,8 +177,8 @@ describe('request context', () => {
   });
 
   it('isolates nested contexts from each other', () => {
-    const outer: Actor = { accountId: 1, personId: 'person-1', role: 'SUPER_ADMIN' };
-    const inner: Actor = { accountId: 2, personId: 'person-2', role: 'USER' };
+    const outer: Actor = { accountId: 1, role: 'SUPER_ADMIN' };
+    const inner: Actor = { accountId: 2, role: 'USER' };
 
     runWithRequestContext({ actor: outer }, () => {
       runWithRequestContext({ actor: inner }, () => {

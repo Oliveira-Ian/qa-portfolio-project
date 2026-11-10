@@ -26,10 +26,17 @@ loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') 
 
 // The generated client lives in apps/api (see the generator block in schema.prisma) and, like
 // the API, talks to Postgres through a driver adapter — no adapter, no client, in Prisma 7.
-const connectionString = process.env.DATABASE_URL;
+//
+// The seed writes into every company, so it connects as the role that bypasses
+// row-level security (docs/adr/0012) — never as the API's DATABASE_URL, which
+// sees nothing without a company and would refuse every company-scoped insert.
+// The table owner works too (a database without the separate admin role yet).
+const connectionString = process.env.ADMIN_DATABASE_URL ?? process.env.MIGRATION_DATABASE_URL;
 
 if (!connectionString) {
-  throw new Error('DATABASE_URL is required — set it in prisma/.env (see prisma/.env.example).');
+  throw new Error(
+    'ADMIN_DATABASE_URL (or MIGRATION_DATABASE_URL) is required — set it in prisma/.env (see prisma/.env.example).',
+  );
 }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
@@ -199,18 +206,8 @@ async function seedSystemAccount(): Promise<void> {
   // about this hash needs to be known by anyone.
   const passwordHash = await bcrypt.hash(randomUUID(), SALT_ROUNDS);
 
-  await prisma.person.create({
-    data: {
-      name: 'System',
-      types: ['USER'],
-      account: {
-        create: {
-          email: SYSTEM_ACCOUNT_EMAIL,
-          password: passwordHash,
-          role: 'SYSTEM',
-        },
-      },
-    },
+  await prisma.accessAccount.create({
+    data: { name: 'System', email: SYSTEM_ACCOUNT_EMAIL, password: passwordHash, role: 'SYSTEM' },
   });
 
   console.log(`  system account: created (${SYSTEM_ACCOUNT_EMAIL})`);
@@ -232,9 +229,9 @@ const COMPANY_CONTRACTS: { product: ProductName; seatLimit: number }[] = [
 const COMPANY_NAME = process.env.SEED_COMPANY_NAME ?? 'Oliveira Demo Company';
 
 /**
- * Until company data is isolated (#60) there is exactly one company, so this
- * reuses whichever one already exists rather than matching on a name that may
- * have changed between runs. The contracts are created but never overwritten —
+ * The bootstrap company: reuses the oldest one rather than matching on a name
+ * that may have changed between runs. Other companies (the demo's, a test's)
+ * are provisioned by their own scripts. The contracts are created but never overwritten —
  * a limit changed later is not the seed's to undo.
  */
 async function seedCompany(): Promise<string> {
@@ -324,7 +321,7 @@ async function seedAdmin(companyId: string, profileIdByName: Map<string, number>
         email,
         password: await bcrypt.hash(password, SALT_ROUNDS),
         role: 'SUPER_ADMIN',
-        person: { create: { name: 'Administrator', email, types: ['USER'] } },
+        name: 'Administrator',
       },
     });
     accountId = created.id;
@@ -409,7 +406,7 @@ async function seedTestAccounts(
           email: seed.email,
           password: passwordHash,
           role: seed.role,
-          person: { create: { name: seed.name, email: seed.email, types: ['USER'] } },
+          name: seed.name,
         },
       }));
 
