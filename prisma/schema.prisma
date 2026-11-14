@@ -208,6 +208,8 @@ model Company {
   equipment      Equipment[]
   catalogItems   CatalogItem[]
   workOrderTypes WorkOrderType[]
+  workOrders     WorkOrder[]
+  fsmCounters    FsmCounter[]
 }
 
 /// A place a company operates from (docs/adr/0013, addendum of 2026-11-10).
@@ -233,7 +235,9 @@ model Branch {
   updatedAt         DateTime @updatedAt
 
   /// Its address (the forms keep one; the table allows more later).
-  addresses Address[]
+  addresses  Address[]
+  /// Work orders this branch runs.
+  workOrders WorkOrder[]
 
   @@unique([companyId, id])
   @@unique([companyId, code])
@@ -278,7 +282,9 @@ model Address {
   updatedAt  DateTime    @updatedAt
 
   /// Equipment installed here.
-  equipment Equipment[]
+  equipment  Equipment[]
+  /// Work orders carried out here.
+  workOrders WorkOrder[]
 
   @@unique([companyId, id])
   @@index([companyId, personId])
@@ -326,8 +332,10 @@ model Membership {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  productAccess ProductAccess[]
-  profiles      MembershipProfile[]
+  productAccess      ProductAccess[]
+  profiles           MembershipProfile[]
+  /// Work orders this member is the technician of (Oliveira FSM).
+  assignedWorkOrders WorkOrder[]
 
   @@unique([accountId, companyId])
   @@unique([companyId, id])
@@ -486,7 +494,8 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  equipment Equipment[]
+  equipment  Equipment[]
+  workOrders WorkOrder[]
 
   @@unique([companyId, id])
   @@unique([companyId, personId])
@@ -524,6 +533,8 @@ model Equipment {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  workOrders WorkOrder[]
+
   @@unique([companyId, id])
   @@unique([companyId, tag])
   @@index([companyId, customerId])
@@ -552,6 +563,8 @@ model CatalogItem {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  workOrderItems WorkOrderItem[]
+
   @@unique([companyId, id])
   @@unique([companyId, code])
   @@index([companyId, name])
@@ -570,6 +583,140 @@ model WorkOrderType {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  workOrders WorkOrder[]
+
   @@unique([companyId, id])
   @@unique([companyId, name])
+}
+
+/// The next number of a company's sequence ("work-order" → #1042). One row per
+/// company and key, bumped inside the transaction that uses it.
+model FsmCounter {
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+  key       String
+  value     Int     @default(0)
+
+  @@id([companyId, key])
+}
+
+enum WorkOrderStatus {
+  OPEN
+  SCHEDULED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+/// A job for a customer (plan § 2.5): what, where, for which equipment, by whom
+/// and when — and, once done, what was done. The transitions between statuses
+/// are a pure function in packages/schemas (`work-order-status.ts`), shared by
+/// the API and the screens. Every change is a WorkOrderEvent.
+model WorkOrder {
+  id                   String            @id @default(uuid(7))
+  companyId            String
+  company              Company           @relation(fields: [companyId], references: [id])
+  /// Sequential within the company, shown as "#1042".
+  number               Int
+  customerId           String
+  customer             Customer          @relation(fields: [companyId, customerId], references: [companyId, id], onDelete: Restrict)
+  equipmentId          String?
+  equipment            Equipment?        @relation(fields: [companyId, equipmentId], references: [companyId, id], onDelete: Restrict)
+  /// One of the customer's addresses — where the work is done.
+  serviceAddressId     String?
+  serviceAddress       Address?          @relation(fields: [companyId, serviceAddressId], references: [companyId, id], onDelete: Restrict)
+  typeId               String
+  type                 WorkOrderType     @relation(fields: [companyId, typeId], references: [companyId, id], onDelete: Restrict)
+  branchId             String?
+  branch               Branch?           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict)
+  title                String
+  description          String?
+  priority             WorkOrderPriority @default(NORMAL)
+  status               WorkOrderStatus   @default(OPEN)
+  /// The technician: a member with an FSM seat.
+  assigneeMembershipId String?
+  assignee             Membership?       @relation(fields: [companyId, assigneeMembershipId], references: [companyId, id], onDelete: Restrict)
+  scheduledAt          DateTime?
+  dueAt                DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  cancelledAt          DateTime?
+  holdReason           String?
+  cancellationReason   String?
+  /// What was done — required to complete.
+  resolution           String?
+  createdById          Int
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  items  WorkOrderItem[]
+  events WorkOrderEvent[]
+
+  @@unique([companyId, id])
+  @@unique([companyId, number])
+  @@index([companyId, status])
+  @@index([companyId, assigneeMembershipId, status])
+  @@index([companyId, customerId])
+  @@index([companyId, equipmentId])
+  @@index([companyId, scheduledAt])
+}
+
+/// A material used or a service performed on a work order — a snapshot of the
+/// catalog item, so a later change to the catalog never rewrites history.
+model WorkOrderItem {
+  id            String          @id @default(uuid(7))
+  companyId     String
+  workOrderId   String
+  workOrder     WorkOrder       @relation(fields: [companyId, workOrderId], references: [companyId, id], onDelete: Cascade)
+  catalogItemId String
+  catalogItem   CatalogItem     @relation(fields: [companyId, catalogItemId], references: [companyId, id], onDelete: Restrict)
+  kind          CatalogItemKind
+  name          String
+  unit          String
+  unitPrice     Decimal?        @db.Decimal(12, 2)
+  quantity      Decimal         @db.Decimal(12, 3)
+  createdById   Int
+  createdAt     DateTime        @default(now())
+
+  @@unique([companyId, id])
+  @@index([companyId, workOrderId])
+}
+
+enum WorkOrderEventType {
+  CREATED
+  UPDATED
+  ASSIGNED
+  UNASSIGNED
+  STATUS_CHANGED
+  NOTE
+  ITEM_ADDED
+  ITEM_REMOVED
+}
+
+/// The work order's history, append-only: who did what, and when.
+model WorkOrderEvent {
+  id             String             @id @default(uuid(7))
+  companyId      String
+  workOrderId    String
+  workOrder      WorkOrder          @relation(fields: [companyId, workOrderId], references: [companyId, id], onDelete: Cascade)
+  type           WorkOrderEventType
+  fromStatus     WorkOrderStatus?
+  toStatus       WorkOrderStatus?
+  message        String?
+  payload        Json?
+  actorAccountId Int
+  /// The actor's name when it happened — the history reads the same later.
+  actorName      String
+  createdAt      DateTime           @default(now())
+
+  @@unique([companyId, id])
+  @@index([companyId, workOrderId, createdAt])
 }

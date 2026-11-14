@@ -12,3 +12,4 @@ export * from './company.js';
 export * from './address.js';
 export * from './contact.js';
 export * from './fsm/records.js';
+export * from './fsm/work-orders.js';

@@ -27,6 +27,10 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'Equipment',
   'CatalogItem',
   'WorkOrderType',
+  'FsmCounter',
+  'WorkOrder',
+  'WorkOrderItem',
+  'WorkOrderEvent',
 ]);
 
 type Args = Record<string, unknown>;
