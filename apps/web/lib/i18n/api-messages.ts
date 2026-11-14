@@ -74,6 +74,25 @@ const EXACT: Record<string, MessageKey> = {
   'An address in use by equipment or work orders cannot be removed': 'api.guard.addressInUse',
   'Contact name is required': 'api.validation.contactNameRequired',
 
+  // Oliveira FSM's records
+  'Customer not found': 'api.notFound.customer',
+  'Equipment not found': 'api.notFound.equipment',
+  'Product or service not found': 'api.notFound.catalogItem',
+  'Work order type not found': 'api.notFound.workOrderType',
+  'This customer has equipment or work orders. Deactivate it instead.': 'api.guard.customerInUse',
+  'This equipment has work orders. Deactivate it instead.': 'api.guard.equipmentInUse',
+  'An equipment with this tag already exists': 'api.guard.equipmentTagTaken',
+  "The address must be one of the customer's addresses": 'api.guard.equipmentAddress',
+  'A product or service with this code already exists': 'api.guard.catalogItemCodeTaken',
+  'This product or service is in use. Deactivate it instead.': 'api.guard.catalogItemInUse',
+  'A work order type with this name already exists': 'api.guard.workOrderTypeNameTaken',
+  'This work order type is in use. Deactivate it instead.': 'api.guard.workOrderTypeInUse',
+  'Customer is required': 'api.validation.customerRequired',
+  'Unit is required': 'api.validation.unitRequired',
+  'Invalid price': 'api.validation.invalidPrice',
+  'Invalid date': 'api.validation.invalidDate',
+  'The warranty cannot end before the installation': 'api.validation.warrantyBeforeInstall',
+
   // Confirmations a Server Action sends back
   'Person created successfully': 'api.done.personCreated',
   'Person updated successfully': 'api.done.personUpdated',
@@ -111,6 +130,32 @@ const PATTERNS: readonly MessagePattern[] = [
   },
   { pattern: /^(\d+) people deleted$/, key: 'api.done.peopleDeleted', vars: countVars },
   { pattern: /^(\d+) profiles deleted$/, key: 'api.done.profilesDeleted', vars: countVars },
+  { pattern: /^Branch deleted$/, key: 'api.done.branchesDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(d+) branches deleted$/, key: 'api.done.branchesDeleted', vars: countVars },
+  { pattern: /^Customer deleted$/, key: 'api.done.customersDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(\d+) customers deleted$/, key: 'api.done.customersDeleted', vars: countVars },
+  { pattern: /^Equipment deleted$/, key: 'api.done.equipmentDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(\d+) equipment deleted$/, key: 'api.done.equipmentDeleted', vars: countVars },
+  {
+    pattern: /^Product or service deleted$/,
+    key: 'api.done.catalogItemsDeleted',
+    vars: () => ({ count: 1 }),
+  },
+  {
+    pattern: /^(\d+) products and services deleted$/,
+    key: 'api.done.catalogItemsDeleted',
+    vars: countVars,
+  },
+  {
+    pattern: /^Work order type deleted$/,
+    key: 'api.done.workOrderTypesDeleted',
+    vars: () => ({ count: 1 }),
+  },
+  {
+    pattern: /^(\d+) work order types deleted$/,
+    key: 'api.done.workOrderTypesDeleted',
+    vars: countVars,
+  },
   {
     pattern: /^Use at most (\d+) characters$/,
     key: 'api.validation.tooLong',

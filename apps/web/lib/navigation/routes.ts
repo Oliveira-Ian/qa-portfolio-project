@@ -11,6 +11,16 @@
  * every call site gets a compile error instead of a silent 404, which is
  * exactly what hard-coding the string everywhere used to make impossible.
  */
+/** The four pages of a record routine: its list, a new one, one record, and its edit form. */
+function record(list: string) {
+  return {
+    list,
+    new: `${list}/new`,
+    view: (id: string) => `${list}/${id}`,
+    edit: (id: string) => `${list}/${id}/edit`,
+  };
+}
+
 export const ROUTES = {
   /** The Platform's home: the systems the signed-in user can open. */
   home: '/home',
@@ -49,8 +59,20 @@ export const ROUTES = {
     list: '/erp/administration/access-control/users',
   },
 
-  /** Oliveira FSM — a placeholder, nothing inside it yet. */
+  /** Oliveira FSM — an area of its own under `/fsm` (catalog in `catalog.ts`). */
   fsm: {
     home: '/fsm',
+    customers: record('/fsm/records/customers/customers'),
+    equipment: record('/fsm/records/customers/equipment'),
+    catalogItems: record('/fsm/records/catalog/products-services'),
+    workOrderTypes: record('/fsm/settings/work-orders/work-order-types'),
+    branches: record('/fsm/settings/company/branches'),
+    profiles: {
+      list: '/fsm/administration/access-control/profiles',
+      new: '/fsm/administration/access-control/profiles/new',
+      view: (id: number) => `/fsm/administration/access-control/profiles/${id}`,
+      edit: (id: number) => `/fsm/administration/access-control/profiles/${id}/edit`,
+    },
+    users: { list: '/fsm/administration/access-control/users' },
   },
 } as const;

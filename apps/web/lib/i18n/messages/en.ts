@@ -8,6 +8,7 @@
  * the typecheck.
  */
 import { erpEn } from './erp';
+import { fsmEn } from './fsm';
 import { tableEn } from './table';
 
 export const en = {
@@ -22,6 +23,14 @@ export const en = {
     save: 'Save',
     back: 'Back',
     remove: 'Remove',
+    edit: 'Edit',
+    delete: 'Delete',
+    saveChanges: 'Save changes',
+    optional: 'Optional',
+    active: 'Active',
+    inactive: 'Inactive',
+    yes: 'Yes',
+    no: 'No',
     previousSlide: 'Previous slide',
     nextSlide: 'Next slide',
     select: 'Select…',
@@ -164,6 +173,25 @@ export const en = {
       accessProfiles: 'Access profiles',
       users: 'Users',
     },
+    fsm: {
+      overview: 'Overview',
+      operations: 'Operations',
+      workOrders: 'Work orders',
+      myWorkOrders: 'My work orders',
+      records: 'Records',
+      customers: 'Customers',
+      equipment: 'Equipment',
+      catalog: 'Catalog',
+      productsServices: 'Products & services',
+      settings: 'Settings',
+      workOrderTypes: 'Work order types',
+      company: 'Company',
+      branches: 'Branches',
+      access: 'Access',
+      accessControl: 'Access control',
+      accessProfiles: 'Access profiles',
+      users: 'Users',
+    },
   },
 
   access: {
@@ -176,6 +204,79 @@ export const en = {
 
   /** Screens every product shares for its own access control — the product is passed in. */
   accessControl: {
+    profiles: {
+      title: 'Access profiles',
+      meta: '{count, plural, one {# profile} other {# profiles}}',
+      add: 'Add profile',
+      addFirst: 'Add the first profile',
+      edit: 'Edit',
+      delete: 'Delete',
+      duplicate: 'Duplicate',
+      duplicated: 'Profile duplicated — adjust the copy and save',
+      created: 'Profile created',
+      updated: 'Profile updated',
+      record: { back: 'Back', edit: 'Edit profile' },
+      empty: {
+        title: 'No profiles yet',
+        body: 'Profiles group permissions — create one and link it to an account.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this profile?',
+        titleMany: 'Delete {count} profiles?',
+        bodyOne: 'Accounts linked to it lose whatever permissions it granted. There is no undo.',
+        bodyMany:
+          'Accounts linked to them lose whatever permissions they granted. There is no undo.',
+        confirm: 'Delete',
+        cancel: 'Cancel',
+      },
+      form: {
+        newTitle: 'New access profile',
+        editTitle: 'Edit access profile',
+        systemNote: 'This is a system profile — it can be edited, but not deleted.',
+        infoTitle: 'Permissions inside {product}',
+        infoBody:
+          'This profile defines what people can do inside {product}. Whether someone can open {product} at all is decided in Oliveira Platform › Product access.',
+        save: 'Save profile',
+        cancel: 'Cancel',
+        errorBody: 'The profile wasn’t saved. Fix the highlighted fields and try again.',
+        code: 'Code',
+        codeAuto: 'Auto',
+        name: 'Name',
+        namePlaceholder: 'Finance',
+        description: 'Description',
+        descriptionPlaceholder: 'What this profile is for…',
+        permissions: 'Permissions',
+        permissionsNote: 'Screens appear here as they are added to {product}.',
+        screen: 'Screen',
+        actions: { view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete' },
+        groups: {
+          operations: 'Operations',
+          records: 'Records',
+          settings: 'Settings',
+          access: 'Access',
+          other: 'Other',
+        },
+        resources: {
+          person: 'People',
+          profile: 'Access profiles',
+          workOrder: 'Work orders',
+          customer: 'Customers',
+          equipment: 'Equipment',
+          catalogItem: 'Products & services',
+          branch: 'Branches',
+        },
+        special: 'Other permissions',
+        permissionLabels: {
+          profileManage: 'Manage profiles and their access',
+          workOrderTypeManage: 'Manage work order types',
+          workOrderAssign: 'Assign work orders to technicians',
+          workOrderChangeStatus: 'Schedule, put on hold and cancel work orders',
+          workOrderExecute: 'Start, record and complete the work orders assigned to them',
+          dashboardView: 'View the operations dashboard',
+        },
+        selectColumn: 'Allow {action} on {screen}',
+      },
+    },
     users: {
       title: 'Users',
       meta: '{count, plural, one {# user} other {# users}}',
@@ -463,11 +564,7 @@ export const en = {
     },
   },
 
-  fsm: {
-    overline: 'Field service management',
-    soon: 'Coming soon',
-    body: 'In development. Not available to any company yet.',
-  },
+  fsm: fsmEn,
 
   errors: {
     boundary: {
@@ -521,6 +618,11 @@ export const en = {
       unknownPermission: 'One or more permissions do not exist',
       codeRequired: 'Code is required',
       tooLong: 'Use at most {max} characters',
+      customerRequired: 'Customer is required',
+      unitRequired: 'Unit is required',
+      invalidPrice: 'Invalid price',
+      invalidDate: 'Invalid date',
+      warrantyBeforeInstall: 'The warranty cannot end before the installation',
     },
     auth: {
       missingFields: 'Please fill in email and password',
@@ -551,6 +653,10 @@ export const en = {
       people: 'One or more people were not found',
       profile: 'Profile not found',
       branch: 'Branch not found',
+      customer: 'Customer not found',
+      equipment: 'Equipment not found',
+      catalogItem: 'Product or service not found',
+      workOrderType: 'Work order type not found',
     },
     guard: {
       lastCompanyAdmin: 'The company must keep at least one administrator',
@@ -563,6 +669,14 @@ export const en = {
       branchCodeTaken: 'A branch with this code already exists',
       branchInUse: 'This branch is in use. Deactivate it instead.',
       addressInUse: 'An address in use by equipment or work orders cannot be removed',
+      customerInUse: 'This customer has equipment or work orders. Deactivate it instead.',
+      equipmentInUse: 'This equipment has work orders. Deactivate it instead.',
+      equipmentTagTaken: 'An equipment with this tag already exists',
+      equipmentAddress: 'The address must be one of the customer’s addresses',
+      catalogItemCodeTaken: 'A product or service with this code already exists',
+      catalogItemInUse: 'This product or service is in use. Deactivate it instead.',
+      workOrderTypeNameTaken: 'A work order type with this name already exists',
+      workOrderTypeInUse: 'This work order type is in use. Deactivate it instead.',
     },
     done: {
       personCreated: 'Person created successfully',
@@ -571,6 +685,14 @@ export const en = {
       peopleDeleted: '{count} people deleted',
       profileDeleted: 'Profile deleted',
       profilesDeleted: '{count} profiles deleted',
+      branchesDeleted: '{count, plural, one {Branch deleted} other {# branches deleted}}',
+      customersDeleted: '{count, plural, one {Customer deleted} other {# customers deleted}}',
+      equipmentDeleted:
+        '{count, plural, one {Equipment deleted} other {# items of equipment deleted}}',
+      catalogItemsDeleted:
+        '{count, plural, one {Product or service deleted} other {# products and services deleted}}',
+      workOrderTypesDeleted:
+        '{count, plural, one {Work order type deleted} other {# work order types deleted}}',
     },
   },
 

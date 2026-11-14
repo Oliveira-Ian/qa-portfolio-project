@@ -1,33 +1,31 @@
 import type { Metadata } from 'next';
+import { ProfileForm } from '@/components/profiles/profile-form';
 import { NoPermission } from '@/components/platform/no-permission';
-import { getTranslator } from '@/lib/i18n/server';
 import { can } from '@/lib/permissions';
-import { listPermissions } from '../_data-access/list-permissions';
-import { ProfileRecord } from './_components/profile-record';
-import { getProfile } from './_data-access/get-profile';
+import { profileAccess } from '../_data-access/profile-access';
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
-  const { id } = await params;
-  const [t, profile] = await Promise.all([getTranslator(), getProfile(Number.parseInt(id, 10))]);
+  if (!(await can('ERP', 'profile:manage'))) {
+    return {};
+  }
 
-  return { title: profile.name || t('erp.profiles.title') };
+  return { title: (await profileAccess.get(Number.parseInt((await params).id, 10))).name };
 }
 
 /** One profile, read-only — what a double click on the list opens. */
 export default async function ProfilePage({ params }: ProfilePageProps) {
   if (!(await can('ERP', 'profile:manage'))) {
-    return <NoPermission screen="erp.profiles.title" />;
+    return <NoPermission screen="accessControl.profiles.title" />;
   }
 
-  const { id } = await params;
   const [profile, permissions] = await Promise.all([
-    getProfile(Number.parseInt(id, 10)),
-    listPermissions(),
+    profileAccess.get(Number.parseInt((await params).id, 10)),
+    profileAccess.permissions(),
   ]);
 
-  return <ProfileRecord profile={profile} permissions={permissions} />;
+  return <ProfileForm product="ERP" mode="view" profile={profile} permissions={permissions} />;
 }

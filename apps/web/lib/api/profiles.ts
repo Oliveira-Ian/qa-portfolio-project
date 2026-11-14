@@ -20,33 +20,54 @@ export function requestProfileList(
   });
 }
 
-export function requestProfile(token: string, id: number): Promise<ApiResult<ProfileDto>> {
-  return apiRequest<ProfileDto>(`${BASE}/${id}`, { token });
+export function requestProfile(
+  token: string,
+  id: number,
+  product: Product = 'ERP',
+): Promise<ApiResult<ProfileDto>> {
+  return apiRequest<ProfileDto>(`${PRODUCT_BASE[product]}/${id}`, { token });
 }
 
 export function requestProfileCreate(
   token: string,
   input: ProfileWriteInput,
+  product: Product = 'ERP',
 ): Promise<ApiResult<ProfileDto>> {
-  return apiRequest<ProfileDto>(BASE, { method: 'POST', token, body: input });
+  return apiRequest<ProfileDto>(PRODUCT_BASE[product], { method: 'POST', token, body: input });
 }
 
 export function requestProfileUpdate(
   token: string,
   id: number,
   input: ProfileWriteInput,
+  product: Product = 'ERP',
 ): Promise<ApiResult<ProfileDto>> {
-  return apiRequest<ProfileDto>(`${BASE}/${id}`, { method: 'PUT', token, body: input });
+  return apiRequest<ProfileDto>(`${PRODUCT_BASE[product]}/${id}`, {
+    method: 'PUT',
+    token,
+    body: input,
+  });
 }
 
 export function requestProfileDelete(
   token: string,
   id: number,
+  product: Product = 'ERP',
 ): Promise<ApiResult<{ message: string }>> {
-  return apiRequest<{ message: string }>(`${BASE}/${id}`, { method: 'DELETE', token });
+  return apiRequest<{ message: string }>(`${PRODUCT_BASE[product]}/${id}`, {
+    method: 'DELETE',
+    token,
+  });
 }
 
 /** A new, ordinary profile with the source's description and permissions, named "<name> (copy)". */
-export function requestProfileDuplicate(token: string, id: number): Promise<ApiResult<ProfileDto>> {
-  return apiRequest<ProfileDto>(`${BASE}/${id}/duplicate`, { method: 'POST', token });
+export function requestProfileDuplicate(
+  token: string,
+  id: number,
+  product: Product = 'ERP',
+): Promise<ApiResult<ProfileDto>> {
+  return apiRequest<ProfileDto>(`${PRODUCT_BASE[product]}/${id}/duplicate`, {
+    method: 'POST',
+    token,
+  });
 }

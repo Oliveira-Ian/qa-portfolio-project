@@ -97,8 +97,8 @@ function buildCrumbs(area: AreaKey, pathname: string, t: (key: MessageKey) => st
     return [];
   }
 
-  if (area === 'ERP') {
-    const entry = resolveBreadcrumb(pathname);
+  if (area === 'ERP' || area === 'FSM') {
+    const entry = resolveBreadcrumb(area, pathname);
 
     if (!entry) {
       return [];

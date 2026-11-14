@@ -24,11 +24,11 @@ export function areaScope(area: AreaKey): 'platform' | 'erp' | 'fsm' {
 
 /**
  * What the web knows about each product beyond its name. `available` is false
- * for a product that is announced but not built: the FSM is a placeholder
- * ("coming soon"), so it cannot be opened, and its access cannot be granted
- * from the UI, even though the API would accept a seat for it.
+ * for a product that is announced but not built ("coming soon"): it cannot be
+ * opened, and its access cannot be granted from the UI, even though the API
+ * would accept a seat for it. Both products are available today.
  */
 export const PRODUCT_AVAILABILITY: Record<Product, { available: boolean }> = {
   ERP: { available: true },
-  FSM: { available: false },
+  FSM: { available: true },
 };

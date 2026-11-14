@@ -1,0 +1,511 @@
+/**
+ * Oliveira FSM's own words. `{product}` is always the proper noun, passed in —
+ * never written here. `fsmEn` is the shape; `fsmPtBR` is typed against it.
+ *
+ * Every record's listing has the same keys under `<record>.list`, read by
+ * `EntityList` (`components/data-table/entity-list.tsx`).
+ */
+export const fsmEn = {
+  home: {
+    title: 'Overview',
+    lead: 'Customers, equipment and the work in the field.',
+  },
+
+  columns: {
+    name: 'Name',
+    tradeName: 'Trade name',
+    document: 'Document',
+    email: 'Email',
+    phone: 'Phone',
+    city: 'City',
+    state: 'State',
+    status: 'Status',
+    created: 'Created',
+    equipmentCount: 'Equipment',
+    customer: 'Customer',
+    tag: 'Tag',
+    category: 'Category',
+    manufacturer: 'Manufacturer',
+    model: 'Model',
+    serialNumber: 'Serial number',
+    warrantyUntil: 'Warranty until',
+    location: 'Location',
+    kind: 'Kind',
+    code: 'Code',
+    unit: 'Unit',
+    price: 'Price',
+    description: 'Description',
+  },
+
+  status: { active: 'Active', inactive: 'Inactive' },
+
+  customers: {
+    list: {
+      title: 'Customers',
+      searchPlaceholder: 'Search by name, trade name or document',
+      meta: '{count, plural, one {# customer} other {# customers}}',
+      metaSelected: '{count, plural, one {# customer} other {# customers}} · {selected} selected',
+      add: 'Add customer',
+      addFirst: 'Add the first customer',
+      empty: {
+        title: 'No customers yet',
+        body: 'The people and companies you serve in the field, with their sites and contacts.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this customer?',
+        titleMany: 'Delete {count} customers?',
+        body: 'A customer with equipment or work orders can’t be deleted — deactivate it instead. There is no undo.',
+      },
+    },
+    form: {
+      newTitle: 'New customer',
+      newDescription: 'A person or a company you serve. A name is enough to start.',
+      save: 'Save customer',
+      identificationBody: 'A name is enough; the document is checked when given.',
+      created: 'Customer created',
+      updated: 'Customer updated',
+    },
+    record: {
+      equipment: 'Equipment',
+      equipmentBody: 'What this customer has installed.',
+      noEquipment: 'No equipment registered for this customer.',
+      addEquipment: 'Add equipment',
+    },
+  },
+
+  equipment: {
+    list: {
+      title: 'Equipment',
+      searchPlaceholder: 'Search by name, tag, serial number or customer',
+      meta: '{count, plural, one {# item} other {# items}}',
+      metaSelected: '{count, plural, one {# item} other {# items}} · {selected} selected',
+      add: 'Add equipment',
+      addFirst: 'Add the first equipment',
+      empty: {
+        title: 'No equipment yet',
+        body: 'Register what your customers have installed, and every work order builds its history.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this equipment?',
+        titleMany: 'Delete {count} items of equipment?',
+        body: 'Equipment with work orders can’t be deleted — set it inactive instead. There is no undo.',
+      },
+    },
+    form: {
+      newTitle: 'New equipment',
+      newDescription: 'What the customer has, and where it is installed.',
+      save: 'Save equipment',
+      created: 'Equipment created',
+      updated: 'Equipment updated',
+      sections: {
+        customer: { title: 'Customer and site', body: 'Whose it is and where it is installed.' },
+        identification: { title: 'Identification', body: 'How the team recognizes it.' },
+        lifecycle: { title: 'Installation and warranty', body: 'Dates and current status.' },
+        notes: { title: 'Notes', body: 'Anything the technician should know.' },
+      },
+      fields: {
+        customer: 'Customer',
+        customerPlaceholder: 'Search a customer…',
+        customerEmpty: 'No customer found',
+        address: 'Address',
+        addressPlaceholder: 'Select one of the customer’s addresses…',
+        addressEmpty: 'This customer has no address yet',
+        addressHelp: 'The customer’s addresses. Add one in the customer’s record.',
+        noAddress: 'No address',
+        location: 'Exact location',
+        locationPlaceholder: 'Machine room, 3rd floor',
+        name: 'Name',
+        namePlaceholder: 'Chiller 01',
+        tag: 'Tag',
+        tagHelp: 'Your own asset number, unique in the company.',
+        category: 'Category',
+        categoryPlaceholder: 'HVAC, Electrical, Elevator…',
+        manufacturer: 'Manufacturer',
+        model: 'Model',
+        serialNumber: 'Serial number',
+        installedAt: 'Installed on',
+        warrantyUntil: 'Warranty until',
+        status: 'Status',
+        notes: 'Notes',
+      },
+    },
+    status: {
+      ACTIVE: 'Active',
+      UNDER_MAINTENANCE: 'Under maintenance',
+      INACTIVE: 'Inactive',
+    },
+  },
+
+  catalogItems: {
+    list: {
+      title: 'Products & services',
+      searchPlaceholder: 'Search by name or code',
+      meta: '{count, plural, one {# item} other {# items}}',
+      metaSelected: '{count, plural, one {# item} other {# items}} · {selected} selected',
+      add: 'Add item',
+      addFirst: 'Add the first item',
+      empty: {
+        title: 'The catalog is empty',
+        body: 'The materials technicians use and the services they perform, recorded on each work order.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this item?',
+        titleMany: 'Delete {count} items?',
+        body: 'An item used on a work order can’t be deleted — deactivate it instead. There is no undo.',
+      },
+      tabs: { label: 'Kind', all: 'All', products: 'Products', services: 'Services' },
+    },
+    form: {
+      newTitle: 'New product or service',
+      newDescription: 'Something used or performed in the field.',
+      save: 'Save item',
+      created: 'Item created',
+      updated: 'Item updated',
+      sections: {
+        identification: { title: 'Identification', body: 'What it is and how it is called.' },
+        pricing: { title: 'Unit and price', body: 'How it is counted and its reference price.' },
+      },
+      fields: {
+        kind: 'Kind',
+        code: 'Code',
+        codeHelp: 'Optional, unique in the company.',
+        name: 'Name',
+        description: 'Description',
+        unit: 'Unit',
+        unitHelp: 'UN, H, M, KG…',
+        price: 'Reference price',
+        active: 'Active item',
+      },
+    },
+    kind: { PRODUCT: 'Product', SERVICE: 'Service' },
+  },
+
+  workOrderTypes: {
+    list: {
+      title: 'Work order types',
+      searchPlaceholder: 'Search by name',
+      meta: '{count, plural, one {# type} other {# types}}',
+      metaSelected: '{count, plural, one {# type} other {# types}} · {selected} selected',
+      add: 'Add type',
+      addFirst: 'Add the first type',
+      empty: {
+        title: 'No work order types',
+        body: 'Installation, preventive maintenance, a technical visit — what kinds of work you do.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this type?',
+        titleMany: 'Delete {count} types?',
+        body: 'A type used by a work order can’t be deleted — deactivate it instead. There is no undo.',
+      },
+    },
+    form: {
+      newTitle: 'New work order type',
+      newDescription: 'A kind of work your team does.',
+      save: 'Save type',
+      created: 'Work order type created',
+      updated: 'Work order type updated',
+      section: { title: 'Type', body: 'Its name and what it covers.' },
+      fields: { name: 'Name', description: 'Description', active: 'Active type' },
+    },
+  },
+
+  branches: {
+    list: {
+      title: 'Branches',
+      searchPlaceholder: 'Search by name, code or city',
+      meta: '{count, plural, one {# branch} other {# branches}}',
+      metaSelected: '{count, plural, one {# branch} other {# branches}} · {selected} selected',
+      add: 'Add branch',
+      addFirst: 'Add the first branch',
+      empty: {
+        title: 'No branches yet',
+        body: 'The places your company operates from. A work order can name the branch that runs it.',
+      },
+      deleteDialog: {
+        titleOne: 'Delete this branch?',
+        titleMany: 'Delete {count} branches?',
+        body: 'A branch in use can’t be deleted — deactivate it instead. There is no undo.',
+      },
+      company: 'Company',
+      companyNote:
+        'The company’s registration is managed on the Oliveira Platform. Branches are shared by every product.',
+    },
+    form: {
+      newTitle: 'New branch',
+      newDescription: 'A place your company operates from.',
+      save: 'Save branch',
+      created: 'Branch created',
+      updated: 'Branch updated',
+      sections: {
+        identification: { title: 'Identification', body: 'Code, name and its own registration.' },
+        contact: { title: 'Contact', body: 'How to reach this branch.' },
+        address: { title: 'Address', body: 'Where it is.' },
+      },
+      fields: {
+        code: 'Code',
+        codeHelp: 'Short and unique in the company: SP-01.',
+        name: 'Name',
+        document: 'CNPJ',
+        documentHelp: 'When the branch has its own.',
+        stateRegistration: 'State registration',
+        email: 'Email',
+        phone: 'Phone',
+        active: 'Active branch',
+      },
+    },
+  },
+};
+
+type DeepString<T> = { [K in keyof T]: T[K] extends string ? string : DeepString<T[K]> };
+
+export const fsmPtBR: DeepString<typeof fsmEn> = {
+  home: {
+    title: 'Visão geral',
+    lead: 'Clientes, equipamentos e o trabalho em campo.',
+  },
+
+  columns: {
+    name: 'Nome',
+    tradeName: 'Nome fantasia',
+    document: 'Documento',
+    email: 'E-mail',
+    phone: 'Telefone',
+    city: 'Cidade',
+    state: 'UF',
+    status: 'Situação',
+    created: 'Criado em',
+    equipmentCount: 'Equipamentos',
+    customer: 'Cliente',
+    tag: 'Patrimônio',
+    category: 'Categoria',
+    manufacturer: 'Fabricante',
+    model: 'Modelo',
+    serialNumber: 'Nº de série',
+    warrantyUntil: 'Garantia até',
+    location: 'Local',
+    kind: 'Tipo',
+    code: 'Código',
+    unit: 'Unidade',
+    price: 'Preço',
+    description: 'Descrição',
+  },
+
+  status: { active: 'Ativo', inactive: 'Inativo' },
+
+  customers: {
+    list: {
+      title: 'Clientes',
+      searchPlaceholder: 'Buscar por nome, nome fantasia ou documento',
+      meta: '{count, plural, one {# cliente} other {# clientes}}',
+      metaSelected: '{count, plural, one {# cliente} other {# clientes}} · {selected} selecionados',
+      add: 'Adicionar cliente',
+      addFirst: 'Adicionar o primeiro cliente',
+      empty: {
+        title: 'Nenhum cliente ainda',
+        body: 'As pessoas e empresas que você atende em campo, com seus locais e contatos.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir este cliente?',
+        titleMany: 'Excluir {count} clientes?',
+        body: 'Um cliente com equipamentos ou ordens de serviço não pode ser excluído — inative-o. Não há como desfazer.',
+      },
+    },
+    form: {
+      newTitle: 'Novo cliente',
+      newDescription: 'Uma pessoa ou empresa que você atende. Um nome basta para começar.',
+      save: 'Salvar cliente',
+      identificationBody: 'Um nome basta; o documento é conferido quando informado.',
+      created: 'Cliente criado',
+      updated: 'Cliente atualizado',
+    },
+    record: {
+      equipment: 'Equipamentos',
+      equipmentBody: 'O que este cliente tem instalado.',
+      noEquipment: 'Nenhum equipamento cadastrado para este cliente.',
+      addEquipment: 'Adicionar equipamento',
+    },
+  },
+
+  equipment: {
+    list: {
+      title: 'Equipamentos',
+      searchPlaceholder: 'Buscar por nome, patrimônio, nº de série ou cliente',
+      meta: '{count, plural, one {# equipamento} other {# equipamentos}}',
+      metaSelected:
+        '{count, plural, one {# equipamento} other {# equipamentos}} · {selected} selecionados',
+      add: 'Adicionar equipamento',
+      addFirst: 'Adicionar o primeiro equipamento',
+      empty: {
+        title: 'Nenhum equipamento ainda',
+        body: 'Cadastre o que seus clientes têm instalado; cada ordem de serviço forma o histórico.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir este equipamento?',
+        titleMany: 'Excluir {count} equipamentos?',
+        body: 'Um equipamento com ordens de serviço não pode ser excluído — inative-o. Não há como desfazer.',
+      },
+    },
+    form: {
+      newTitle: 'Novo equipamento',
+      newDescription: 'O que o cliente tem e onde está instalado.',
+      save: 'Salvar equipamento',
+      created: 'Equipamento criado',
+      updated: 'Equipamento atualizado',
+      sections: {
+        customer: { title: 'Cliente e local', body: 'De quem é e onde está instalado.' },
+        identification: { title: 'Identificação', body: 'Como a equipe o reconhece.' },
+        lifecycle: { title: 'Instalação e garantia', body: 'Datas e situação atual.' },
+        notes: { title: 'Observações', body: 'O que o técnico precisa saber.' },
+      },
+      fields: {
+        customer: 'Cliente',
+        customerPlaceholder: 'Buscar um cliente…',
+        customerEmpty: 'Nenhum cliente encontrado',
+        address: 'Endereço',
+        addressPlaceholder: 'Selecione um endereço do cliente…',
+        addressEmpty: 'Este cliente ainda não tem endereço',
+        addressHelp: 'Os endereços do cliente. Cadastre um novo no cadastro do cliente.',
+        noAddress: 'Sem endereço',
+        location: 'Local exato',
+        locationPlaceholder: 'Casa de máquinas, 3º andar',
+        name: 'Nome',
+        namePlaceholder: 'Chiller 01',
+        tag: 'Patrimônio',
+        tagHelp: 'O número de patrimônio da empresa, único nela.',
+        category: 'Categoria',
+        categoryPlaceholder: 'Climatização, Elétrica, Elevador…',
+        manufacturer: 'Fabricante',
+        model: 'Modelo',
+        serialNumber: 'Nº de série',
+        installedAt: 'Instalado em',
+        warrantyUntil: 'Garantia até',
+        status: 'Situação',
+        notes: 'Observações',
+      },
+    },
+    status: {
+      ACTIVE: 'Ativo',
+      UNDER_MAINTENANCE: 'Em manutenção',
+      INACTIVE: 'Inativo',
+    },
+  },
+
+  catalogItems: {
+    list: {
+      title: 'Produtos e serviços',
+      searchPlaceholder: 'Buscar por nome ou código',
+      meta: '{count, plural, one {# item} other {# itens}}',
+      metaSelected: '{count, plural, one {# item} other {# itens}} · {selected} selecionados',
+      add: 'Adicionar item',
+      addFirst: 'Adicionar o primeiro item',
+      empty: {
+        title: 'O catálogo está vazio',
+        body: 'Os materiais que os técnicos usam e os serviços que executam, lançados em cada ordem de serviço.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir este item?',
+        titleMany: 'Excluir {count} itens?',
+        body: 'Um item usado em ordem de serviço não pode ser excluído — inative-o. Não há como desfazer.',
+      },
+      tabs: { label: 'Tipo', all: 'Todos', products: 'Produtos', services: 'Serviços' },
+    },
+    form: {
+      newTitle: 'Novo produto ou serviço',
+      newDescription: 'Algo usado ou executado em campo.',
+      save: 'Salvar item',
+      created: 'Item criado',
+      updated: 'Item atualizado',
+      sections: {
+        identification: { title: 'Identificação', body: 'O que é e como é chamado.' },
+        pricing: { title: 'Unidade e preço', body: 'Como é contado e seu preço de referência.' },
+      },
+      fields: {
+        kind: 'Tipo',
+        code: 'Código',
+        codeHelp: 'Opcional, único na empresa.',
+        name: 'Nome',
+        description: 'Descrição',
+        unit: 'Unidade',
+        unitHelp: 'UN, H, M, KG…',
+        price: 'Preço de referência',
+        active: 'Item ativo',
+      },
+    },
+    kind: { PRODUCT: 'Produto', SERVICE: 'Serviço' },
+  },
+
+  workOrderTypes: {
+    list: {
+      title: 'Tipos de OS',
+      searchPlaceholder: 'Buscar por nome',
+      meta: '{count, plural, one {# tipo} other {# tipos}}',
+      metaSelected: '{count, plural, one {# tipo} other {# tipos}} · {selected} selecionados',
+      add: 'Adicionar tipo',
+      addFirst: 'Adicionar o primeiro tipo',
+      empty: {
+        title: 'Nenhum tipo de OS',
+        body: 'Instalação, manutenção preventiva, visita técnica — os tipos de trabalho que vocês fazem.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir este tipo?',
+        titleMany: 'Excluir {count} tipos?',
+        body: 'Um tipo usado em ordem de serviço não pode ser excluído — inative-o. Não há como desfazer.',
+      },
+    },
+    form: {
+      newTitle: 'Novo tipo de OS',
+      newDescription: 'Um tipo de trabalho que sua equipe faz.',
+      save: 'Salvar tipo',
+      created: 'Tipo de OS criado',
+      updated: 'Tipo de OS atualizado',
+      section: { title: 'Tipo', body: 'O nome e o que ele abrange.' },
+      fields: { name: 'Nome', description: 'Descrição', active: 'Tipo ativo' },
+    },
+  },
+
+  branches: {
+    list: {
+      title: 'Filiais',
+      searchPlaceholder: 'Buscar por nome, código ou cidade',
+      meta: '{count, plural, one {# filial} other {# filiais}}',
+      metaSelected: '{count, plural, one {# filial} other {# filiais}} · {selected} selecionadas',
+      add: 'Adicionar filial',
+      addFirst: 'Adicionar a primeira filial',
+      empty: {
+        title: 'Nenhuma filial ainda',
+        body: 'Os locais de onde sua empresa opera. Uma ordem de serviço pode indicar a filial responsável.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir esta filial?',
+        titleMany: 'Excluir {count} filiais?',
+        body: 'Uma filial em uso não pode ser excluída — inative-a. Não há como desfazer.',
+      },
+      company: 'Empresa',
+      companyNote:
+        'O cadastro da empresa é administrado na Oliveira Platform. As filiais são compartilhadas por todos os produtos.',
+    },
+    form: {
+      newTitle: 'Nova filial',
+      newDescription: 'Um local de onde sua empresa opera.',
+      save: 'Salvar filial',
+      created: 'Filial criada',
+      updated: 'Filial atualizada',
+      sections: {
+        identification: { title: 'Identificação', body: 'Código, nome e inscrição própria.' },
+        contact: { title: 'Contato', body: 'Como falar com esta filial.' },
+        address: { title: 'Endereço', body: 'Onde ela fica.' },
+      },
+      fields: {
+        code: 'Código',
+        codeHelp: 'Curto e único na empresa: SP-01.',
+        name: 'Nome',
+        document: 'CNPJ',
+        documentHelp: 'Quando a filial tem o próprio.',
+        stateRegistration: 'Inscrição estadual',
+        email: 'E-mail',
+        phone: 'Telefone',
+        active: 'Filial ativa',
+      },
+    },
+  },
+};

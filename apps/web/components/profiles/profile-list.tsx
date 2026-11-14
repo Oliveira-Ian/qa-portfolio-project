@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { GridColumnPreferenceDto, ProfileDto } from '@oliveira/schemas';
+import type {
+  GridColumnPreferenceDto,
+  GridColumnPreferenceItem,
+  Product,
+  ProfileDto,
+} from '@oliveira/schemas';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,12 +32,10 @@ import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
 import { useListNavigation } from '@/components/data-table/use-list-navigation';
 import { PageHeader } from '@/components/layout/page-header';
+import type { ActionResult } from '@/lib/actions';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
-import { deleteProfileAction } from '../_actions/delete-profile';
-import { duplicateProfileAction } from '../_actions/duplicate-profile';
-import { saveProfileGridPreferenceAction } from '../_actions/save-grid-preferences';
 import {
   PROFILE_CUSTOMIZABLE_COLUMNS,
   PROFILE_EXPORT_COLUMNS,
@@ -42,11 +45,32 @@ import { PROFILE_FILTER_FIELDS, PROFILE_FILTERABLE_COLUMNS } from './profile-fil
 
 const TESTID_PREFIX = 'profile-list';
 
+/** The four pages of a product's profile routine. */
+export interface ProfileRoutes {
+  list: string;
+  new: string;
+  view: (id: number) => string;
+  edit: (id: number) => string;
+}
+
+/**
+ * Each product's profile pages. Chosen here, by `product`, rather than passed
+ * in: a page (a Server Component) can't hand functions to a Client Component.
+ */
+export const PROFILE_ROUTES: Record<Product, ProfileRoutes> = {
+  ERP: ROUTES.profiles,
+  FSM: ROUTES.fsm.profiles,
+};
+
 interface ProfileListProps {
   profiles: ProfileDto[];
   /** Total rows across every page — `profiles.length` is just the current page's. */
   total: number;
   gridPreference: GridColumnPreferenceDto | null;
+  product: Product;
+  deleteAction: (ids: number[]) => Promise<ActionResult>;
+  duplicateAction: (id: number) => Promise<ActionResult & { id?: number }>;
+  saveGridPreferenceAction: (columns: GridColumnPreferenceItem[]) => Promise<ActionResult>;
 }
 
 /**
@@ -56,12 +80,24 @@ interface ProfileListProps {
  * `profile:manage`, so Add/Edit/Delete have no per-permission checks the way
  * Person's do.
  *
+ * Shared by every product's profile screen: the ERP's and the FSM's differ in
+ * their routes and Server Actions only, which the page hands in.
+ *
  * Delete is disabled — per row and in the header — for any `isSystem`
  * profile (Administrator, Default User): the API itself rejects deleting
  * one with a 409, this just avoids the round trip.
  */
-export function ProfileList({ profiles, total, gridPreference }: ProfileListProps) {
+export function ProfileList({
+  profiles,
+  total,
+  gridPreference,
+  product,
+  deleteAction,
+  duplicateAction,
+  saveGridPreferenceAction,
+}: ProfileListProps) {
   const t = useT();
+  const routes = PROFILE_ROUTES[product];
   const router = useRouter();
   const { query, setQuery } = useListNavigation(PROFILE_FILTERABLE_COLUMNS);
   const [isDeleting, startDeleting] = useTransition();
@@ -81,7 +117,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
   } = useListingScreen({
     gridPreference,
     customizableColumns: PROFILE_CUSTOMIZABLE_COLUMNS,
-    saveGridPreferenceAction: saveProfileGridPreferenceAction,
+    saveGridPreferenceAction,
   });
 
   const columns = profileColumns;
@@ -104,7 +140,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
 
   function handleEdit() {
     if (selectedId) {
-      router.push(ROUTES.profiles.edit(selectedId));
+      router.push(routes.edit(selectedId));
     }
   }
 
@@ -115,15 +151,15 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
     }
 
     startDeleting(async () => {
-      const result = await duplicateProfileAction(selectedId);
+      const result = await duplicateAction(selectedId);
 
       if (!result.success || result.id === undefined) {
         toast.error(translateApiMessage(result.message ?? '', t));
         return;
       }
 
-      toast.success(t('erp.profiles.duplicated'));
-      router.push(ROUTES.profiles.edit(result.id));
+      toast.success(t('accessControl.profiles.duplicated'));
+      router.push(routes.edit(result.id));
     });
   }
 
@@ -133,7 +169,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
     }
 
     startDeleting(async () => {
-      const result = await deleteProfileAction(pendingDeleteIds);
+      const result = await deleteAction(pendingDeleteIds);
       const message = translateApiMessage(result.message ?? '', t);
 
       if (!result.success) {
@@ -151,9 +187,9 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
   return (
     <div data-testid={`${TESTID_PREFIX}-container`}>
       <PageHeader
-        title={t('erp.profiles.title')}
+        title={t('accessControl.profiles.title')}
         titleTestId={`${TESTID_PREFIX}-title`}
-        meta={t('erp.profiles.meta', { count: total })}
+        meta={t('accessControl.profiles.meta', { count: total })}
         actions={
           <>
             <Button
@@ -163,7 +199,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
               onClick={() => setPendingDeleteIds(selectedRows.map((row) => row.original.id))}
             >
               <Trash2 aria-hidden="true" />
-              {t('erp.profiles.delete')}
+              {t('accessControl.profiles.delete')}
             </Button>
             <Button
               variant="outline"
@@ -172,7 +208,7 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
               onClick={handleDuplicate}
             >
               <Copy aria-hidden="true" />
-              {t('erp.profiles.duplicate')}
+              {t('accessControl.profiles.duplicate')}
             </Button>
             <Button
               variant="outline"
@@ -181,12 +217,12 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
               onClick={handleEdit}
             >
               <Pencil aria-hidden="true" />
-              {t('erp.profiles.edit')}
+              {t('accessControl.profiles.edit')}
             </Button>
             <Button asChild data-testid="profile-button-add">
-              <Link href={ROUTES.profiles.new}>
+              <Link href={routes.new}>
                 <Plus aria-hidden="true" />
-                {t('erp.profiles.add')}
+                {t('accessControl.profiles.add')}
               </Link>
             </Button>
           </>
@@ -212,16 +248,16 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
         <DataTable
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          onRowOpen={(profile) => router.push(ROUTES.profiles.view(profile.id))}
+          onRowOpen={(profile) => router.push(routes.view(profile.id))}
           getRowLabel={(profile) => profile.name}
           emptyState={{
-            title: t('erp.profiles.empty.title'),
-            description: t('erp.profiles.empty.body'),
+            title: t('accessControl.profiles.empty.title'),
+            description: t('accessControl.profiles.empty.body'),
             action: (
               <Button asChild data-testid="profile-empty-button-add">
-                <Link href={ROUTES.profiles.new}>
+                <Link href={routes.new}>
                   <Plus aria-hidden="true" />
-                  {t('erp.profiles.addFirst')}
+                  {t('accessControl.profiles.addFirst')}
                 </Link>
               </Button>
             ),
@@ -269,25 +305,27 @@ export function ProfileList({ profiles, total, gridPreference }: ProfileListProp
           <AlertDialogHeader>
             <AlertDialogTitle>
               {isMultiDelete
-                ? t('erp.profiles.deleteDialog.titleMany', { count: pendingDeleteIds?.length ?? 0 })
-                : t('erp.profiles.deleteDialog.titleOne')}
+                ? t('accessControl.profiles.deleteDialog.titleMany', {
+                    count: pendingDeleteIds?.length ?? 0,
+                  })
+                : t('accessControl.profiles.deleteDialog.titleOne')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {isMultiDelete
-                ? t('erp.profiles.deleteDialog.bodyMany')
-                : t('erp.profiles.deleteDialog.bodyOne')}
+                ? t('accessControl.profiles.deleteDialog.bodyMany')
+                : t('accessControl.profiles.deleteDialog.bodyOne')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="ghost" data-testid="profile-delete-cancel">
-              {t('erp.profiles.deleteDialog.cancel')}
+              {t('accessControl.profiles.deleteDialog.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               data-testid="profile-delete-confirm"
               onClick={handleConfirmDelete}
             >
-              {t('erp.profiles.deleteDialog.confirm')}
+              {t('accessControl.profiles.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

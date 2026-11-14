@@ -1,5 +1,6 @@
 import type { Messages } from './en';
 import { erpPtBR } from './erp';
+import { fsmPtBR } from './fsm';
 import { tablePtBR } from './table';
 
 /** Brazilian Portuguese. Typed against `en.ts`: the two always have the same keys. */
@@ -15,6 +16,14 @@ export const ptBR: Messages = {
     save: 'Salvar',
     back: 'Voltar',
     remove: 'Remover',
+    edit: 'Editar',
+    delete: 'Excluir',
+    saveChanges: 'Salvar alterações',
+    optional: 'Opcional',
+    active: 'Ativo',
+    inactive: 'Inativo',
+    yes: 'Sim',
+    no: 'Não',
     previousSlide: 'Slide anterior',
     nextSlide: 'Próximo slide',
     select: 'Selecione…',
@@ -157,6 +166,25 @@ export const ptBR: Messages = {
       accessProfiles: 'Perfis de acesso',
       users: 'Usuários',
     },
+    fsm: {
+      overview: 'Visão geral',
+      operations: 'Operação',
+      workOrders: 'Ordens de serviço',
+      myWorkOrders: 'Minhas ordens',
+      records: 'Cadastros',
+      customers: 'Clientes',
+      equipment: 'Equipamentos',
+      catalog: 'Catálogo',
+      productsServices: 'Produtos e serviços',
+      settings: 'Configurações',
+      workOrderTypes: 'Tipos de OS',
+      company: 'Empresa',
+      branches: 'Filiais',
+      access: 'Acesso',
+      accessControl: 'Controle de acesso',
+      accessProfiles: 'Perfis de acesso',
+      users: 'Usuários',
+    },
   },
 
   access: {
@@ -168,6 +196,80 @@ export const ptBR: Messages = {
   },
 
   accessControl: {
+    profiles: {
+      title: 'Perfis de acesso',
+      meta: '{count, plural, one {# perfil} other {# perfis}}',
+      add: 'Adicionar perfil',
+      addFirst: 'Adicionar o primeiro perfil',
+      edit: 'Editar',
+      delete: 'Excluir',
+      duplicate: 'Duplicar',
+      duplicated: 'Perfil duplicado — ajuste a cópia e salve',
+      created: 'Perfil criado',
+      updated: 'Perfil atualizado',
+      record: { back: 'Voltar', edit: 'Editar perfil' },
+      empty: {
+        title: 'Ainda não há perfis',
+        body: 'Perfis agrupam permissões — crie um e vincule a uma conta.',
+      },
+      deleteDialog: {
+        titleOne: 'Excluir este perfil?',
+        titleMany: 'Excluir {count} perfis?',
+        bodyOne:
+          'As contas vinculadas a ele perdem as permissões que ele concedia. Não há como desfazer.',
+        bodyMany:
+          'As contas vinculadas a eles perdem as permissões que eles concediam. Não há como desfazer.',
+        confirm: 'Excluir',
+        cancel: 'Cancelar',
+      },
+      form: {
+        newTitle: 'Novo perfil de acesso',
+        editTitle: 'Editar perfil de acesso',
+        systemNote: 'Este é um perfil do sistema — ele pode ser editado, mas não excluído.',
+        infoTitle: 'Permissões dentro do {product}',
+        infoBody:
+          'Este perfil define o que as pessoas podem fazer dentro do {product}. Se alguém pode abrir o {product} é decidido em Oliveira Platform › Acesso ao produto.',
+        save: 'Salvar perfil',
+        cancel: 'Cancelar',
+        errorBody: 'O perfil não foi salvo. Corrija os campos destacados e tente novamente.',
+        code: 'Código',
+        codeAuto: 'Automático',
+        name: 'Nome',
+        namePlaceholder: 'Financeiro',
+        description: 'Descrição',
+        descriptionPlaceholder: 'Para que serve este perfil…',
+        permissions: 'Permissões',
+        permissionsNote: 'As telas aparecem aqui conforme são adicionadas ao {product}.',
+        screen: 'Tela',
+        actions: { view: 'Ver', create: 'Criar', edit: 'Editar', delete: 'Excluir' },
+        groups: {
+          operations: 'Operação',
+          records: 'Cadastros',
+          settings: 'Configurações',
+          access: 'Acesso',
+          other: 'Outras',
+        },
+        resources: {
+          person: 'Pessoas',
+          profile: 'Perfis de acesso',
+          workOrder: 'Ordens de serviço',
+          customer: 'Clientes',
+          equipment: 'Equipamentos',
+          catalogItem: 'Produtos e serviços',
+          branch: 'Filiais',
+        },
+        special: 'Outras permissões',
+        permissionLabels: {
+          profileManage: 'Gerenciar perfis e o acesso deles',
+          workOrderTypeManage: 'Gerenciar tipos de OS',
+          workOrderAssign: 'Atribuir ordens de serviço a técnicos',
+          workOrderChangeStatus: 'Agendar, pausar e cancelar ordens de serviço',
+          workOrderExecute: 'Iniciar, registrar e concluir as ordens atribuídas a si',
+          dashboardView: 'Ver o painel da operação',
+        },
+        selectColumn: 'Permitir {action} em {screen}',
+      },
+    },
     users: {
       title: 'Usuários',
       meta: '{count, plural, one {# usuário} other {# usuários}}',
@@ -456,11 +558,7 @@ export const ptBR: Messages = {
     },
   },
 
-  fsm: {
-    overline: 'Gestão de serviços em campo',
-    soon: 'Em breve',
-    body: 'Em desenvolvimento. Ainda não disponível para nenhuma empresa.',
-  },
+  fsm: fsmPtBR,
 
   errors: {
     boundary: {
@@ -509,6 +607,11 @@ export const ptBR: Messages = {
       unknownPermission: 'Uma ou mais permissões não existem',
       codeRequired: 'O código é obrigatório',
       tooLong: 'Use no máximo {max} caracteres',
+      customerRequired: 'O cliente é obrigatório',
+      unitRequired: 'A unidade é obrigatória',
+      invalidPrice: 'Preço inválido',
+      invalidDate: 'Data inválida',
+      warrantyBeforeInstall: 'A garantia não pode terminar antes da instalação',
     },
     auth: {
       missingFields: 'Preencha o e-mail e a senha',
@@ -540,6 +643,10 @@ export const ptBR: Messages = {
       people: 'Uma ou mais pessoas não foram encontradas',
       profile: 'Perfil não encontrado',
       branch: 'Filial não encontrada',
+      customer: 'Cliente não encontrado',
+      equipment: 'Equipamento não encontrado',
+      catalogItem: 'Produto ou serviço não encontrado',
+      workOrderType: 'Tipo de OS não encontrado',
     },
     guard: {
       lastCompanyAdmin: 'A empresa precisa manter pelo menos um administrador',
@@ -552,6 +659,15 @@ export const ptBR: Messages = {
       branchCodeTaken: 'Já existe uma filial com este código',
       branchInUse: 'Esta filial está em uso. Inative-a em vez de excluir.',
       addressInUse: 'Um endereço usado por equipamentos ou ordens de serviço não pode ser removido',
+      customerInUse:
+        'Este cliente tem equipamentos ou ordens de serviço. Inative-o em vez de excluir.',
+      equipmentInUse: 'Este equipamento tem ordens de serviço. Inative-o em vez de excluir.',
+      equipmentTagTaken: 'Já existe um equipamento com este patrimônio',
+      equipmentAddress: 'O endereço precisa ser um dos endereços do cliente',
+      catalogItemCodeTaken: 'Já existe um produto ou serviço com este código',
+      catalogItemInUse: 'Este produto ou serviço está em uso. Inative-o em vez de excluir.',
+      workOrderTypeNameTaken: 'Já existe um tipo de OS com este nome',
+      workOrderTypeInUse: 'Este tipo de OS está em uso. Inative-o em vez de excluir.',
     },
     done: {
       personCreated: 'Pessoa criada com sucesso',
@@ -560,6 +676,14 @@ export const ptBR: Messages = {
       peopleDeleted: '{count, plural, one {# pessoa excluída} other {# pessoas excluídas}}',
       profileDeleted: 'Perfil excluído',
       profilesDeleted: '{count, plural, one {# perfil excluído} other {# perfis excluídos}}',
+      branchesDeleted: '{count, plural, one {Filial excluída} other {# filiais excluídas}}',
+      customersDeleted: '{count, plural, one {Cliente excluído} other {# clientes excluídos}}',
+      equipmentDeleted:
+        '{count, plural, one {Equipamento excluído} other {# equipamentos excluídos}}',
+      catalogItemsDeleted:
+        '{count, plural, one {Produto ou serviço excluído} other {# produtos e serviços excluídos}}',
+      workOrderTypesDeleted:
+        '{count, plural, one {Tipo de OS excluído} other {# tipos de OS excluídos}}',
     },
   },
 

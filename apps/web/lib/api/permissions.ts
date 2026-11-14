@@ -1,8 +1,18 @@
 import 'server-only';
 
-import type { PermissionDto } from '@oliveira/schemas';
+import type { PermissionDto, Product } from '@oliveira/schemas';
 import { apiRequest, type ApiResult } from './client';
 
-export function requestPermissionList(token: string): Promise<ApiResult<PermissionDto[]>> {
-  return apiRequest<PermissionDto[]>('/api/permissions', { token });
+/** Each product's catalog under its own prefix; the ERP keeps the historical one. */
+const PRODUCT_BASE: Record<Product, string> = {
+  ERP: '/api/permissions',
+  FSM: '/api/fsm/permissions',
+};
+
+/** The product's permission catalog — what its profile editor offers. */
+export function requestPermissionList(
+  token: string,
+  product: Product = 'ERP',
+): Promise<ApiResult<PermissionDto[]>> {
+  return apiRequest<PermissionDto[]>(PRODUCT_BASE[product], { token });
 }

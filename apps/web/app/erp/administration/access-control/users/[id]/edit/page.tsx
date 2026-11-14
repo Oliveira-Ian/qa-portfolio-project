@@ -4,7 +4,7 @@ import { NoPermission } from '@/components/platform/no-permission';
 import { EMPTY_LIST_QUERY } from '@/lib/list-query';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
-import { listProfiles } from '../../../profiles/_data-access/list-profiles';
+import { profileAccess } from '../../../profiles/_data-access/profile-access';
 import { setErpProfileAction } from '../../_actions/set-profile';
 import { getAccount } from '../../_data-access/get-account';
 
@@ -28,7 +28,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   // The picker needs every profile; a company has a handful.
   const [account, profiles] = await Promise.all([
     getAccount(id),
-    listProfiles({ ...EMPTY_LIST_QUERY, pageSize: 100 }),
+    profileAccess.list({ ...EMPTY_LIST_QUERY, pageSize: 100 }),
   ]);
 
   return (

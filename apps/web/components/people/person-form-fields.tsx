@@ -50,6 +50,12 @@ import { cn } from '@/lib/utils';
  */
 interface PersonFormFieldsProps {
   disabled?: boolean;
+  /**
+   * `customer`: an Oliveira FSM customer — the same record without the ERP's
+   * types (a product never sets them, docs/adr/0019), and the document always
+   * offered, optional.
+   */
+  variant?: 'erp' | 'customer';
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
@@ -181,13 +187,13 @@ function TypesField({ disabled }: { disabled: boolean }) {
  * applicable, the same way the view mode hides Save instead of disabling it:
  * a visible-but-pointless field invites confusion about whether it matters.
  */
-function DocumentFields({ disabled }: { disabled: boolean }) {
+function DocumentFields({ disabled, optional }: { disabled: boolean; optional: boolean }) {
   const t = useT();
   const form = useFormContext<PersonFormValues>();
   const types = useWatch({ control: form.control, name: 'types' });
   const documentType = useWatch({ control: form.control, name: 'documentType' });
 
-  if (!requiresDocument(types)) {
+  if (!optional && !requiresDocument(types)) {
     return null;
   }
 
@@ -197,7 +203,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         control={form.control}
         name="documentType"
         render={({ field }) => (
-          <FormItem required>
+          <FormItem required={!optional}>
             <FormLabel data-testid="person-form-label-document-type">
               {t('erp.people.form.fields.documentType')}
             </FormLabel>
@@ -228,7 +234,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         control={form.control}
         name="document"
         render={({ field }) => (
-          <FormItem required>
+          <FormItem required={!optional}>
             <FormLabel data-testid="person-form-label-document">
               {t('erp.people.form.fields.document')}
             </FormLabel>
@@ -439,7 +445,7 @@ function ContactItemFields({ prefix, disabled }: { prefix: string; disabled: boo
   );
 }
 
-export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
+export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFormFieldsProps) {
   const t = useT();
   const form = useFormContext<PersonFormValues>();
 
@@ -450,7 +456,11 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
           id="person-section-identification"
           data-testid="person-form-section-identification"
           title={t('erp.people.form.sections.identification.title')}
-          description={t('erp.people.form.sections.identification.body')}
+          description={t(
+            variant === 'customer'
+              ? 'fsm.customers.form.identificationBody'
+              : 'erp.people.form.sections.identification.body',
+          )}
         >
           <FieldGrid>
             <FormField
@@ -496,8 +506,8 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
               )}
             />
 
-            <TypesField disabled={disabled} />
-            <DocumentFields disabled={disabled} />
+            {variant === 'erp' ? <TypesField disabled={disabled} /> : null}
+            <DocumentFields disabled={disabled} optional={variant === 'customer'} />
 
             <FormField
               control={form.control}

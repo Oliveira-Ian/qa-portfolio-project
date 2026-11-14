@@ -1,51 +1,68 @@
-import { Contact, Database, KeyRound, Settings, Users, type LucideIcon } from 'lucide-react';
-import type { ErpPermissionKey } from '@oliveira/schemas';
+import {
+  Blocks,
+  Building2,
+  ClipboardList,
+  Contact,
+  Database,
+  KeyRound,
+  ListChecks,
+  Package,
+  Settings,
+  ShieldCheck,
+  Tags,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react';
+import type { ProductPermissionKey } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 
 /**
- * The Oliveira ERP's navigation catalog — sealed, like `PERMISSION_CATALOG`
+ * The navigation catalogs of the products — sealed, like `PERMISSION_CATALOG`
  * (`packages/schemas/src/permissions.ts`), but four levels deep instead of one.
- * Every screen the ERP's sidebar, search and breadcrumb know about is a
- * `RoutineDefinition` somewhere in this tree. Growing the ERP means adding an
+ * Every screen a product's sidebar, search and breadcrumb know about is a
+ * `RoutineDefinition` somewhere in its tree. Growing a product means adding an
  * entry here (and the matching route folder); the sidebar, search index and
  * breadcrumb resolver need no changes.
  *
- * There is one catalogue per area (docs/adr/0019): this one is the ERP's, under
- * `/erp`. The Platform's few screens and the FSM's placeholder are described in
- * `nav.ts`. Labels are translation keys, never text — the language is a runtime
- * choice (docs/adr/0018's frontend, handoff § 7).
+ * There is one catalog per area (docs/adr/0019), each under its own base path
+ * (`/erp`, `/fsm`), each checked against that product's own permissions — a
+ * routine of the FSM can only ask for an FSM permission. The Platform's few
+ * screens are described in `nav.ts`. Labels are translation keys, never text.
  */
-export const ERP_BASE_PATH = '/erp';
+export type CatalogArea = 'ERP' | 'FSM';
 
-export interface RoutineDefinition {
+export interface RoutineDefinition<P extends CatalogArea = CatalogArea> {
   slug: string;
   labelKey: MessageKey;
   icon: LucideIcon;
-  /** ERP permission required, if any — checked against `MeResponse.permissions.ERP`. */
-  permission?: ErpPermissionKey;
+  /** The product permission required, if any — checked against `MeResponse.permissions[product]`. */
+  permission?: ProductPermissionKey<P>;
+  /** Several permissions, any of which is enough (e.g. "all work orders" or "my own"). */
+  anyPermission?: readonly ProductPermissionKey<P>[];
 }
 
-export interface CategoryDefinition {
+export interface CategoryDefinition<P extends CatalogArea = CatalogArea> {
   slug: string;
   labelKey: MessageKey;
-  routines: readonly RoutineDefinition[];
+  routines: readonly RoutineDefinition<P>[];
 }
 
-export interface GroupDefinition {
-  slug: string;
-  labelKey: MessageKey;
-  icon: LucideIcon;
-  categories: readonly CategoryDefinition[];
-}
-
-export interface ModuleDefinition {
+export interface GroupDefinition<P extends CatalogArea = CatalogArea> {
   slug: string;
   labelKey: MessageKey;
   icon: LucideIcon;
-  groups: readonly GroupDefinition[];
+  categories: readonly CategoryDefinition<P>[];
 }
 
-export const NAVIGATION_CATALOG = [
+export interface ModuleDefinition<P extends CatalogArea = CatalogArea> {
+  slug: string;
+  labelKey: MessageKey;
+  icon: LucideIcon;
+  groups: readonly GroupDefinition<P>[];
+}
+
+const ERP_CATALOG = [
   {
     slug: 'records',
     labelKey: 'nav.erp.records',
@@ -104,10 +121,153 @@ export const NAVIGATION_CATALOG = [
       },
     ],
   },
-] as const satisfies readonly ModuleDefinition[];
+] as const satisfies readonly ModuleDefinition<'ERP'>[];
+
+/**
+ * Oliveira FSM (plan § 2.6). Routines are added as their screens are built —
+ * an entry here without its route folder would be a link to a 404.
+ */
+const FSM_CATALOG = [
+  {
+    slug: 'records',
+    labelKey: 'nav.fsm.records',
+    icon: Database,
+    groups: [
+      {
+        slug: 'customers',
+        labelKey: 'nav.fsm.customers',
+        icon: Contact,
+        categories: [
+          {
+            slug: 'records',
+            labelKey: 'nav.fsm.records',
+            routines: [
+              {
+                slug: 'customers',
+                labelKey: 'nav.fsm.customers',
+                icon: Contact,
+                permission: 'customer:view',
+              },
+              {
+                slug: 'equipment',
+                labelKey: 'nav.fsm.equipment',
+                icon: Wrench,
+                permission: 'equipment:view',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        slug: 'catalog',
+        labelKey: 'nav.fsm.catalog',
+        icon: Package,
+        categories: [
+          {
+            slug: 'records',
+            labelKey: 'nav.fsm.records',
+            routines: [
+              {
+                slug: 'products-services',
+                labelKey: 'nav.fsm.productsServices',
+                icon: Package,
+                permission: 'catalog-item:view',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'settings',
+    labelKey: 'nav.fsm.settings',
+    icon: Settings,
+    groups: [
+      {
+        slug: 'work-orders',
+        labelKey: 'nav.fsm.workOrders',
+        icon: ClipboardList,
+        categories: [
+          {
+            slug: 'settings',
+            labelKey: 'nav.fsm.settings',
+            routines: [
+              {
+                slug: 'work-order-types',
+                labelKey: 'nav.fsm.workOrderTypes',
+                icon: Tags,
+                permission: 'work-order-type:manage',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        slug: 'company',
+        labelKey: 'nav.fsm.company',
+        icon: Building2,
+        categories: [
+          {
+            slug: 'settings',
+            labelKey: 'nav.fsm.settings',
+            routines: [
+              {
+                slug: 'branches',
+                labelKey: 'nav.fsm.branches',
+                icon: Blocks,
+                permission: 'branch:view',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'administration',
+    labelKey: 'nav.fsm.access',
+    icon: ShieldCheck,
+    groups: [
+      {
+        slug: 'access-control',
+        labelKey: 'nav.fsm.accessControl',
+        icon: KeyRound,
+        categories: [
+          {
+            slug: 'settings',
+            labelKey: 'nav.fsm.settings',
+            routines: [
+              {
+                slug: 'profiles',
+                labelKey: 'nav.fsm.accessProfiles',
+                icon: KeyRound,
+                permission: 'profile:manage',
+              },
+              {
+                slug: 'users',
+                labelKey: 'nav.fsm.users',
+                icon: ListChecks,
+                permission: 'profile:manage',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+] as const satisfies readonly ModuleDefinition<'FSM'>[];
+
+export const AREA_CATALOGS: {
+  [P in CatalogArea]: { basePath: string; modules: readonly ModuleDefinition<P>[] };
+} = {
+  ERP: { basePath: '/erp', modules: ERP_CATALOG },
+  FSM: { basePath: '/fsm', modules: FSM_CATALOG },
+};
 
 /** The literal URL segments a routine's ancestors contribute, in order. */
 export interface RoutinePath {
+  area: CatalogArea;
   module: ModuleDefinition;
   group: GroupDefinition;
   category: CategoryDefinition;
@@ -121,19 +281,19 @@ export function buildHref(...slugs: string[]): string {
 }
 
 /**
- * Every routine in `modules`, flattened with its full ancestry — the shape
- * both search and breadcrumb resolution need. Defaults to the whole sealed
- * catalog; pass the result of `filterCatalogForAccount()` to flatten only
- * what the caller can actually see.
+ * Every routine of `area` (or of the `modules` given, e.g. already filtered by
+ * `filterCatalogForAccount`), flattened with its full ancestry — the shape both
+ * search and breadcrumb resolution need.
  *
  * `href` is built from the area, then (module, group, routine) only — category
  * stays part of the ancestry but deliberately isn't a URL segment (ADR 0007), so
- * a routine's path doesn't repeat itself. This means `(module.slug, group.slug,
- * routine.slug)` must be unique across the whole catalog.
+ * `(module.slug, group.slug, routine.slug)` must be unique within an area.
  */
 export function flattenRoutines(
-  modules: readonly ModuleDefinition[] = NAVIGATION_CATALOG,
+  area: CatalogArea,
+  modules: readonly ModuleDefinition[] = AREA_CATALOGS[area].modules,
 ): RoutinePath[] {
+  const base = AREA_CATALOGS[area].basePath.slice(1);
   const flattened: RoutinePath[] = [];
 
   for (const catalogModule of modules) {
@@ -141,11 +301,12 @@ export function flattenRoutines(
       for (const category of group.categories) {
         for (const routine of category.routines) {
           flattened.push({
+            area,
             module: catalogModule,
             group,
             category,
             routine,
-            href: buildHref(ERP_BASE_PATH.slice(1), catalogModule.slug, group.slug, routine.slug),
+            href: buildHref(base, catalogModule.slug, group.slug, routine.slug),
           });
         }
       }
@@ -155,31 +316,33 @@ export function flattenRoutines(
   return flattened;
 }
 
-/** Access the caller's session carries — the same shape `lib/permissions.ts#getMe()` resolves. */
-export interface AccessContext {
-  permissions: readonly ErpPermissionKey[];
-}
+function canSeeRoutine(routine: RoutineDefinition, permissions: readonly string[]): boolean {
+  if (routine.anyPermission) {
+    return routine.anyPermission.some((key) => permissions.includes(key));
+  }
 
-function canSeeRoutine(routine: RoutineDefinition, access: AccessContext): boolean {
-  return !routine.permission || access.permissions.includes(routine.permission);
+  return !routine.permission || permissions.includes(routine.permission);
 }
 
 /**
- * Prunes the catalog down to what this account can actually reach — a
- * module/group/category with zero visible routines underneath it is dropped
- * entirely rather than rendered as an empty shell.
+ * Prunes an area's catalog down to what this account can reach with its
+ * permissions in that product — a module/group/category with zero visible
+ * routines underneath it is dropped rather than rendered as an empty shell.
  */
-export function filterCatalogForAccount(access: AccessContext): ModuleDefinition[] {
+export function filterCatalogForAccount(
+  area: CatalogArea,
+  permissions: readonly string[],
+): ModuleDefinition[] {
   const modules: ModuleDefinition[] = [];
 
-  for (const catalogModule of NAVIGATION_CATALOG) {
+  for (const catalogModule of AREA_CATALOGS[area].modules as readonly ModuleDefinition[]) {
     const groups: GroupDefinition[] = [];
 
     for (const group of catalogModule.groups) {
       const categories: CategoryDefinition[] = [];
 
       for (const category of group.categories) {
-        const routines = category.routines.filter((routine) => canSeeRoutine(routine, access));
+        const routines = category.routines.filter((routine) => canSeeRoutine(routine, permissions));
 
         if (routines.length > 0) {
           categories.push({ ...category, routines });
@@ -199,10 +362,10 @@ export function filterCatalogForAccount(access: AccessContext): ModuleDefinition
   return modules;
 }
 
-/** The Module→Group→Category→Routine chain for the current URL, or `null` outside the ERP catalog (e.g. `/erp`). */
-export function resolveBreadcrumb(pathname: string): RoutinePath | null {
+/** The Module→Group→Category→Routine chain for the current URL, or `null` outside the area's catalog (e.g. `/erp`). */
+export function resolveBreadcrumb(area: CatalogArea, pathname: string): RoutinePath | null {
   return (
-    flattenRoutines().find(
+    flattenRoutines(area).find(
       (entry) => pathname === entry.href || pathname.startsWith(`${entry.href}/`),
     ) ?? null
   );

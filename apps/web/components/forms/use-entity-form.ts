@@ -15,12 +15,13 @@ import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
 import { reportInvalidFields } from './report-invalid-fields';
 
-type SubmitResult = ActionResult | void;
+type SubmitResult = (ActionResult & { id?: string }) | void;
 
 /** What a successful save says and where it goes next. */
 export interface EntityFormSuccess {
   message: string;
-  href: string;
+  /** Where to go next — or, given the saved record's id (a new one's), where to go. */
+  href: string | ((id: string | undefined) => string);
 }
 
 /**
@@ -76,7 +77,9 @@ export function useEntityForm<TValues extends FieldValues>(
 
         if (result?.success && onSuccess) {
           toast.success(onSuccess.message);
-          router.push(onSuccess.href);
+          router.push(
+            typeof onSuccess.href === 'string' ? onSuccess.href : onSuccess.href(result.id),
+          );
           router.refresh();
           return;
         }
