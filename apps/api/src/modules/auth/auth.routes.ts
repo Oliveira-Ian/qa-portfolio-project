@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { loginSchema, registerSchema } from '@oliveira/schemas';
+import { env } from '../../config/env.js';
 import { docsOnlyValidatorCompiler } from '../../plugins/openapi.js';
 import { authController } from './auth.controller.js';
 import { requireAuth } from './require-auth.js';
@@ -22,15 +23,18 @@ export async function authRoutes(app: FastifyInstance) {
     },
     authController.login,
   );
-  app.post(
-    '/register',
-    {
-      validatorCompiler: docsOnlyValidatorCompiler,
-      schema: { tags: ['auth'], body: registerSchema },
-      config: { errorMessage: 'Server error', rateLimit: { max: 5, timeWindow: '1 minute' } },
-    },
-    authController.register,
-  );
+  // Public sign-up exists only where the deployment turns it on (plan § 2.7).
+  if (env.PUBLIC_REGISTRATION_ENABLED) {
+    app.post(
+      '/register',
+      {
+        validatorCompiler: docsOnlyValidatorCompiler,
+        schema: { tags: ['auth'], body: registerSchema },
+        config: { errorMessage: 'Server error', rateLimit: { max: 5, timeWindow: '1 minute' } },
+      },
+      authController.register,
+    );
+  }
   app.get(
     '/me',
     {

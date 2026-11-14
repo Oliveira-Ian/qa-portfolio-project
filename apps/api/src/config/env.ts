@@ -40,6 +40,20 @@ const envSchema = z.object({
    * the web server. A request from anywhere else cannot spoof its address.
    */
   TRUST_PROXY: z.string().min(1).default('loopback,linklocal,uniquelocal'),
+  /**
+   * Public sign-up (`POST /api/auth/register`). Off unless set to `true`: a
+   * company adds its own members (plan § 2.7); the route does not exist otherwise.
+   */
+  PUBLIC_REGISTRATION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  /**
+   * The public demo's account (docs/operations/environments.md): nobody can
+   * change its role, status, seats, profiles or sign-in — the next visitor
+   * must find it as it was. Unset outside the demo.
+   */
+  DEMO_ACCOUNT_EMAIL: z.string().trim().toLowerCase().optional(),
   /** Minimum level the logger writes — see `config/logger.ts`. */
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });

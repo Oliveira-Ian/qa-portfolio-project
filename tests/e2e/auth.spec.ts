@@ -14,7 +14,10 @@ test('invalid credentials show the documented toast', async ({ page }) => {
   await expect(page.getByText('Invalid email or password')).toBeVisible();
 });
 
-test('register, log in and land on the home placeholder', async ({ page }) => {
+// Public sign-up is off by default (PUBLIC_REGISTRATION_ENABLED, plan § 2.7: a company adds its
+// own members). Left in place rather than rewritten: the full API/E2E test strategy is a later,
+// deliberate phase — see docs/qa/testing-status.md.
+test.fixme('register, log in and land on the home placeholder', async ({ page }) => {
   const email = `qa-web-e2e-${Date.now()}@example.com`;
   const password = 'secret123';
 

@@ -13,6 +13,7 @@ import {
   toSkipTake,
   type FilterFieldMap,
 } from '../../shared/list-query.js';
+import { assertNotDemoProfile } from '../auth/demo-guard.js';
 import { permissionRepository } from '../permission/permission.repository.js';
 import { toProfileDto } from './profile.mapper.js';
 import { profileRepository, type ProfileWriteData } from './profile.repository.js';
@@ -185,6 +186,8 @@ export const profileService = {
   },
 
   async update(product: Product, id: number, input: ProfileWriteInput): Promise<ProfileDto> {
+    await assertNotDemoProfile(id);
+
     const row = await profileRepository.update(product, id, await toWriteData(product, input));
 
     return toProfileDto(row);
@@ -212,6 +215,8 @@ export const profileService = {
   },
 
   async remove(product: Product, id: number): Promise<void> {
+    await assertNotDemoProfile(id);
+
     const row = await profileRepository.findById(product, id);
 
     if (!row) {

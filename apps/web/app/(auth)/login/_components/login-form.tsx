@@ -30,9 +30,13 @@ const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 interface LoginFormProps {
   /** Where to land after signing in, supplied by `proxy.ts`. */
   next?: string | undefined;
+  /** Public sign-up is on in this deployment — the "create an account" link. */
+  canRegister?: boolean;
+  /** The public demo's credentials, when this is the demo (`lib/deployment.ts`). */
+  demo?: { email: string; password: string } | null;
 }
 
-export function LoginForm({ next }: LoginFormProps) {
+export function LoginForm({ next, canRegister = false, demo = null }: LoginFormProps) {
   const t = useT();
   const [isPending, startTransition] = useTransition();
   const [isRemembered, setRemembered] = useState(false);
@@ -190,16 +194,51 @@ export function LoginForm({ next }: LoginFormProps) {
             {t('auth.signIn.submit')}
           </Button>
 
-          <p className="border-t border-border pt-5 text-sm text-text-2">
-            {t('auth.signIn.newHere')}{' '}
-            <Link
-              href={ROUTES.register}
-              className="rounded-xs font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
-              data-testid="auth-login-link-register"
+          {canRegister ? (
+            <p className="border-t border-border pt-5 text-sm text-text-2">
+              {t('auth.signIn.newHere')}{' '}
+              <Link
+                href={ROUTES.register}
+                className="rounded-xs font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
+                data-testid="auth-login-link-register"
+              >
+                {t('auth.signIn.createAccount')}
+              </Link>
+            </p>
+          ) : null}
+
+          {demo ? (
+            <div
+              className="grid gap-3 rounded-lg border border-border bg-surface-2 p-4 text-sm"
+              data-testid="auth-login-demo"
             >
-              {t('auth.signIn.createAccount')}
-            </Link>
-          </p>
+              <div>
+                <p className="font-semibold text-foreground">{t('auth.demo.title')}</p>
+                <p className="mt-0.5 text-text-2">{t('auth.demo.body')}</p>
+              </div>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+                <dt className="text-text-3">{t('auth.fields.email')}</dt>
+                <dd className="olv-data truncate" data-testid="auth-login-demo-email">
+                  {demo.email}
+                </dd>
+                <dt className="text-text-3">{t('auth.fields.password')}</dt>
+                <dd className="olv-data truncate" data-testid="auth-login-demo-password">
+                  {demo.password}
+                </dd>
+              </dl>
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="auth-login-demo-fill"
+                onClick={() => {
+                  form.setValue('email', demo.email, { shouldValidate: true });
+                  form.setValue('password', demo.password, { shouldValidate: true });
+                }}
+              >
+                {t('auth.demo.use')}
+              </Button>
+            </div>
+          ) : null}
         </form>
       </Form>
     </div>

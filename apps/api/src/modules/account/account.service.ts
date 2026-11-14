@@ -15,6 +15,7 @@ import {
   type FilterFieldMap,
 } from '../../shared/list-query.js';
 import { requireCompanyId } from '../../shared/request-context.js';
+import { assertNotDemoAccount } from '../auth/demo-guard.js';
 import { hashPassword } from '../auth/password.js';
 import { companyService } from '../company/company.service.js';
 import { accountRepository } from './account.repository.js';
@@ -157,6 +158,8 @@ export const accountService = {
   },
 
   async update(id: number, actorAccountId: number, input: AccountUpdateInput): Promise<AccountDto> {
+    await assertNotDemoAccount(id);
+
     const current = await requireAccountWithProfiles('ERP', id);
 
     await assertAdminChangeAllowed({
@@ -184,6 +187,7 @@ export const accountService = {
     profileId: number | null,
   ): Promise<AccountDto> {
     await requireAccountWithProfiles(product, accountId); // 404 before touching the link
+    await assertNotDemoAccount(accountId);
     const membershipId = await companyService.requireMember(
       accountId,
       requireCompanyId(),

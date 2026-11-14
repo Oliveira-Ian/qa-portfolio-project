@@ -11,7 +11,8 @@ import { expect, test } from '@playwright/test';
 // the deliberate later testing-strategy phase — see docs/qa/testing-status.md.
 const pages = [
   { name: 'login', path: '/login', fixme: false },
-  { name: 'register', path: '/register', fixme: false },
+  // Public sign-up is off by default (PUBLIC_REGISTRATION_ENABLED) — the page is not found.
+  { name: 'register', path: '/register', fixme: true },
   { name: 'home', path: '/home', fixme: true },
   { name: 'people list', path: '/people', fixme: true },
   { name: 'people form (new)', path: '/people/new', fixme: true },

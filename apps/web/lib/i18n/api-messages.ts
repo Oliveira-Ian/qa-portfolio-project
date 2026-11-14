@@ -62,6 +62,7 @@ const EXACT: Record<string, MessageKey> = {
   'One or more people were not found': 'api.notFound.people',
   'Profile not found': 'api.notFound.profile',
   'Branch not found': 'api.notFound.branch',
+  'The demo account cannot be changed': 'api.guard.demoLocked',
   'The company must keep at least one administrator': 'api.guard.lastCompanyAdmin',
   'At least one member must keep the ability to manage profiles': 'api.guard.lastProfileManager',
   'Cannot remove the last active super admin': 'api.guard.lastSuperAdmin',

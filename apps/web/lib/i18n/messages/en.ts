@@ -103,6 +103,11 @@ export const en = {
   },
 
   auth: {
+    demo: {
+      title: 'Try the demo',
+      body: 'A fictional company with customers, equipment and work orders. It is reset every day.',
+      use: 'Use the demo account',
+    },
     builtAs: 'Built as a QA automation portfolio.',
     copyright: '© {year} Oliveira',
     panel: {
@@ -670,6 +675,7 @@ export const en = {
     },
     guard: {
       lastCompanyAdmin: 'The company must keep at least one administrator',
+      demoLocked: 'The demo account cannot be changed — it stays as it is for the next visitor.',
       lastProfileManager: 'At least one member must keep the ability to manage profiles',
       lastSuperAdmin: 'Cannot remove the last active super admin',
       ownSuperAdmin: 'A super admin cannot remove their own access',

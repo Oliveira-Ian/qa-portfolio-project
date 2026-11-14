@@ -8,8 +8,13 @@ build" below).
 ## Active
 
 - `tests/unit/*.test.ts` (Vitest) — pure logic, no auth/UI drift possible. Healthy.
-- `tests/api/auth.spec.ts` — matches the current `/api/auth/*` contract (messages, status codes).
-- `tests/e2e/auth.spec.ts` — matches the current login/register UI (testids, redirect targets).
+- `tests/api/auth.spec.ts` — the login half matches the current `/api/auth/*` contract (messages,
+  status codes). The `POST /api/auth/register` describe is `fixme`: public sign-up is off by default
+  (`PUBLIC_REGISTRATION_ENABLED`, decided 2026-11-10 — a company adds its own members), so the route
+  answers 404.
+- `tests/e2e/auth.spec.ts` — the login specs match the current UI. "register, log in and land on the
+  home placeholder" is `fixme` for the same reason, as is the `register` page in `a11y.spec.ts`.
+  With the flag on (a test environment that needs sign-up), they apply as written.
 - `tests/isolation/*.test.ts` (Vitest, `npm run test:isolation`) — tenant isolation against a real
   PostgreSQL (docs/adr/0012's required tests, the approved exception to "no tests unless asked").
   `global-setup.ts` drops and recreates `oliveira_test` (it refuses any name not ending in `_test`),

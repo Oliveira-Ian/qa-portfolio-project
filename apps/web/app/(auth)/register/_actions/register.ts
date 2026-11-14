@@ -3,8 +3,14 @@
 import { authMessages, registerFormSchema, type RegisterFormValues } from '@oliveira/schemas';
 import { requestRegister } from '@/lib/api/auth';
 import type { ActionResult } from '@/lib/actions';
+import { isPublicRegistrationEnabled } from '@/lib/deployment';
 
 export async function registerAction(values: RegisterFormValues): Promise<ActionResult> {
+  // The page is not found when sign-up is off; the action refuses too.
+  if (!isPublicRegistrationEnabled()) {
+    return { success: false, message: 'Route not found' };
+  }
+
   const parsed = registerFormSchema.safeParse(values);
 
   if (!parsed.success) {

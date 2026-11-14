@@ -96,6 +96,11 @@ export const ptBR: Messages = {
   },
 
   auth: {
+    demo: {
+      title: 'Experimente a demo',
+      body: 'Uma empresa fictícia com clientes, equipamentos e ordens de serviço. É restaurada todos os dias.',
+      use: 'Usar a conta demo',
+    },
     builtAs: 'Criado como um portfólio de automação de QA.',
     copyright: '© {year} Oliveira',
     panel: {
@@ -660,6 +665,7 @@ export const ptBR: Messages = {
     },
     guard: {
       lastCompanyAdmin: 'A empresa precisa manter pelo menos um administrador',
+      demoLocked: 'A conta demo não pode ser alterada — ela fica como está para o próximo visitante.',
       lastProfileManager: 'Pelo menos um membro precisa manter a permissão de gerenciar perfis',
       lastSuperAdmin: 'Não é possível remover o último super admin ativo',
       ownSuperAdmin: 'Um super admin não pode remover o próprio acesso',

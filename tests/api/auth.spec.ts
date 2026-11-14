@@ -36,7 +36,10 @@ test.describe('POST /api/auth/login', () => {
   });
 });
 
-test.describe('POST /api/auth/register', () => {
+// Public sign-up is off by default (PUBLIC_REGISTRATION_ENABLED, plan § 2.7: a company adds its
+// own members). Left in place rather than rewritten: the full API/E2E test strategy is a later,
+// deliberate phase — see docs/qa/testing-status.md.
+test.describe.fixme('POST /api/auth/register', () => {
   test('missing fields return the documented 400 message', async ({ request }) => {
     const response = await request.post('/api/auth/register', {
       data: { email: 'a@a.com' },
