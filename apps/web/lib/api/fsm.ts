@@ -10,6 +10,7 @@ import type {
   CustomerPersonWriteInput,
   EquipmentDto,
   EquipmentWriteInput,
+  FsmDashboardDto,
   PaginatedResult,
   TechnicianDto,
   WorkOrderDto,
@@ -164,4 +165,9 @@ export function requestWorkOrderItemRemove(
     method: 'DELETE',
     token,
   });
+}
+
+/** The operation at a glance (`dashboard:view`). */
+export function requestFsmDashboard(token: string): Promise<ApiResult<FsmDashboardDto>> {
+  return apiRequest<FsmDashboardDto>('/api/fsm/dashboard', { token });
 }

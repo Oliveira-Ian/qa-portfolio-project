@@ -13,7 +13,7 @@ import { catalogItemRoutes } from './modules/fsm/catalog-item/catalog-item.modul
 import { customerRoutes } from './modules/fsm/customer/customer.module.js';
 import { equipmentRoutes } from './modules/fsm/equipment/equipment.module.js';
 import { workOrderTypeRoutes } from './modules/fsm/work-order-type/work-order-type.module.js';
-import { workOrderRoutes } from './modules/fsm/work-order/work-order.routes.js';
+import { fsmDashboardRoutes, workOrderRoutes } from './modules/fsm/work-order/work-order.routes.js';
 import { companyProfileRoutes } from './modules/company/company-profile.js';
 import { companyRoutes } from './modules/company/company.routes.js';
 import { gridPreferenceRoutes } from './modules/grid-preference/grid-preference.routes.js';
@@ -104,6 +104,7 @@ export function buildApp() {
   app.register(catalogItemRoutes, { prefix: '/api/fsm/catalog-items' });
   app.register(workOrderTypeRoutes, { prefix: '/api/fsm/work-order-types' });
   app.register(workOrderRoutes, { prefix: '/api/fsm/work-orders' });
+  app.register(fsmDashboardRoutes, { prefix: '/api/fsm/dashboard' });
 
   app.addHook('onClose', async () => {
     await prisma.$disconnect();

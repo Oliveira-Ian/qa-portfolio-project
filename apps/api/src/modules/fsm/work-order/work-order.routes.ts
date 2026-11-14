@@ -237,3 +237,22 @@ export async function workOrderRoutes(app: FastifyInstance) {
       ),
   );
 }
+
+/**
+ * The FSM's dashboard (`/api/fsm/dashboard`): `dashboard:view`. Numbers of
+ * every work order with `work-order:view`, of the caller's own otherwise.
+ */
+export async function fsmDashboardRoutes(app: FastifyInstance) {
+  fsmPlugin(app);
+
+  app.get(
+    '/',
+    {
+      preHandler: requirePermission('FSM', 'dashboard:view'),
+      schema: { tags: ['dashboard'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to load the dashboard' },
+    },
+    async (request, reply) =>
+      sendSuccess(reply, 200, await workOrderService.dashboard(await callerOf(request))),
+  );
+}

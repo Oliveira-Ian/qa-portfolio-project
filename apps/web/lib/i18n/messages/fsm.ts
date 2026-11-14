@@ -9,6 +9,22 @@ export const fsmEn = {
   home: {
     title: 'Overview',
     lead: 'Customers, equipment and the work in the field.',
+    leadMine: 'Your work in the field.',
+    stats: {
+      open: 'Open',
+      scheduled: 'Scheduled',
+      inProgress: 'In progress',
+      onHold: 'On hold',
+      overdue: 'Overdue',
+      today: 'Scheduled today',
+      completed: 'Completed · 30 days',
+    },
+    upcoming: 'Coming up',
+    noUpcoming: 'Nothing scheduled from today on.',
+    recent: 'Latest opened',
+    noRecent: 'No work orders yet.',
+    seeAll: 'See all',
+    shortcuts: 'Shortcuts',
   },
 
   columns: {
@@ -465,6 +481,22 @@ export const fsmPtBR: DeepString<typeof fsmEn> = {
   home: {
     title: 'Visão geral',
     lead: 'Clientes, equipamentos e o trabalho em campo.',
+    leadMine: 'O seu trabalho em campo.',
+    stats: {
+      open: 'Abertas',
+      scheduled: 'Agendadas',
+      inProgress: 'Em andamento',
+      onHold: 'Pausadas',
+      overdue: 'Atrasadas',
+      today: 'Agendadas hoje',
+      completed: 'Concluídas · 30 dias',
+    },
+    upcoming: 'Próximas',
+    noUpcoming: 'Nada agendado de hoje em diante.',
+    recent: 'Abertas recentemente',
+    noRecent: 'Nenhuma ordem de serviço ainda.',
+    seeAll: 'Ver todas',
+    shortcuts: 'Atalhos',
   },
 
   columns: {

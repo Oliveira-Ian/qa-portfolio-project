@@ -356,3 +356,34 @@ export function workOrderToFormValues(workOrder: WorkOrderDto): WorkOrderFormVal
 export function formatWorkOrderNumber(number: number): string {
   return `#${number}`;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Dashboard                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `GET /api/fsm/dashboard`: the operation at a glance. `scope` is `all` for
+ * whoever sees every work order and `mine` for a technician, whose numbers
+ * count only the work orders assigned to them.
+ */
+export interface FsmDashboardDto {
+  scope: 'all' | 'mine';
+  byStatus: Record<WorkOrderStatus, number>;
+  overdue: number;
+  scheduledToday: number;
+  completedLast30Days: number;
+  /** The next scheduled work orders, soonest first. */
+  upcoming: WorkOrderListItemDto[];
+  /** The latest work orders opened. */
+  recent: WorkOrderListItemDto[];
+}
+
+/** Midnight today in the business time zone, as an instant. */
+export function startOfBusinessDay(now: Date = new Date()): Date {
+  const local = new Date(now.getTime() - businessUtcOffsetMinutes(now) * 60_000);
+
+  return new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) +
+      businessUtcOffsetMinutes(now) * 60_000,
+  );
+}

@@ -1,8 +1,11 @@
 import {
+  WORK_ORDER_STATUSES,
   allowedTransitions,
   isFinalStatus,
   isPlanningStatus,
   planningStatus,
+  startOfBusinessDay,
+  type FsmDashboardDto,
   type FsmListQuery,
   type PaginatedResult,
   type TechnicianDto,
@@ -316,6 +319,69 @@ async function findForChange(tx: TransactionClient, id: string, caller: WorkOrde
 }
 
 export const workOrderService = {
+  /**
+   * The operation at a glance — every work order for whoever sees them all,
+   * the caller's own for a technician. All counted by the database.
+   */
+  async dashboard(caller: WorkOrderCaller): Promise<FsmDashboardDto> {
+    const now = new Date();
+    const today = startOfBusinessDay(now);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60_000);
+    const scope: Prisma.WorkOrderWhereInput = caller.can.view
+      ? {}
+      : { assigneeMembershipId: caller.membershipId ?? '—' };
+    const unfinished = { status: { notIn: ['COMPLETED' as const, 'CANCELLED' as const] } };
+
+    const [grouped, overdue, scheduledToday, completedLast30Days, upcoming, recent] =
+      await Promise.all([
+        prisma.workOrder.groupBy({ by: ['status'], where: scope, _count: { _all: true } }),
+        prisma.workOrder.count({ where: { ...scope, ...unfinished, dueAt: { lt: now } } }),
+        prisma.workOrder.count({
+          where: { ...scope, ...unfinished, scheduledAt: { gte: today, lt: tomorrow } },
+        }),
+        prisma.workOrder.count({
+          where: {
+            ...scope,
+            status: 'COMPLETED',
+            completedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60_000) },
+          },
+        }),
+        prisma.workOrder.findMany({
+          where: {
+            ...scope,
+            status: { in: ['SCHEDULED', 'IN_PROGRESS', 'ON_HOLD'] },
+            scheduledAt: { gte: today },
+          },
+          orderBy: [{ scheduledAt: 'asc' }, { number: 'asc' }],
+          take: 5,
+          include: LIST_INCLUDE,
+        }),
+        prisma.workOrder.findMany({
+          where: scope,
+          orderBy: [{ createdAt: 'desc' }, { number: 'desc' }],
+          take: 5,
+          include: LIST_INCLUDE,
+        }),
+      ]);
+
+    const byStatus = Object.fromEntries(
+      WORK_ORDER_STATUSES.map((status) => [
+        status,
+        grouped.find((group) => group.status === status)?._count._all ?? 0,
+      ]),
+    ) as FsmDashboardDto['byStatus'];
+
+    return {
+      scope: caller.can.view ? 'all' : 'mine',
+      byStatus,
+      overdue,
+      scheduledToday,
+      completedLast30Days,
+      upcoming: upcoming.map((row) => toListDto(row, now)),
+      recent: recent.map((row) => toListDto(row, now)),
+    };
+  },
+
   async list(
     query: FsmListQuery,
     raw: Record<string, unknown>,
