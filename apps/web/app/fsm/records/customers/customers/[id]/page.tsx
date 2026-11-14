@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { NoPermission } from '@/components/platform/no-permission';
 import { EMPTY_LIST_QUERY } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
+import { listWorkOrders } from '../../../../operations/work-orders/work-orders/_data-access/work-order-access';
 import { equipmentAccess } from '../../equipment/_data-access/equipment-access';
 import { CustomerForm } from '../_components/customer-form';
 import { customerAccess } from '../_data-access/customer-access';
@@ -25,11 +26,20 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
   }
 
   const { id } = await params;
-  const [customer, canEdit, canViewEquipment, canAddEquipment] = await Promise.all([
+  const [
+    customer,
+    canEdit,
+    canViewEquipment,
+    canAddEquipment,
+    canViewWorkOrders,
+    canOpenWorkOrder,
+  ] = await Promise.all([
     customerAccess.get(id),
     can('FSM', 'customer:edit'),
     can('FSM', 'equipment:view'),
     can('FSM', 'equipment:create'),
+    can('FSM', 'work-order:view'),
+    can('FSM', 'work-order:create'),
   ]);
   const equipment = canViewEquipment
     ? (await equipmentAccess.list({ ...EMPTY_LIST_QUERY, pageSize: 100 }, { customerId: id })).items
@@ -42,6 +52,12 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
       canEdit={canEdit}
       equipment={equipment}
       canAddEquipment={canAddEquipment}
+      workOrders={
+        canViewWorkOrders
+          ? (await listWorkOrders({ ...EMPTY_LIST_QUERY, pageSize: 20 }, { customerId: id })).items
+          : null
+      }
+      canOpenWorkOrder={canOpenWorkOrder}
     />
   );
 }

@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   Tags,
+  UserCheck,
   Users,
   Wrench,
   type LucideIcon,
@@ -124,10 +125,42 @@ const ERP_CATALOG = [
 ] as const satisfies readonly ModuleDefinition<'ERP'>[];
 
 /**
- * Oliveira FSM (plan § 2.6). Routines are added as their screens are built —
- * an entry here without its route folder would be a link to a 404.
+ * Oliveira FSM (plan § 2.6). An entry here without its route folder would be a
+ * link to a 404.
  */
 const FSM_CATALOG = [
+  {
+    slug: 'operations',
+    labelKey: 'nav.fsm.operations',
+    icon: ClipboardList,
+    groups: [
+      {
+        slug: 'work-orders',
+        labelKey: 'nav.fsm.workOrders',
+        icon: ClipboardList,
+        categories: [
+          {
+            slug: 'operations',
+            labelKey: 'nav.fsm.operations',
+            routines: [
+              {
+                slug: 'work-orders',
+                labelKey: 'nav.fsm.workOrders',
+                icon: ClipboardList,
+                permission: 'work-order:view',
+              },
+              {
+                slug: 'my-work-orders',
+                labelKey: 'nav.fsm.myWorkOrders',
+                icon: UserCheck,
+                permission: 'work-order:execute',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   {
     slug: 'records',
     labelKey: 'nav.fsm.records',

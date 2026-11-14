@@ -11,8 +11,10 @@ import {
   type CustomerDto,
   type EquipmentDto,
   type PersonFormValues,
+  type WorkOrderListItemDto,
 } from '@oliveira/schemas';
 import { FormSection } from '@/components/forms/form-section';
+import { WorkOrderSummaryList } from '@/components/fsm/work-order-summary-list';
 import { RecordForm, SectionBlock, type RecordFormMode } from '@/components/forms/record-form';
 import { useEntityForm } from '@/components/forms/use-entity-form';
 import { PersonFormFields } from '@/components/people/person-form-fields';
@@ -29,6 +31,9 @@ interface CustomerFormProps {
   /** View mode: the customer's equipment, and whether one can be added from here. */
   equipment?: EquipmentDto[];
   canAddEquipment?: boolean;
+  /** View mode: the customer's work orders — `null` without `work-order:view`. */
+  workOrders?: WorkOrderListItemDto[] | null;
+  canOpenWorkOrder?: boolean;
 }
 
 const routes = ROUTES.fsm.customers;
@@ -44,6 +49,8 @@ export function CustomerForm({
   canEdit = false,
   equipment = [],
   canAddEquipment = false,
+  workOrders = null,
+  canOpenWorkOrder = false,
 }: CustomerFormProps) {
   const t = useT();
   const { form, isPending, onSubmit } = useEntityForm<PersonFormValues>(
@@ -93,6 +100,27 @@ export function CustomerForm({
                     />
                   </FormSection>
                 </SectionBlock>
+                {workOrders ? (
+                  <div className="border-t border-border">
+                    <SectionBlock>
+                      <FormSection
+                        title={t('fsm.customers.record.workOrders')}
+                        description={t('fsm.customers.record.workOrdersBody')}
+                      >
+                        <WorkOrderSummaryList
+                          workOrders={workOrders}
+                          emptyText={t('fsm.customers.record.noWorkOrders')}
+                          testId="customer-work-orders"
+                          {...(canOpenWorkOrder
+                            ? {
+                                newHref: `${ROUTES.fsm.workOrders.new}?customerId=${encodeURIComponent(customer.id)}`,
+                              }
+                            : {})}
+                        />
+                      </FormSection>
+                    </SectionBlock>
+                  </div>
+                ) : null}
               </div>
             ),
           }

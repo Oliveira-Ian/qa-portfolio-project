@@ -612,6 +612,14 @@ export const ptBR: Messages = {
       invalidPrice: 'Preço inválido',
       invalidDate: 'Data inválida',
       warrantyBeforeInstall: 'A garantia não pode terminar antes da instalação',
+      workOrderTypeRequired: 'O tipo é obrigatório',
+      titleRequired: 'O título é obrigatório',
+      dueBeforeSchedule: 'O prazo não pode ser antes da data agendada',
+      reasonRequired: 'Informe o motivo',
+      resolutionRequired: 'Descreva o serviço executado para concluir a OS',
+      noteRequired: 'Escreva a anotação',
+      itemRequired: 'Escolha um produto ou serviço',
+      invalidQuantity: 'Quantidade inválida',
     },
     auth: {
       missingFields: 'Preencha o e-mail e a senha',
@@ -647,6 +655,8 @@ export const ptBR: Messages = {
       equipment: 'Equipamento não encontrado',
       catalogItem: 'Produto ou serviço não encontrado',
       workOrderType: 'Tipo de OS não encontrado',
+      workOrder: 'Ordem de serviço não encontrada',
+      workOrderItem: 'Item não encontrado',
     },
     guard: {
       lastCompanyAdmin: 'A empresa precisa manter pelo menos um administrador',
@@ -668,6 +678,13 @@ export const ptBR: Messages = {
       catalogItemInUse: 'Este produto ou serviço está em uso. Inative-o em vez de excluir.',
       workOrderTypeNameTaken: 'Já existe um tipo de OS com este nome',
       workOrderTypeInUse: 'Este tipo de OS está em uso. Inative-o em vez de excluir.',
+      workOrderTransition: 'Esta OS não pode ir para essa situação agora',
+      workOrderFinal: 'Uma OS concluída ou cancelada não pode ser alterada',
+      workOrderCustomerLocked: 'O cliente não pode mudar depois que o serviço começou',
+      workOrderEquipment: 'O equipamento precisa ser do cliente',
+      workOrderTechnician:
+        'O técnico precisa ter o FSM e permissão para executar ordens de serviço',
+      workOrderItemsLocked: 'Materiais e serviços são registrados com a OS em andamento',
     },
     done: {
       personCreated: 'Pessoa criada com sucesso',

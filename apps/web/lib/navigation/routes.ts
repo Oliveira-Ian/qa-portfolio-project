@@ -62,6 +62,8 @@ export const ROUTES = {
   /** Oliveira FSM — an area of its own under `/fsm` (catalog in `catalog.ts`). */
   fsm: {
     home: '/fsm',
+    workOrders: record('/fsm/operations/work-orders/work-orders'),
+    myWorkOrders: '/fsm/operations/work-orders/my-work-orders',
     customers: record('/fsm/records/customers/customers'),
     equipment: record('/fsm/records/customers/equipment'),
     catalogItems: record('/fsm/records/catalog/products-services'),

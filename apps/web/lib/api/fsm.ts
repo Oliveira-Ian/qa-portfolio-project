@@ -11,6 +11,12 @@ import type {
   EquipmentDto,
   EquipmentWriteInput,
   PaginatedResult,
+  TechnicianDto,
+  WorkOrderDto,
+  WorkOrderItemWriteInput,
+  WorkOrderListItemDto,
+  WorkOrderRequest,
+  WorkOrderStatusChange,
   WorkOrderTypeDto,
   WorkOrderTypeWriteInput,
 } from '@oliveira/schemas';
@@ -77,4 +83,85 @@ export const branchesApi = recordApi<BranchDto, BranchWriteInput>('/api/fsm/bran
 /** Every active branch — what a work order's form offers. */
 export function requestBranchOptions(token: string): Promise<ApiResult<BranchDto[]>> {
   return apiRequest<BranchDto[]>('/api/fsm/branches/options', { token });
+}
+
+/* Work orders (`/api/fsm/work-orders`). */
+
+const WORK_ORDERS = '/api/fsm/work-orders';
+const workOrderPath = (id: string) => `${WORK_ORDERS}/${encodeURIComponent(id)}`;
+
+export function requestWorkOrderList(
+  token: string,
+  query: ListQueryState,
+  extra: Record<string, string> = {},
+): Promise<ApiResult<PaginatedResult<WorkOrderListItemDto>>> {
+  return apiRequest<PaginatedResult<WorkOrderListItemDto>>(WORK_ORDERS, {
+    token,
+    query: { ...Object.fromEntries(new URLSearchParams(serializeListQuery(query))), ...extra },
+  });
+}
+
+export function requestWorkOrder(token: string, id: string): Promise<ApiResult<WorkOrderDto>> {
+  return apiRequest<WorkOrderDto>(workOrderPath(id), { token });
+}
+
+export function requestTechnicians(token: string): Promise<ApiResult<TechnicianDto[]>> {
+  return apiRequest<TechnicianDto[]>(`${WORK_ORDERS}/technicians`, { token });
+}
+
+export function requestWorkOrderSave(
+  token: string,
+  body: WorkOrderRequest,
+  id?: string,
+): Promise<ApiResult<WorkOrderDto>> {
+  return id
+    ? apiRequest<WorkOrderDto>(workOrderPath(id), { method: 'PUT', token, body })
+    : apiRequest<WorkOrderDto>(WORK_ORDERS, { method: 'POST', token, body });
+}
+
+export function requestWorkOrderStatus(
+  token: string,
+  id: string,
+  change: WorkOrderStatusChange,
+): Promise<ApiResult<WorkOrderDto>> {
+  return apiRequest<WorkOrderDto>(`${workOrderPath(id)}/status`, {
+    method: 'POST',
+    token,
+    body: change,
+  });
+}
+
+export function requestWorkOrderNote(
+  token: string,
+  id: string,
+  message: string,
+): Promise<ApiResult<WorkOrderDto>> {
+  return apiRequest<WorkOrderDto>(`${workOrderPath(id)}/notes`, {
+    method: 'POST',
+    token,
+    body: { message },
+  });
+}
+
+export function requestWorkOrderItemAdd(
+  token: string,
+  id: string,
+  input: WorkOrderItemWriteInput,
+): Promise<ApiResult<WorkOrderDto>> {
+  return apiRequest<WorkOrderDto>(`${workOrderPath(id)}/items`, {
+    method: 'POST',
+    token,
+    body: input,
+  });
+}
+
+export function requestWorkOrderItemRemove(
+  token: string,
+  id: string,
+  itemId: string,
+): Promise<ApiResult<WorkOrderDto>> {
+  return apiRequest<WorkOrderDto>(`${workOrderPath(id)}/items/${encodeURIComponent(itemId)}`, {
+    method: 'DELETE',
+    token,
+  });
 }

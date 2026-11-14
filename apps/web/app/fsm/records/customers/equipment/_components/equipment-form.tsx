@@ -13,8 +13,10 @@ import {
   type CustomerOptionDto,
   type EquipmentDto,
   type EquipmentFormValues,
+  type WorkOrderListItemDto,
 } from '@oliveira/schemas';
 import { FormSection } from '@/components/forms/form-section';
+import { WorkOrderSummaryList } from '@/components/fsm/work-order-summary-list';
 import { RecordForm, SectionBlock, type RecordFormMode } from '@/components/forms/record-form';
 import { useEntityForm } from '@/components/forms/use-entity-form';
 import { AsyncCombobox } from '@/components/ui/async-combobox';
@@ -41,6 +43,8 @@ interface EquipmentFormProps {
   /** The chosen customer, with its addresses — the record's, or one picked from a customer's sheet. */
   customer?: CustomerOptionDto | null;
   canEdit?: boolean;
+  /** View mode: the equipment's work orders — `null` without `work-order:view`. */
+  workOrders?: WorkOrderListItemDto[] | null;
 }
 
 const routes = ROUTES.fsm.equipment;
@@ -59,7 +63,13 @@ function addressLabel(address: AddressDto): string {
  * server; its addresses become the choices for where the equipment is
  * installed, and changing the customer clears that choice.
  */
-export function EquipmentForm({ mode, equipment, customer, canEdit = false }: EquipmentFormProps) {
+export function EquipmentForm({
+  mode,
+  equipment,
+  customer,
+  canEdit = false,
+  workOrders = null,
+}: EquipmentFormProps) {
   const t = useT();
   const disabled = mode === 'view';
   const [chosen, setChosen] = useState<CustomerOptionDto | null>(customer ?? null);
@@ -138,6 +148,26 @@ export function EquipmentForm({ mode, equipment, customer, canEdit = false }: Eq
       cancelHref={equipment && mode === 'edit' ? routes.view(equipment.id) : routes.list}
       {...(equipment && canEdit ? { editHref: routes.edit(equipment.id) } : {})}
       {...(equipment ? { badges: <EquipmentStatusBadge status={equipment.status} /> } : {})}
+      {...(mode === 'view' && workOrders
+        ? {
+            after: (
+              <div className="border-t border-border">
+                <SectionBlock>
+                  <FormSection
+                    title={t('fsm.equipment.record.workOrders')}
+                    description={t('fsm.equipment.record.workOrdersBody')}
+                  >
+                    <WorkOrderSummaryList
+                      workOrders={workOrders}
+                      emptyText={t('fsm.equipment.record.noWorkOrders')}
+                      testId="equipment-work-orders"
+                    />
+                  </FormSection>
+                </SectionBlock>
+              </div>
+            ),
+          }
+        : {})}
     >
       <div className="divide-y divide-border">
         <SectionBlock>

@@ -91,6 +91,23 @@ const EXACT: Record<string, MessageKey> = {
   'Unit is required': 'api.validation.unitRequired',
   'Invalid price': 'api.validation.invalidPrice',
   'Invalid date': 'api.validation.invalidDate',
+  'Work order not found': 'api.notFound.workOrder',
+  'Item not found': 'api.notFound.workOrderItem',
+  'A completed or cancelled work order cannot be changed': 'api.guard.workOrderFinal',
+  'The customer cannot change once the work has started': 'api.guard.workOrderCustomerLocked',
+  "The equipment must be one of the customer's": 'api.guard.workOrderEquipment',
+  'The technician must have the FSM and permission to execute work orders':
+    'api.guard.workOrderTechnician',
+  'Materials and services are recorded while the work is in progress':
+    'api.guard.workOrderItemsLocked',
+  'Type is required': 'api.validation.workOrderTypeRequired',
+  'Title is required': 'api.validation.titleRequired',
+  'The due date cannot be before the scheduled date': 'api.validation.dueBeforeSchedule',
+  'A reason is required': 'api.validation.reasonRequired',
+  'Describe the work done to complete the work order': 'api.validation.resolutionRequired',
+  'Write the note': 'api.validation.noteRequired',
+  'Choose a product or service': 'api.validation.itemRequired',
+  'Invalid quantity': 'api.validation.invalidQuantity',
   'The warranty cannot end before the installation': 'api.validation.warrantyBeforeInstall',
 
   // Confirmations a Server Action sends back
@@ -130,6 +147,11 @@ const PATTERNS: readonly MessagePattern[] = [
   },
   { pattern: /^(\d+) people deleted$/, key: 'api.done.peopleDeleted', vars: countVars },
   { pattern: /^(\d+) profiles deleted$/, key: 'api.done.profilesDeleted', vars: countVars },
+  {
+    pattern: /^A work order cannot go from \w+ to \w+$/,
+    key: 'api.guard.workOrderTransition',
+    vars: () => ({}),
+  },
   { pattern: /^Branch deleted$/, key: 'api.done.branchesDeleted', vars: () => ({ count: 1 }) },
   { pattern: /^(d+) branches deleted$/, key: 'api.done.branchesDeleted', vars: countVars },
   { pattern: /^Customer deleted$/, key: 'api.done.customersDeleted', vars: () => ({ count: 1 }) },
