@@ -69,6 +69,19 @@ export const branchRepository = {
     });
   },
 
+  findPage(
+    where: Prisma.BranchWhereInput,
+    orderBy: Prisma.BranchOrderByWithRelationInput[],
+    skip: number,
+    take: number,
+  ): Promise<BranchRow[]> {
+    return prisma.branch.findMany({ where, orderBy, skip, take, include: WITH_ADDRESS });
+  },
+
+  count(where: Prisma.BranchWhereInput): Promise<number> {
+    return prisma.branch.count({ where });
+  },
+
   findById(id: string): Promise<BranchRow | null> {
     return prisma.branch.findUnique({ where: { id }, include: WITH_ADDRESS });
   },
@@ -101,9 +114,14 @@ export const branchRepository = {
     }
   },
 
-  async delete(id: string): Promise<void> {
+  /** All or nothing: one branch in use and none is deleted. */
+  async deleteMany(ids: string[]): Promise<void> {
     try {
-      await prisma.branch.delete({ where: { id } });
+      await withTransaction(async (tx) => {
+        for (const id of ids) {
+          await tx.branch.delete({ where: { id } });
+        }
+      });
     } catch (error) {
       throw translateWriteError(error);
     }

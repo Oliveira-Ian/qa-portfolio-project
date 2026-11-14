@@ -305,9 +305,14 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
 
 /** Form values → an FSM customer's person: no `types`, the document kept whenever it was typed. */
 export function customerFormValuesToPayload(values: PersonFormValues): CustomerPersonWriteInput {
-  const { types: _types, ...payload } = personFormValuesToPayload({ ...values, types: ['CLIENT'] });
+  // `CLIENT` only so the document is kept whenever it was typed; `types` itself is dropped.
+  const payload: Partial<PersonCreateInput> = personFormValuesToPayload({
+    ...values,
+    types: ['CLIENT'],
+  });
+  delete payload.types;
 
-  return payload;
+  return payload as CustomerPersonWriteInput;
 }
 
 /**

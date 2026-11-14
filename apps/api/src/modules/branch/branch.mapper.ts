@@ -4,13 +4,12 @@ import type { BranchRow, BranchWriteData } from './branch.repository.js';
 
 const orNull = (value: string): string | null => (value.trim() === '' ? null : value.trim());
 
+/** The CNPJ is kept as typed (masked), like a person's document; the schema checked its digits. */
 export function toBranchWriteData(input: BranchWriteInput): BranchWriteData {
-  const document = input.document.replace(/\D/g, '');
-
   return {
     code: input.code,
     name: input.name,
-    document: document === '' ? null : document,
+    document: orNull(input.document),
     stateRegistration: orNull(input.stateRegistration),
     email: orNull(input.email),
     phone: orNull(input.phone),

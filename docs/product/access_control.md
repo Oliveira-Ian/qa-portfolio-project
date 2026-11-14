@@ -193,3 +193,13 @@ a persisted, queryable trail belongs to F-15 (#7).
 - A member's first seat in a product links that product's default profile (ERP Default User, FSM
   Technician) — never an administrative one. The "last member able to manage profiles" guard is per
   product.
+- The FSM's catalog: `customer:*`, `equipment:*`, `catalog-item:*` and `branch:*` (view, create,
+  edit, delete), `work-order-type:manage`, `work-order:view|create|edit|assign|change-status|execute`,
+  `dashboard:view`, `profile:manage`. A list another record's form picks from is also readable with
+  that form's permission: customers, equipment, branches and work order types with
+  `work-order:create`/`edit`, products and services with `work-order:execute`/`edit`. Branches are
+  Foundation data managed inside each product with that product's `branch:*`
+  (docs/adr/0013, addendum); only the FSM mounts them today (`/api/fsm/branches`).
+- Each product manages its profiles and users on its own screens, built from the same components
+  (`components/profiles/`, `components/access-control/`): `/erp/administration/access-control/…` and
+  `/fsm/administration/access-control/…`. The profile editor shows that product's catalog only.

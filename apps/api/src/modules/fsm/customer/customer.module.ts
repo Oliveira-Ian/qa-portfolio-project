@@ -86,9 +86,13 @@ function toDto(row: ListRow | RecordRow, withLists: boolean): CustomerDto {
 
 /** The person's columns of a customer's write — without `types`, which only the ERP sets. */
 function personData(input: CustomerPersonWriteInput) {
-  const { types: _types, ...data } = toPersonWriteData({ ...input, types: [] });
+  const data: Partial<ReturnType<typeof toPersonWriteData>> = toPersonWriteData({
+    ...input,
+    types: [],
+  });
+  delete data.types;
 
-  return data;
+  return data as Omit<ReturnType<typeof toPersonWriteData>, 'types'>;
 }
 
 /** City and state of the primary address, matched in the address table (`f_city`, `f_state`). */
@@ -127,7 +131,7 @@ function translate(error: unknown, operation: 'write' | 'delete' = 'delete'): un
 }
 
 export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto> & {
-  options(search: string | undefined): Promise<CustomerOptionDto[]>;
+  options(search: string | undefined, id?: string): Promise<CustomerOptionDto[]>;
 } = {
   async list(query, raw): Promise<PaginatedResult<CustomerDto>> {
     const where: Prisma.CustomerWhereInput = {
@@ -248,12 +252,16 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
     }
   },
 
-  /** Active customers matching `search`, with their addresses — what another record's form offers. */
-  async options(search) {
+  /**
+   * Active customers matching `search`, with their addresses — what another
+   * record's form offers; or, by `id`, the one already chosen (active or not).
+   */
+  async options(search, id) {
     const rows = await prisma.customer.findMany({
       where: {
+        ...(id ? { id } : {}),
         person: {
-          active: true,
+          ...(id ? {} : { active: true }),
           ...(search
             ? {
                 OR: [
@@ -299,10 +307,12 @@ export async function customerRoutes(app: FastifyInstance) {
       config: { errorMessage: 'Failed to list customers' },
     },
     async (request: FastifyRequest, reply) => {
-      const raw = (request.query as { search?: unknown }).search;
-      const search = typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
+      const query = request.query as { search?: unknown; id?: unknown };
+      const search =
+        typeof query.search === 'string' && query.search.trim() ? query.search.trim() : undefined;
+      const id = typeof query.id === 'string' && query.id ? query.id : undefined;
 
-      return sendSuccess(reply, 200, await customerService.options(search));
+      return sendSuccess(reply, 200, await customerService.options(search, id));
     },
   );
 
