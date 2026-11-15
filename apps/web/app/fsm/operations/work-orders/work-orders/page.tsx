@@ -4,7 +4,7 @@ import { NoPermission } from '@/components/platform/no-permission';
 import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can, getMe } from '@/lib/permissions';
-import { getFsmDashboard } from '../../../_data-access/get-dashboard';
+import { getFsmDashboardIfAllowed } from '../../../_data-access/get-dashboard';
 import type { WorkOrderListCounts, WorkOrderView } from './_components/work-order-views';
 import { WorkOrderList } from './_components/work-order-list';
 import { WORK_ORDER_FILTERABLE_COLUMNS } from './_components/work-order-filters';
@@ -57,7 +57,7 @@ export default async function WorkOrdersPage({ searchParams }: WorkOrdersPagePro
       getWorkOrderFilterChoices(),
       can('FSM', 'work-order:create'),
       can('FSM', 'work-order:edit'),
-      getFsmDashboard(),
+      getFsmDashboardIfAllowed(),
       getMe(),
       can('FSM', 'work-order:execute'),
     ]);
@@ -78,7 +78,7 @@ export default async function WorkOrdersPage({ searchParams }: WorkOrdersPagePro
       canEdit={canEdit}
       gridPreference={gridPreference}
       filterChoices={filterChoices}
-      counts={listCounts(dashboard, membershipId)}
+      {...(dashboard ? { counts: listCounts(dashboard, membershipId) } : {})}
       views={views}
       now={new Date().toISOString()}
     />

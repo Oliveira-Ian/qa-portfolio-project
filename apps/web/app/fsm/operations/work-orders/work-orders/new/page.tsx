@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getTranslator } from '@/lib/i18n/server';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
+import { getFsmDashboardIfAllowed } from '@/app/fsm/_data-access/get-dashboard';
 import { customerEquipmentAction } from '../_actions/work-order-actions';
 import { WorkOrderForm } from '../_components/work-order-form';
 import { getCustomerOption, getWorkOrderFormOptions } from '../_data-access/work-order-access';
@@ -31,6 +32,11 @@ export default async function NewWorkOrderPage({ searchParams }: NewWorkOrderPag
   ]);
   const equipment = customer ? await customerEquipmentAction(customer.id) : [];
 
+  const dashboard = await getFsmDashboardIfAllowed();
+  const technicianLoad = Object.fromEntries(
+    (dashboard?.teamLoad ?? []).map((row) => [row.membershipId, row.open]),
+  );
+
   return (
     <WorkOrderForm
       mode="create"
@@ -38,6 +44,7 @@ export default async function NewWorkOrderPage({ searchParams }: NewWorkOrderPag
       equipment={equipment}
       options={options}
       canAssign={canAssign}
+      technicianLoad={technicianLoad}
     />
   );
 }

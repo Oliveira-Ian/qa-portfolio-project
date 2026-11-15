@@ -3,7 +3,7 @@ import { NoPermission } from '@/components/platform/no-permission';
 import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
-import { getFsmDashboard } from '../../../_data-access/get-dashboard';
+import { getFsmDashboardIfAllowed } from '../../../_data-access/get-dashboard';
 import { WorkOrderList } from '../work-orders/_components/work-order-list';
 import { WORK_ORDER_FILTERABLE_COLUMNS } from '../work-orders/_components/work-order-filters';
 import {
@@ -36,7 +36,7 @@ export default async function MyWorkOrdersPage({ searchParams }: MyWorkOrdersPag
     listWorkOrders(query, { mine: 'true' }),
     workOrderGrid.getPreference(),
     getWorkOrderFilterChoices(),
-    getFsmDashboard(),
+    getFsmDashboardIfAllowed(),
   ]);
 
   return (
@@ -49,7 +49,7 @@ export default async function MyWorkOrdersPage({ searchParams }: MyWorkOrdersPag
       gridPreference={gridPreference}
       filterChoices={filterChoices}
       // The summary counts the caller's own only for a technician; for a manager they would be everyone's.
-      {...(dashboard.scope === 'mine'
+      {...(dashboard?.scope === 'mine'
         ? {
             counts: {
               all: Object.values(dashboard.byStatus).reduce((sum, count) => sum + count, 0),

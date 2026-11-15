@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { formatWorkOrderNumber, isFinalStatus } from '@oliveira/schemas';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
+import { getFsmDashboardIfAllowed } from '@/app/fsm/_data-access/get-dashboard';
 import { customerEquipmentAction } from '../../_actions/work-order-actions';
 import { WorkOrderForm } from '../../_components/work-order-form';
 import {
@@ -46,6 +47,11 @@ export default async function EditWorkOrderPage({ params }: EditWorkOrderPagePro
     can('FSM', 'work-order:assign'),
   ]);
 
+  const dashboard = await getFsmDashboardIfAllowed();
+  const technicianLoad = Object.fromEntries(
+    (dashboard?.teamLoad ?? []).map((row) => [row.membershipId, row.open]),
+  );
+
   return (
     <WorkOrderForm
       mode="edit"
@@ -54,6 +60,7 @@ export default async function EditWorkOrderPage({ params }: EditWorkOrderPagePro
       equipment={equipment}
       options={options}
       canAssign={canAssign}
+      technicianLoad={technicianLoad}
     />
   );
 }
