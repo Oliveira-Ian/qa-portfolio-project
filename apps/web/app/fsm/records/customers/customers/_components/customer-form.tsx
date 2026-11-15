@@ -181,7 +181,7 @@ export function CustomerForm({ customer, branches }: CustomerFormProps) {
             {isDirty ? <Pill tone="warning">{t('fsmUi.record.unsaved')}</Pill> : null}
           </div>
           <nav aria-label={t('fsmUi.record.tabsLabel')} className="border-t border-border px-2.5">
-            <ul role="tablist" className="flex gap-0.5 overflow-x-auto lg:overflow-visible">
+            <ul role="tablist" className="flex gap-0.5 overflow-x-auto xl:overflow-visible">
               {tabs.map((item) => {
                 const isCurrent = item.key === tab;
                 const errorsHere =
@@ -190,7 +190,7 @@ export function CustomerForm({ customer, branches }: CustomerFormProps) {
                     : 0;
                 const Icon = item.icon;
                 return (
-                  <li key={item.key} className="flex lg:flex-1">
+                  <li key={item.key} className="flex xl:flex-1">
                     <button
                       type="button"
                       role="tab"
@@ -200,7 +200,7 @@ export function CustomerForm({ customer, branches }: CustomerFormProps) {
                       onClick={() => !item.disabled && setTab(item.key as EditTab)}
                       data-testid={`customer-form-tab-${item.key}`}
                       className={cn(
-                        'relative flex h-[46px] w-full items-center justify-center gap-2 rounded-t-lg px-3.5 text-sm font-medium whitespace-nowrap text-text-3 outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--olv-accent-600)] lg:flex-1',
+                        'relative flex h-[46px] w-full items-center justify-center gap-2 rounded-t-lg px-3.5 text-sm font-medium whitespace-nowrap text-text-3 outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--olv-accent-600)] xl:flex-1',
                         isCurrent
                           ? 'font-semibold text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-t-sm after:bg-accent-600'
                           : 'hover:bg-surface-hover hover:text-foreground',

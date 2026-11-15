@@ -130,11 +130,11 @@ export function RecordHeader({
   return (
     <section
       data-testid={testId}
-      className="rounded-xl border border-border bg-surface shadow-fsm-card"
+      className="min-w-0 rounded-xl border border-border bg-surface shadow-fsm-card"
     >
       <div className="flex flex-wrap items-start gap-x-[18px] gap-y-4 p-[22px] pb-[18px]">
         {tile}
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-[min(100%,24rem)] flex-1 flex-col gap-2">
           <span className="olv-overline text-text-3">{overline}</span>
           <h1
             data-testid={titleTestId}
@@ -204,7 +204,7 @@ export function RecordTabs({
 }) {
   return (
     <nav aria-label={label} className="border-t border-border">
-      <ul className={cn('flex gap-0.5 overflow-x-auto', fill && 'lg:overflow-visible')}>
+      <ul className={cn('flex gap-0.5 overflow-x-auto', fill && 'xl:overflow-visible')}>
         {tabs.map((tab) => {
           const isCurrent = tab.key === current;
           const Icon = tab.icon;
@@ -233,7 +233,7 @@ export function RecordTabs({
           );
           const className = cn(
             'relative flex h-[46px] items-center justify-center gap-2 rounded-t-lg px-3.5 text-sm font-medium text-text-3 outline-none transition-colors focus-visible:shadow-[inset_0_0_0_2px_var(--olv-accent-600)]',
-            fill && 'lg:flex-1',
+            fill && 'xl:flex-1',
             isCurrent
               ? 'font-semibold text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-t-sm after:bg-accent-600'
               : 'hover:bg-surface-hover hover:text-foreground',
@@ -242,7 +242,7 @@ export function RecordTabs({
           );
 
           return (
-            <li key={tab.key} className={cn('flex', fill && 'lg:flex-1')}>
+            <li key={tab.key} className={cn('flex', fill && 'xl:flex-1')}>
               {tab.disabled ? (
                 <span
                   aria-disabled="true"
