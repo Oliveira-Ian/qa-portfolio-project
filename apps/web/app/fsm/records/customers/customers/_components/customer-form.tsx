@@ -6,11 +6,11 @@ import { Plus, Wrench } from 'lucide-react';
 import type { Resolver } from 'react-hook-form';
 import {
   customerFormSchema,
-  emptyPersonFormValues,
-  personToFormValues,
+  customerToFormValues,
+  emptyCustomerFormValues,
   type CustomerDto,
+  type CustomerFormValues,
   type EquipmentDto,
-  type PersonFormValues,
   type WorkOrderListItemDto,
 } from '@oliveira/schemas';
 import { FormSection } from '@/components/forms/form-section';
@@ -53,9 +53,9 @@ export function CustomerForm({
   canOpenWorkOrder = false,
 }: CustomerFormProps) {
   const t = useT();
-  const { form, isPending, onSubmit } = useEntityForm<PersonFormValues>(
-    zodResolver(customerFormSchema) as Resolver<PersonFormValues, unknown, PersonFormValues>,
-    customer ? personToFormValues(customer.person) : emptyPersonFormValues,
+  const { form, isPending, onSubmit } = useEntityForm<CustomerFormValues>(
+    zodResolver(customerFormSchema) as Resolver<CustomerFormValues, unknown, CustomerFormValues>,
+    customer ? customerToFormValues(customer) : emptyCustomerFormValues,
     (values) => saveCustomerAction(values, customer?.id),
     {
       message: t(customer ? 'fsm.customers.form.updated' : 'fsm.customers.form.created'),

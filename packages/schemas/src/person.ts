@@ -120,7 +120,13 @@ export const personCreateSchema = z
  * document is optional, and checked when given.
  */
 export const customerPersonWriteSchema = z
-  .object(personWriteShape)
+  .object({
+    ...personWriteShape,
+    /** What every technician must know before arriving — the customer's, not the person's. */
+    serviceInstructions: z.string().trim().max(1000, maxLengthMessage(1000)).nullable().optional(),
+    /** The branch that usually serves the customer, or null. */
+    defaultBranchId: z.string().trim().nullable().optional(),
+  })
   .superRefine((data, ctx) => checkDocument(data, ctx, false));
 
 export type CustomerPersonWriteInput = z.infer<typeof customerPersonWriteSchema>;
@@ -232,13 +238,20 @@ export const personFormSchema = z.object(personFormShape).superRefine((data, ctx
  * layout), with `types` left alone and the document optional.
  */
 export const customerFormSchema = z
-  .object({ ...personFormShape, types: z.array(personTypeValueSchema) })
+  .object({
+    ...personFormShape,
+    types: z.array(personTypeValueSchema),
+    serviceInstructions: z.string().trim().max(1000, maxLengthMessage(1000)),
+    defaultBranchId: z.string().trim(),
+  })
   .superRefine((data, ctx) => {
     checkEmail(data, ctx);
     checkDocument(data, ctx, false);
   });
 
 export type PersonFormValues = z.infer<typeof personFormSchema>;
+/** The FSM customer's form: the person's values plus what the FSM keeps on the customer. */
+export type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
 export const emptyPersonFormValues: PersonFormValues = {
   name: '',
@@ -304,15 +317,20 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
 }
 
 /** Form values → an FSM customer's person: no `types`, the document kept whenever it was typed. */
-export function customerFormValuesToPayload(values: PersonFormValues): CustomerPersonWriteInput {
+export function customerFormValuesToPayload(values: CustomerFormValues): CustomerPersonWriteInput {
+  const { serviceInstructions, defaultBranchId, ...personValues } = values;
   // `CLIENT` only so the document is kept whenever it was typed; `types` itself is dropped.
   const payload: Partial<PersonCreateInput> = personFormValuesToPayload({
-    ...values,
+    ...personValues,
     types: ['CLIENT'],
   });
   delete payload.types;
 
-  return payload as CustomerPersonWriteInput;
+  return {
+    ...(payload as Omit<PersonCreateInput, 'types'>),
+    serviceInstructions: serviceInstructions.trim() === '' ? null : serviceInstructions.trim(),
+    defaultBranchId: defaultBranchId === '' ? null : defaultBranchId,
+  };
 }
 
 /**

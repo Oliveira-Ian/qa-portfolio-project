@@ -7,8 +7,8 @@ import {
   type PaginatedResult,
 } from '@oliveira/schemas';
 import type { Prisma } from '../../../generated/prisma/client.js';
-import { prisma, withTransaction } from '../../../config/prisma.js';
-import { ConflictError, NotFoundError } from '../../../shared/errors.js';
+import { prisma, withTransaction, type TransactionClient } from '../../../config/prisma.js';
+import { BadRequestError, ConflictError, NotFoundError } from '../../../shared/errors.js';
 import { sendSuccess } from '../../../shared/http.js';
 import {
   buildFiltersWhere,
@@ -27,6 +27,7 @@ import { requireCompanyId } from '../../../shared/request-context.js';
 import { requireAnyOf, requirePermission } from '../../auth/authorize.js';
 import {
   ADDRESS_ORDER,
+  CONTACT_ORDER,
   syncAddresses,
   syncContacts,
   toAddressDto,
@@ -63,24 +64,76 @@ const SORTS: Record<string, string> = {
   createdAt: 'createdAt',
 };
 
+const BRANCH = { select: { id: true, code: true, name: true } } as const;
+
 const LIST_INCLUDE = {
   person: { include: PRIMARY_ADDRESS },
-  _count: { select: { equipment: true } },
+  defaultBranch: BRANCH,
+  _count: { select: { equipment: true, workOrders: true } },
 } satisfies Prisma.CustomerInclude;
 
 const RECORD_INCLUDE = {
   person: { include: FULL_RECORD },
-  _count: { select: { equipment: true } },
+  defaultBranch: BRANCH,
+  _count: { select: { equipment: true, workOrders: true } },
 } satisfies Prisma.CustomerInclude;
+
+type Reader = Pick<TransactionClient, 'workOrder'>;
+interface OpenCounts {
+  open: number;
+  overdue: number;
+}
+
+const UNFINISHED = { notIn: ['COMPLETED', 'CANCELLED'] } as {
+  notIn: ('COMPLETED' | 'CANCELLED')[];
+};
+
+/** Unfinished work orders per customer, and how many of them are past due — for a page at once. */
+async function loadOpenCounts(client: Reader, ids: string[]): Promise<Map<string, OpenCounts>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+  const [open, overdue] = await Promise.all([
+    client.workOrder.groupBy({
+      by: ['customerId'],
+      where: { customerId: { in: ids }, status: UNFINISHED },
+      _count: { _all: true },
+    }),
+    client.workOrder.groupBy({
+      by: ['customerId'],
+      where: { customerId: { in: ids }, status: UNFINISHED, dueAt: { lt: new Date() } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  return new Map(
+    ids.map((id) => [
+      id,
+      {
+        open: open.find((row) => row.customerId === id)?._count._all ?? 0,
+        overdue: overdue.find((row) => row.customerId === id)?._count._all ?? 0,
+      },
+    ]),
+  );
+}
 
 type ListRow = Prisma.CustomerGetPayload<{ include: typeof LIST_INCLUDE }>;
 type RecordRow = Prisma.CustomerGetPayload<{ include: typeof RECORD_INCLUDE }>;
 
-function toDto(row: ListRow | RecordRow, withLists: boolean): CustomerDto {
+function toDto(
+  row: ListRow | RecordRow,
+  withLists: boolean,
+  counts: OpenCounts = { open: 0, overdue: 0 },
+): CustomerDto {
   return {
     id: row.id,
     person: toPersonDto(row.person, withLists),
     equipmentCount: row._count.equipment,
+    serviceInstructions: row.serviceInstructions,
+    defaultBranch: row.defaultBranch,
+    openWorkOrderCount: counts.open,
+    overdueWorkOrderCount: counts.overdue,
+    workOrderCount: row._count.workOrders,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -88,6 +141,7 @@ function toDto(row: ListRow | RecordRow, withLists: boolean): CustomerDto {
 
 /** The person's columns of a customer's write — without `types`, which only the ERP sets. */
 function personData(input: CustomerPersonWriteInput) {
+  // The mapper picks the person's columns one by one, so the customer's own fields stay out.
   const data: Partial<ReturnType<typeof toPersonWriteData>> = toPersonWriteData({
     ...input,
     types: [],
@@ -95,6 +149,20 @@ function personData(input: CustomerPersonWriteInput) {
   delete data.types;
 
   return data as Omit<ReturnType<typeof toPersonWriteData>, 'types'>;
+}
+
+/** What the FSM keeps on the customer itself; the branch must be the company's. */
+async function customerData(tx: TransactionClient, input: CustomerPersonWriteInput) {
+  const defaultBranchId = input.defaultBranchId?.trim() || null;
+
+  if (defaultBranchId && !(await tx.branch.findUnique({ where: { id: defaultBranchId } }))) {
+    throw new BadRequestError('Branch not found');
+  }
+
+  return {
+    serviceInstructions: input.serviceInstructions?.trim() || null,
+    defaultBranchId,
+  };
 }
 
 /**
@@ -180,8 +248,13 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
       prisma.customer.count({ where }),
     ]);
 
+    const counts = await loadOpenCounts(
+      prisma,
+      rows.map((row) => row.id),
+    );
+
     return {
-      items: rows.map((row) => toDto(row, false)),
+      items: rows.map((row) => toDto(row, false, counts.get(row.id))),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -195,7 +268,7 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
       throw new NotFoundError('Customer not found');
     }
 
-    return toDto(row, true);
+    return toDto(row, true, (await loadOpenCounts(prisma, [id])).get(id));
   },
 
   async create(input) {
@@ -209,7 +282,9 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
         await syncAddresses(tx, companyId, { personId: person.id }, input.addresses);
         await syncContacts(tx, companyId, person.id, input.contacts);
 
-        const customer = await tx.customer.create({ data: { companyId, personId: person.id } });
+        const customer = await tx.customer.create({
+          data: { companyId, personId: person.id, ...(await customerData(tx, input)) },
+        });
 
         return toDto(
           await tx.customer.findUniqueOrThrow({
@@ -233,11 +308,15 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
         await tx.person.update({ where: { id: personId }, data: personData(input) });
         await syncAddresses(tx, companyId, { personId }, input.addresses);
         await syncContacts(tx, companyId, personId, input.contacts);
-        await tx.customer.update({ where: { id }, data: { updatedAt: new Date() } });
+        await tx.customer.update({
+          where: { id },
+          data: { updatedAt: new Date(), ...(await customerData(tx, input)) },
+        });
 
         return toDto(
           await tx.customer.findUniqueOrThrow({ where: { id }, include: RECORD_INCLUDE }),
           true,
+          (await loadOpenCounts(tx, [id])).get(id),
         );
       });
     } catch (error) {
@@ -294,14 +373,33 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
       },
       orderBy: [{ person: { name: 'asc' } }, { id: 'asc' }],
       take: ids ? ids.length : 20,
-      include: { person: { include: { addresses: { orderBy: ADDRESS_ORDER } } } },
+      include: {
+        person: {
+          include: { addresses: { orderBy: ADDRESS_ORDER }, contacts: { orderBy: CONTACT_ORDER } },
+        },
+      },
     });
+    const counts = await loadOpenCounts(
+      prisma,
+      rows.map((row) => row.id),
+    );
 
     return rows.map((row) => ({
       id: row.id,
       name: row.person.name,
       document: row.person.document,
       addresses: row.person.addresses.map(toAddressDto),
+      contacts: row.person.contacts.map((contact) => ({
+        id: contact.id,
+        name: contact.name,
+        role: contact.role,
+        phone: contact.phone,
+        mobile: contact.mobile,
+        isPrimary: contact.isPrimary,
+      })),
+      serviceInstructions: row.serviceInstructions,
+      defaultBranchId: row.defaultBranchId,
+      openWorkOrderCount: counts.get(row.id)?.open ?? 0,
     }));
   },
 

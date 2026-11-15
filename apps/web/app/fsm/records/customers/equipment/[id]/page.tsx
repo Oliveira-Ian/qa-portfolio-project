@@ -38,6 +38,10 @@ export default async function EquipmentRecordPage({ params }: EquipmentRecordPag
     name: equipment.customer.name,
     document: null,
     addresses: equipment.address ? [equipment.address] : [],
+    contacts: [],
+    serviceInstructions: null,
+    defaultBranchId: null,
+    openWorkOrderCount: equipment.openWorkOrderCount,
   };
 
   return (
