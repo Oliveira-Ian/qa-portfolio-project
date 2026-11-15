@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  EQUIPMENT_CRITICALITIES,
   EQUIPMENT_STATUSES,
   emptyEquipmentFormValues,
   equipmentToFormValues,
@@ -326,6 +327,62 @@ export function EquipmentForm({
                         onChange={field.onChange}
                         disabled={disabled}
                         data-testid="equipment-form-status"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </FormSection>
+        </SectionBlock>
+
+        <SectionBlock>
+          <FormSection
+            title={t('fsmUi.equipment.details.maintenance')}
+            description={t('fsmUi.equipment.details.maintenanceBody')}
+            optionalLabel={t('common.optional')}
+          >
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="criticality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('fsmUi.equipment.details.criticality')}</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={[
+                          { value: '', label: t('fsmUi.equipment.details.noCriticality') },
+                          ...EQUIPMENT_CRITICALITIES.map((level) => ({
+                            value: level,
+                            label: t(`fsmUi.criticality.short.${level}`),
+                          })),
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={disabled}
+                        data-testid="equipment-form-criticality"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="maintenanceIntervalDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('fsmUi.equipment.details.interval')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        inputMode="numeric"
+                        disabled={disabled}
+                        className="tabular"
+                        placeholder={t('fsmUi.equipment.details.intervalPlaceholder')}
+                        data-testid="equipment-form-input-interval"
                       />
                     </FormControl>
                     <FormMessage />
