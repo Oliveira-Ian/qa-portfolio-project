@@ -63,6 +63,8 @@ export const en = {
       labelPlaceholder: 'Head office, Plant 2, Home…',
       reference: 'Reference point',
       referencePlaceholder: 'Next to the bakery, gate 3…',
+      serviceHours: 'Receives technicians',
+      serviceHoursPlaceholder: 'Mon–Fri 08:00–17:00',
       types: {
         COMMERCIAL: 'Commercial',
         RESIDENTIAL: 'Residential',

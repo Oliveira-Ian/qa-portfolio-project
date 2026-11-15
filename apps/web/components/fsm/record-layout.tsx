@@ -337,3 +337,90 @@ export function NewBadge({ label }: { label: string }) {
     </span>
   );
 }
+
+/**
+ * A section of a record (`fx-sec`): icon tile, title, a line of description,
+ * "Optional" or "New" beside the title, and a 12-column field grid.
+ */
+export function SectionCard({
+  icon,
+  title,
+  description,
+  badge,
+  children,
+  testId,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  testId?: string;
+}) {
+  return (
+    <section
+      data-testid={testId}
+      className="rounded-xl border border-border bg-surface shadow-fsm-card"
+    >
+      <div className="flex items-start gap-3 px-[22px] pt-[18px] pb-1">
+        <IconTile icon={icon} />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">{title}</h2>
+            {badge}
+          </span>
+          {description ? <p className="m-0 text-[13px] text-text-3">{description}</p> : null}
+        </div>
+      </div>
+      <div className="grid grid-cols-12 gap-x-5 gap-y-[18px] px-[22px] pt-4 pb-[22px]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * A field in view mode (HANDOFF-FSM § 5.2): the label, then the value on a
+ * hairline — full contrast, no box, "—" when empty. `span` is the 12-column
+ * grid span (`col-span-*`, literal so Tailwind generates it).
+ */
+export function ReadOnlyField({
+  label,
+  value,
+  span = 'col-span-12 md:col-span-6',
+  mono = false,
+  multiline = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  span?: string;
+  mono?: boolean;
+  multiline?: boolean;
+}) {
+  const isEmpty = value === null || value === undefined || value === '';
+
+  return (
+    <div className={cn('flex min-w-0 flex-col gap-1.5', span)}>
+      <span className="text-[13px] font-medium text-text-2">{label}</span>
+      <span
+        className={cn(
+          'flex min-h-10 min-w-0 items-center gap-2 border-b border-border pb-0.5 text-[14.5px] font-medium text-foreground',
+          multiline && 'items-start py-2.5 leading-[21px] font-normal whitespace-pre-line',
+          mono && 'font-mono text-[13.5px]',
+          isEmpty && 'font-normal text-text-muted',
+        )}
+      >
+        {isEmpty ? '—' : value}
+      </span>
+    </div>
+  );
+}
+
+/** "Optional" written once on a section. */
+export function OptionalBadge({ label }: { label: string }) {
+  return (
+    <span className="text-[11px] font-semibold tracking-[0.06em] text-text-3 uppercase">
+      {label}
+    </span>
+  );
+}

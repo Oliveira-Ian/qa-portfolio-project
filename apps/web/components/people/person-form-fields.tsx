@@ -49,7 +49,22 @@ interface PersonFormFieldsProps {
    * offered, optional.
    */
   variant?: 'erp' | 'customer';
+  /**
+   * Which sections to render, in their usual order — all of them by default.
+   * The Oliveira FSM's customer splits them across tabs (Details, Sites, Contacts).
+   */
+  sections?: readonly PersonSection[];
 }
+
+export type PersonSection = 'identification' | 'contact' | 'contacts' | 'addresses' | 'notes';
+
+const ALL_SECTIONS: readonly PersonSection[] = [
+  'identification',
+  'contact',
+  'contacts',
+  'addresses',
+  'notes',
+];
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-5 sm:grid-cols-2">{children}</div>;
@@ -440,294 +455,313 @@ function ContactItemFields({ prefix, disabled }: { prefix: string; disabled: boo
   );
 }
 
-export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFormFieldsProps) {
+export function PersonFormFields({
+  disabled = false,
+  variant = 'erp',
+  sections = ALL_SECTIONS,
+}: PersonFormFieldsProps) {
   const t = useT();
   const form = useFormContext<PersonFormValues>();
+  const shows = (section: PersonSection) => sections.includes(section);
 
   return (
     <div className="divide-y divide-border">
-      <SectionBlock>
-        <FormSection
-          id="person-section-identification"
-          data-testid="person-form-section-identification"
-          title={t('erp.people.form.sections.identification.title')}
-          description={t(
-            variant === 'customer'
-              ? 'fsm.customers.form.identificationBody'
-              : 'erp.people.form.sections.identification.body',
-          )}
-        >
-          <FieldGrid>
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2" required>
-                  <FormLabel
-                    help={t('erp.people.form.fields.nameHelp')}
-                    data-testid="person-form-label-name"
-                  >
-                    {t('erp.people.form.fields.name')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={disabled}
-                      autoComplete="organization"
-                      placeholder={t('erp.people.form.fields.namePlaceholder')}
-                      data-testid="person-form-input-name"
-                    />
-                  </FormControl>
-                  <FormMessage data-testid="person-form-error-name" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tradeName"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel help={t('erp.people.form.fields.tradeNameHelp')}>
-                    {t('erp.people.form.fields.tradeName')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={disabled}
-                      autoComplete="off"
-                      data-testid="person-form-input-trade-name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {variant === 'erp' ? <TypesField disabled={disabled} /> : null}
-            <DocumentFields disabled={disabled} optional={variant === 'customer'} />
-
-            <FormField
-              control={form.control}
-              name="active"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <label className="flex w-fit cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground">
-                    <Checkbox
-                      checked={field.value}
-                      disabled={disabled}
-                      data-testid="person-form-checkbox-active"
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                    />
-                    {t('erp.people.form.fields.active')}
-                  </label>
-                </FormItem>
-              )}
-            />
-          </FieldGrid>
-        </FormSection>
-      </SectionBlock>
-
-      <SectionBlock>
-        <FormSection
-          id="person-section-contact"
-          data-testid="person-form-section-contact"
-          title={t('erp.people.form.sections.contact.title')}
-          description={t('erp.people.form.sections.contact.body')}
-          optionalLabel={t('erp.people.form.optional')}
-        >
-          <FieldGrid>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-email">
-                    {t('erp.people.form.fields.email')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="email"
-                      disabled={disabled}
-                      autoComplete="email"
-                      inputMode="email"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      placeholder="contact@example.com"
-                      data-testid="person-form-input-email"
-                    />
-                  </FormControl>
-                  <FormMessage data-testid="person-form-error-email" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-phone">
-                    {t('erp.people.form.fields.phone')}
-                  </FormLabel>
-                  <FormControl>
-                    <MaskedInput
-                      {...field}
-                      mask={maskPhone}
-                      type="tel"
-                      disabled={disabled}
-                      autoComplete="tel"
-                      inputMode="tel"
-                      className="tabular"
-                      placeholder="(11) 3456-7890"
-                      data-testid="person-form-input-phone"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="mobile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('erp.people.form.fields.mobile')}</FormLabel>
-                  <FormControl>
-                    <MaskedInput
-                      {...field}
-                      mask={maskPhone}
-                      type="tel"
-                      disabled={disabled}
-                      autoComplete="tel"
-                      inputMode="tel"
-                      className="tabular"
-                      placeholder="(11) 98765-4321"
-                      data-testid="person-form-input-mobile"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="birthdate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel data-testid="person-form-label-birthdate">
-                    {t('erp.people.form.fields.birthdate')}
-                  </FormLabel>
-                  <FormControl>
-                    <DatePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={disabled}
-                      placeholder={t('erp.people.form.fields.pickDate')}
-                      data-testid="person-form-input-birthdate"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </FieldGrid>
-        </FormSection>
-      </SectionBlock>
-
-      <SectionBlock>
-        <FormSection
-          id="person-section-contacts"
-          data-testid="person-form-section-contacts"
-          title={t('erp.people.form.sections.contacts.title')}
-          description={t('erp.people.form.sections.contacts.body')}
-          optionalLabel={t('erp.people.form.optional')}
-        >
-          <RepeatableCards<PersonFormValues, 'contacts'>
-            name="contacts"
-            newItem={() => emptyContactFormValues()}
-            titleOf={(item) => item.name}
-            disabled={disabled}
-            testIdPrefix="person-form-contacts"
-            labels={{
-              item: (position) => t('common.contact.list.item', { position }),
-              add: t('common.contact.list.add'),
-              remove: t('common.contact.list.remove'),
-              primary: t('common.contact.list.primary'),
-              makePrimary: t('common.contact.list.makePrimary'),
-              empty: t('common.contact.list.empty'),
-            }}
-            renderItem={(prefix) => <ContactItemFields prefix={prefix} disabled={disabled} />}
-          />
-        </FormSection>
-      </SectionBlock>
-
-      <SectionBlock>
-        <FormSection
-          id="person-section-address"
-          data-testid="person-form-section-address"
-          title={t('erp.people.form.sections.address.title')}
-          description={t('erp.people.form.sections.address.body')}
-          optionalLabel={t('erp.people.form.optional')}
-        >
-          <RepeatableCards<PersonFormValues, 'addresses'>
-            name="addresses"
-            newItem={() => emptyAddressFormValues()}
-            titleOf={(item) => item.label}
-            disabled={disabled}
-            testIdPrefix="person-form-addresses"
-            labels={{
-              item: (position) => t('common.address.list.item', { position }),
-              add: t('common.address.list.add'),
-              remove: t('common.address.list.remove'),
-              primary: t('common.address.list.primary'),
-              makePrimary: t('common.address.list.makePrimary'),
-              empty: t('common.address.list.empty'),
-            }}
-            renderItem={(prefix, index) => (
-              <AddressFields<PersonFormValues>
-                prefix={prefix}
-                disabled={disabled}
-                withDetails
-                testIdPrefix={`person-form-address-${index}`}
-              />
+      {shows('identification') ? (
+        <SectionBlock>
+          <FormSection
+            id="person-section-identification"
+            data-testid="person-form-section-identification"
+            title={t('erp.people.form.sections.identification.title')}
+            description={t(
+              variant === 'customer'
+                ? 'fsm.customers.form.identificationBody'
+                : 'erp.people.form.sections.identification.body',
             )}
-          />
-        </FormSection>
-      </SectionBlock>
+          >
+            <FieldGrid>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2" required>
+                    <FormLabel
+                      help={t('erp.people.form.fields.nameHelp')}
+                      data-testid="person-form-label-name"
+                    >
+                      {t('erp.people.form.fields.name')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        disabled={disabled}
+                        autoComplete="organization"
+                        placeholder={t('erp.people.form.fields.namePlaceholder')}
+                        data-testid="person-form-input-name"
+                      />
+                    </FormControl>
+                    <FormMessage data-testid="person-form-error-name" />
+                  </FormItem>
+                )}
+              />
 
-      <SectionBlock>
-        <FormSection
-          id="person-section-notes"
-          data-testid="person-form-section-notes"
-          title={t('erp.people.form.sections.notes.title')}
-          description={t('erp.people.form.sections.notes.body')}
-          optionalLabel={t('erp.people.form.optional')}
-        >
-          <FieldGrid>
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel data-testid="person-form-label-notes">
-                    {t('erp.people.form.fields.notes')}
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      rows={3}
-                      disabled={disabled}
-                      placeholder={t('erp.people.form.fields.notesPlaceholder')}
-                      data-testid="person-form-input-notes"
-                    />
-                  </FormControl>
-                </FormItem>
+              <FormField
+                control={form.control}
+                name="tradeName"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel help={t('erp.people.form.fields.tradeNameHelp')}>
+                      {t('erp.people.form.fields.tradeName')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        disabled={disabled}
+                        autoComplete="off"
+                        data-testid="person-form-input-trade-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {variant === 'erp' ? <TypesField disabled={disabled} /> : null}
+              <DocumentFields disabled={disabled} optional={variant === 'customer'} />
+
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <label className="flex w-fit cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground">
+                      <Checkbox
+                        checked={field.value}
+                        disabled={disabled}
+                        data-testid="person-form-checkbox-active"
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                      />
+                      {t('erp.people.form.fields.active')}
+                    </label>
+                  </FormItem>
+                )}
+              />
+            </FieldGrid>
+          </FormSection>
+        </SectionBlock>
+      ) : null}
+
+      {shows('contact') ? (
+        <SectionBlock>
+          <FormSection
+            id="person-section-contact"
+            data-testid="person-form-section-contact"
+            title={t('erp.people.form.sections.contact.title')}
+            description={t('erp.people.form.sections.contact.body')}
+            optionalLabel={t('erp.people.form.optional')}
+          >
+            <FieldGrid>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel data-testid="person-form-label-email">
+                      {t('erp.people.form.fields.email')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        disabled={disabled}
+                        autoComplete="email"
+                        inputMode="email"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder="contact@example.com"
+                        data-testid="person-form-input-email"
+                      />
+                    </FormControl>
+                    <FormMessage data-testid="person-form-error-email" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel data-testid="person-form-label-phone">
+                      {t('erp.people.form.fields.phone')}
+                    </FormLabel>
+                    <FormControl>
+                      <MaskedInput
+                        {...field}
+                        mask={maskPhone}
+                        type="tel"
+                        disabled={disabled}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        className="tabular"
+                        placeholder="(11) 3456-7890"
+                        data-testid="person-form-input-phone"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('erp.people.form.fields.mobile')}</FormLabel>
+                    <FormControl>
+                      <MaskedInput
+                        {...field}
+                        mask={maskPhone}
+                        type="tel"
+                        disabled={disabled}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        className="tabular"
+                        placeholder="(11) 98765-4321"
+                        data-testid="person-form-input-mobile"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* A customer of the FSM is served, not born: no birth date there. */}
+              {variant === 'erp' ? (
+                <FormField
+                  control={form.control}
+                  name="birthdate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel data-testid="person-form-label-birthdate">
+                        {t('erp.people.form.fields.birthdate')}
+                      </FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={disabled}
+                          placeholder={t('erp.people.form.fields.pickDate')}
+                          data-testid="person-form-input-birthdate"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+            </FieldGrid>
+          </FormSection>
+        </SectionBlock>
+      ) : null}
+
+      {shows('contacts') ? (
+        <SectionBlock>
+          <FormSection
+            id="person-section-contacts"
+            data-testid="person-form-section-contacts"
+            title={t('erp.people.form.sections.contacts.title')}
+            description={t('erp.people.form.sections.contacts.body')}
+            optionalLabel={t('erp.people.form.optional')}
+          >
+            <RepeatableCards<PersonFormValues, 'contacts'>
+              name="contacts"
+              newItem={() => emptyContactFormValues()}
+              titleOf={(item) => item.name}
+              disabled={disabled}
+              testIdPrefix="person-form-contacts"
+              labels={{
+                item: (position) => t('common.contact.list.item', { position }),
+                add: t('common.contact.list.add'),
+                remove: t('common.contact.list.remove'),
+                primary: t('common.contact.list.primary'),
+                makePrimary: t('common.contact.list.makePrimary'),
+                empty: t('common.contact.list.empty'),
+              }}
+              renderItem={(prefix) => <ContactItemFields prefix={prefix} disabled={disabled} />}
+            />
+          </FormSection>
+        </SectionBlock>
+      ) : null}
+
+      {shows('addresses') ? (
+        <SectionBlock>
+          <FormSection
+            id="person-section-address"
+            data-testid="person-form-section-address"
+            title={t('erp.people.form.sections.address.title')}
+            description={t('erp.people.form.sections.address.body')}
+            optionalLabel={t('erp.people.form.optional')}
+          >
+            <RepeatableCards<PersonFormValues, 'addresses'>
+              name="addresses"
+              newItem={() => emptyAddressFormValues()}
+              titleOf={(item) => item.label}
+              disabled={disabled}
+              testIdPrefix="person-form-addresses"
+              labels={{
+                item: (position) => t('common.address.list.item', { position }),
+                add: t('common.address.list.add'),
+                remove: t('common.address.list.remove'),
+                primary: t('common.address.list.primary'),
+                makePrimary: t('common.address.list.makePrimary'),
+                empty: t('common.address.list.empty'),
+              }}
+              renderItem={(prefix, index) => (
+                <AddressFields<PersonFormValues>
+                  prefix={prefix}
+                  disabled={disabled}
+                  withDetails
+                  withServiceHours={variant === 'customer'}
+                  testIdPrefix={`person-form-address-${index}`}
+                />
               )}
             />
-          </FieldGrid>
-        </FormSection>
-      </SectionBlock>
+          </FormSection>
+        </SectionBlock>
+      ) : null}
+
+      {shows('notes') ? (
+        <SectionBlock>
+          <FormSection
+            id="person-section-notes"
+            data-testid="person-form-section-notes"
+            title={t('erp.people.form.sections.notes.title')}
+            description={t('erp.people.form.sections.notes.body')}
+            optionalLabel={t('erp.people.form.optional')}
+          >
+            <FieldGrid>
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel data-testid="person-form-label-notes">
+                      {t('erp.people.form.fields.notes')}
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={3}
+                        disabled={disabled}
+                        placeholder={t('erp.people.form.fields.notesPlaceholder')}
+                        data-testid="person-form-input-notes"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </FieldGrid>
+          </FormSection>
+        </SectionBlock>
+      ) : null}
     </div>
   );
 }
