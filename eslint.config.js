@@ -15,4 +15,21 @@ export default [
   { ignores: ['.agents/skills/**', '.claude/skills/**', 'apps/api/src/generated/**'] },
   ...baseConfig,
   ...scopedNextConfig,
+  {
+    // Tenant isolation (docs/adr/0012): a unit of work goes through
+    // `withTransaction` in apps/api/src/config/prisma.ts, which sets the
+    // company once on the transaction. Inside a bare `$transaction` every
+    // operation would open a transaction of its own on another connection.
+    files: ['apps/api/src/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.property.name='$transaction']",
+          message:
+            'Use withTransaction() from config/prisma.ts — it keeps the unit of work on one connection with the company set.',
+        },
+      ],
+    },
+  },
 ];

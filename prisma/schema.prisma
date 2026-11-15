@@ -79,8 +79,17 @@ enum ContractStatus {
   SUSPENDED
 }
 
+/// The company's registry of people and organisations — customers, suppliers,
+/// employees. Company data: `companyId` is NOT NULL and the table is under
+/// row-level security (docs/adr/0012), so a company never sees another's rows.
+///
+/// A Person is not an identity. The account that signs in is AccessAccount,
+/// which holds its own display name; a member's record in a company's registry
+/// is linked from Membership.personId, per company (docs/adr/0013).
 model Person {
-  id           String            @id @default(uuid())
+  id           String            @id @default(uuid(7))
+  companyId    String
+  company      Company           @relation(fields: [companyId], references: [id])
   name         String
   /// Contact e-mail — deliberately separate from AccessAccount.email (the
   /// login credential); the two can legitimately diverge.
@@ -88,7 +97,8 @@ model Person {
   phone        String?
   birthdate    DateTime?
   /// Multiple roles at once (a company can be both a client and a supplier).
-  /// USER marks a person that has an AccessAccount.
+  /// The ERP's classification; products never extend it (docs/adr/0011). USER is
+  /// legacy — new accounts no longer set it (docs/adr/0013).
   types        PersonTypeValue[]
   /// Required only when `types` contains CLIENT or SUPPLIER — enforced by
   /// personCreateSchema/personFormSchema in packages/schemas, not by the DB.
@@ -103,33 +113,39 @@ model Person {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
-  account AccessAccount?
+  /// Members of this company whose registry record this is.
+  memberships Membership[]
 
-  @@unique([document, documentType])
-  @@index([types])
-  @@index([active])
+  /// Target of composite foreign keys `(companyId, personId)`: a row of one
+  /// company can never point at a person of another, even through a bug.
+  @@unique([companyId, id])
+  /// A document is unique within a company, not across the Platform.
+  @@unique([companyId, document, documentType])
+  @@index([companyId, types])
+  @@index([companyId, active])
   // The default `findMany` order (`person.service.ts`) and every other
   // sort column already round out with `id` as a tie-breaker, but
   // `createdAt` itself is what most listings actually sort/page by.
-  @@index([createdAt])
-  // The plain B-tree still earns its keep for `ORDER BY name` (sorting the
-  // People grid by name) and exact/prefix lookups — a GIN index doesn't
-  // accelerate sorting at all, only WHERE-clause matching.
-  @@index([name])
-  // `gin_trgm_ops`: makes `GET /api/persons?search=`'s `contains` (Prisma's
-  // ILIKE `'%term%'`) use an index instead of a sequential table scan — a
-  // B-tree can't accelerate a leading-wildcard match.
+  @@index([companyId, createdAt])
+  // `ORDER BY name` (sorting the People grid by name) and prefix lookups.
+  @@index([companyId, name])
+  // `gin_trgm_ops` makes `contains` (ILIKE `'%term%'`) use an index — for a
+  // role that bypasses RLS. Under the policy the planner cannot use it, because
+  // ILIKE is not leakproof, and the search runs as a filter over the company's
+  // rows instead (measured in the #60 spike, docs/adr/0012).
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Person_name_trgm_idx")
   @@index([document(ops: raw("gin_trgm_ops"))], type: Gin, map: "Person_document_trgm_idx")
 }
 
-/// Credentials only — no cadastral data lives here, that's Person's job.
-/// Deactivating access (or deleting the account once that's supported)
-/// never touches the person's history.
+/// The Platform identity: one login, valid in every company the account is a
+/// member of. Global on purpose — it is read before any company is known — so it
+/// is not under row-level security. It holds only what identifies the person
+/// signing in; a company's record of them is a Person, linked per company from
+/// Membership.personId (docs/adr/0013).
 model AccessAccount {
   id       Int      @id @default(autoincrement())
-  personId String   @unique
-  person   Person   @relation(fields: [personId], references: [id])
+  /// Display name of the person signing in.
+  name     String
   /// The login credential. Kept separate from Person.email on purpose.
   email    String   @unique
   /// Reserved for ERP-style login by username — not used for authentication
@@ -148,10 +164,9 @@ model AccessAccount {
   grantedAccesses ProductAccess[]        @relation("ProductAccessGrantedBy")
 }
 
-/// A customer company of the Oliveira Platform. Deliberately global for now:
-/// business tables are not company-scoped until the isolation work (#60), so
-/// exactly one company may exist until then and nothing provisions another
-/// (docs/adr/0018).
+/// A customer company of the Oliveira Platform — the unit of isolation. Every
+/// business table carries its id and is under row-level security
+/// (docs/adr/0012); this table itself is Platform data and is not.
 model Company {
   id        String        @id @default(uuid(7))
   legalName String
@@ -164,6 +179,7 @@ model Company {
 
   memberships Membership[]
   products    CompanyProduct[]
+  persons     Person[]
 }
 
 /// An account's place in a company. `role` is the company's own administrator
@@ -177,12 +193,18 @@ model Membership {
   company   Company          @relation(fields: [companyId], references: [id])
   role      MembershipRole   @default(MEMBER)
   status    MembershipStatus @default(ACTIVE)
+  /// This member's record in the company's registry, when there is one —
+  /// optional and per company (docs/adr/0013). `Restrict`: deleting the person
+  /// behind a login is refused rather than silently unlinking it.
+  personId  String?
+  person    Person?          @relation(fields: [companyId, personId], references: [companyId, id], onDelete: Restrict)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   productAccess ProductAccess[]
 
   @@unique([accountId, companyId])
+  @@unique([companyId, personId])
   @@index([companyId])
 }
 

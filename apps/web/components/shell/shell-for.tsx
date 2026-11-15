@@ -20,7 +20,7 @@ export function ShellFor({ area, me, hideNavigation = false, children }: ShellFo
   return (
     <AppShell
       area={area}
-      userName={me.person.name}
+      userName={me.account.name}
       userEmail={me.account.email}
       companyName={me.membership?.companyName ?? null}
       isCompanyAdmin={me.membership?.role === 'ADMIN'}

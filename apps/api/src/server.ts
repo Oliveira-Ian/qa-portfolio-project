@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
+import { assertRestrictedDatabaseRole } from './config/prisma.js';
 import { shutdownTelemetry } from './instrumentation.js';
 
 const app = buildApp();
@@ -23,11 +24,21 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-app.listen({ port: env.PORT, host: env.HOST }, (err) => {
-  if (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
+// Before accepting a request: a database role that bypasses row-level security
+// would leave every company's data open to every other (docs/adr/0012).
+assertRestrictedDatabaseRole().then(
+  () => {
+    app.listen({ port: env.PORT, host: env.HOST }, (err) => {
+      if (err) {
+        app.log.error(err);
+        process.exit(1);
+      }
 
-  app.log.info(`API listening on http://localhost:${env.PORT}`);
-});
+      app.log.info(`API listening on http://localhost:${env.PORT}`);
+    });
+  },
+  (error: unknown) => {
+    app.log.fatal(error);
+    process.exit(1);
+  },
+);

@@ -21,7 +21,12 @@ export interface LoginResult {
 }
 
 export const authService = {
-  async register({ fullName, email, password, birthDate }: RegisterInput): Promise<void> {
+  /**
+   * Creates the login only. `birthDate` is still asked for by the form but is no
+   * longer stored: it lived on the Person the account used to own, and a person
+   * record now belongs to a company's registry (docs/adr/0013).
+   */
+  async register({ fullName, email, password }: RegisterInput): Promise<void> {
     const existing = await accountRepository.findByEmail(email);
 
     if (existing) {
@@ -30,11 +35,10 @@ export const authService = {
       throw new BadRequestError(authMessages.register.emailTaken);
     }
 
-    await accountRepository.createWithPerson({
+    await accountRepository.create({
       name: fullName,
       email,
       passwordHash: await hashPassword(password),
-      birthDate: new Date(birthDate),
     });
   },
 
@@ -64,8 +68,7 @@ export const authService = {
 
     const sessionAccount: SessionAccount = {
       id: account.id,
-      personId: account.personId,
-      name: account.person.name,
+      name: account.name,
       email: account.email,
       role: account.role,
     };
@@ -95,12 +98,11 @@ export const authService = {
     return {
       account: {
         id: account.id,
-        personId: account.personId,
+        name: account.name,
         email: account.email,
         role: account.role,
         active: account.active,
       },
-      person: { id: account.person.id, name: account.person.name },
       membership: access.membership,
       products: PRODUCTS.filter((product) => access.products.has(product)),
       permissions: [...permissions],

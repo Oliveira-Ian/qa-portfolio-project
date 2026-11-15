@@ -38,4 +38,6 @@ EXPOSE 3000
 # `--import` loads the OpenTelemetry bootstrap before the app, or the libraries
 # it instruments would already be loaded. With no collector reachable the
 # exporters drop their data quietly — see docs/operations/observability.md.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run db:seed && node --import ./apps/api/dist/instrumentation.js apps/api/dist/server.js"]
+# Migrate as the owner, then (re)create the application and admin roles and
+# their grants (docs/adr/0012), then seed through the admin role.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run db:roles && npm run db:seed && node --import ./apps/api/dist/instrumentation.js apps/api/dist/server.js"]

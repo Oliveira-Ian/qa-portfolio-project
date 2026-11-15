@@ -32,7 +32,7 @@ async function requireAccountWithProfiles(id: number) {
 
 /** `profileCount` (`account.profiles.length`) has no entry — it's computed, not a column; see `list()`'s fallback path below. */
 const ACCOUNT_FILTER_FIELDS: FilterFieldMap = {
-  personName: { field: 'person.name', kind: 'text' },
+  personName: { field: 'name', kind: 'text' },
   email: { field: 'email', kind: 'text' },
   role: { field: 'role', kind: 'enumScalar' },
   active: { field: 'active', kind: 'boolean' },
@@ -40,7 +40,7 @@ const ACCOUNT_FILTER_FIELDS: FilterFieldMap = {
 };
 
 const ACCOUNT_SORT_FIELDS: Record<string, string> = {
-  personName: 'person.name',
+  personName: 'name',
   email: 'email',
   role: 'role',
   active: 'active',
@@ -50,7 +50,7 @@ const ACCOUNT_SORT_FIELDS: Record<string, string> = {
 /**
  * The accounts listing is the company's own: only members of the caller's
  * company, whatever the filters. Until the business tables are scoped (#60) this
- * is the one place an account is looked up by company.
+ * is where an account (global identity) is narrowed to the caller's company.
  */
 function buildWhere(
   query: AccountListQuery,
@@ -59,13 +59,13 @@ function buildWhere(
 ): Prisma.AccessAccountWhereInput {
   const companyWhere: Prisma.AccessAccountWhereInput = { memberships: { some: { companyId } } };
   const scopeWhere: Prisma.AccessAccountWhereInput = query.personId
-    ? { personId: query.personId }
+    ? { memberships: { some: { companyId, personId: query.personId } } }
     : {};
 
   const searchWhere: Prisma.AccessAccountWhereInput = query.search
     ? {
         OR: [
-          { person: { name: { contains: query.search, mode: 'insensitive' } } },
+          { name: { contains: query.search, mode: 'insensitive' } },
           { email: { contains: query.search, mode: 'insensitive' } },
         ],
       }
@@ -161,7 +161,7 @@ export const accountService = {
     return toAccountDto(await requireAccountWithProfiles(id));
   },
 
-  /** Gives the person a login and makes it a member of the caller's company — with no seat and no profile. */
+  /** Gives a person of the caller's company a login, as a member linked to them — with no seat and no profile. */
   async create(input: AccountCreateInput): Promise<AccountDto> {
     const created = await accountRepository.createForPerson({
       personId: input.personId,
@@ -170,8 +170,7 @@ export const accountService = {
       companyId: requireCompanyId(),
     });
 
-    // Re-read with the profile link included — createForPerson only returns
-    // { ...account, person }, and the DTO needs the profiles list too.
+    // Re-read with the profiles and the membership link the DTO needs.
     return toAccountDto(await requireAccountWithProfiles(created.id));
   },
 

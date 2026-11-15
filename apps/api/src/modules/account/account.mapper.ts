@@ -4,8 +4,8 @@ import type { AccountWithProfiles } from './account.repository.js';
 export function toAccountDto(row: AccountWithProfiles): AccountDto {
   return {
     id: row.id,
-    personId: row.personId,
-    personName: row.person.name,
+    personId: row.memberships[0]?.personId ?? null,
+    personName: row.name,
     email: row.email,
     role: row.role,
     active: row.active,

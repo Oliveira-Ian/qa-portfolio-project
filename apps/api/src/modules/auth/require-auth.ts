@@ -60,8 +60,7 @@ export async function requireAuth(request: FastifyRequest): Promise<void> {
 
   request.account = {
     id: account.id,
-    personId: account.personId,
-    name: account.person.name,
+    name: account.name,
     email: account.email,
     role: account.role,
   };
@@ -76,7 +75,7 @@ export async function requireAuth(request: FastifyRequest): Promise<void> {
   // The same caller, for code that has no `request` — the repository layer
   // (`shared/request-context.ts`). Set here and nowhere else, after the account
   // has been loaded and checked.
-  setActor({ accountId: account.id, personId: account.personId, role: account.role });
+  setActor({ accountId: account.id, role: account.role });
 
   if (access.membership) {
     setCompanyId(access.membership.companyId);

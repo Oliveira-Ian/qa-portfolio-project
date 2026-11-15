@@ -197,14 +197,13 @@ export type AccountRole = z.infer<typeof accountRoleSchema>;
 /**
  * What the API puts in the JWT and hands back on login.
  *
- * `id` is the AccessAccount's id (the credential), `personId` is the linked
- * Person's id (the identity/cadastral record) — kept distinct because they're
- * different entities with different lifecycles, even though every account
- * has exactly one person.
+ * `id` is the AccessAccount's id and `name` its display name. The account is
+ * the Platform identity; it has no Person of its own — a company's registry
+ * record of a member is linked from the membership, per company (docs/adr/0013).
+ * A token issued before that change still carries a `personId`; parsing drops it.
  */
 export const sessionAccountSchema = z.object({
   id: z.number(),
-  personId: z.string(),
   name: z.string(),
   email: z.string(),
   role: accountRoleSchema,
@@ -226,8 +225,7 @@ export type SessionAccount = z.infer<typeof sessionAccountSchema>;
  *   administrator exemption (docs/adr/0018).
  */
 export interface MeResponse {
-  account: { id: number; personId: string; email: string; role: AccountRole; active: boolean };
-  person: { id: string; name: string };
+  account: { id: number; name: string; email: string; role: AccountRole; active: boolean };
   membership: MeMembership | null;
   products: Product[];
   permissions: PermissionKey[];

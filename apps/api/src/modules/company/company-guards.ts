@@ -1,5 +1,4 @@
-import type { Prisma } from '../../generated/prisma/client.js';
-import { prisma } from '../../config/prisma.js';
+import { withTransaction, type TransactionClient } from '../../config/prisma.js';
 import { ConflictError } from '../../shared/errors.js';
 import { requireCompanyId } from '../../shared/request-context.js';
 
@@ -13,7 +12,7 @@ import { requireCompanyId } from '../../shared/request-context.js';
  */
 
 /** Serializes every guarded change of one company; released when the transaction ends. */
-export async function lockCompany(tx: Prisma.TransactionClient, companyId: string): Promise<void> {
+export async function lockCompany(tx: TransactionClient, companyId: string): Promise<void> {
   // The ORM has no `FOR UPDATE`. Raw SQL is fine here: this is a repository-layer
   // file, and the statement takes no user input beyond the company id.
   await tx.$queryRaw`SELECT "id" FROM "Company" WHERE "id" = ${companyId} FOR UPDATE`;
@@ -23,10 +22,7 @@ export async function lockCompany(tx: Prisma.TransactionClient, companyId: strin
  * Active members of the company who hold a seat in the ERP and a profile that
  * carries `profile:manage` — the ones who can still change who may do what there.
  */
-export function countProfileManagers(
-  tx: Prisma.TransactionClient,
-  companyId: string,
-): Promise<number> {
+export function countProfileManagers(tx: TransactionClient, companyId: string): Promise<number> {
   return tx.accessAccount.count({
     where: {
       active: true,
@@ -49,10 +45,7 @@ export function countProfileManagers(
 }
 
 /** Active administrators of the company (`Membership.role = ADMIN`) whose account is active too. */
-export function countCompanyAdmins(
-  tx: Prisma.TransactionClient,
-  companyId: string,
-): Promise<number> {
+export function countCompanyAdmins(tx: TransactionClient, companyId: string): Promise<number> {
   return tx.membership.count({
     where: { companyId, role: 'ADMIN', status: 'ACTIVE', account: { active: true } },
   });
@@ -68,11 +61,11 @@ export function countCompanyAdmins(
  * the request context's (`requireCompanyId`), so callers don't pass it.
  */
 export async function withProfileManagerGuard<T>(
-  mutation: (tx: Prisma.TransactionClient) => Promise<T>,
+  mutation: (tx: TransactionClient) => Promise<T>,
 ): Promise<T> {
   const companyId = requireCompanyId();
 
-  return prisma.$transaction(async (tx) => {
+  return withTransaction(async (tx) => {
     await lockCompany(tx, companyId);
 
     const before = await countProfileManagers(tx, companyId);

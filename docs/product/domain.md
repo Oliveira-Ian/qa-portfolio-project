@@ -6,8 +6,11 @@
 
 ### Person
 
-The single identity record — the "Party" in the Party Role pattern used by mainstream ERPs. Every
-person, company, employee or system account starts here: `id` (uuid), `name`, `types` (an array of
+A company's registry of parties — the "Party" in the Party Role pattern used by mainstream ERPs:
+its customers, suppliers and employees. **Company data**: `companyId` is NOT NULL, the table is under
+row-level security (`docs/adr/0012`) and a document is unique per company. It is not the identity of
+whoever signs in — that is `AccessAccount` (`docs/adr/0013`, addendum). Fields: `id` (uuid, v7 for new
+rows), `companyId`, `name`, `types` (an array of
 `PersonTypeValue` — see below), `documentType`/`document` (nullable), `active` (default `true`), plus
 optional `email`, `phone`, `birthdate`, `street`, `city`, `state`, `zipCode`, `notes`, and timestamps.
 
@@ -19,7 +22,7 @@ with the same document). The values:
 |---|---|
 | `CLIENT` | Buys from the business. Requires a document. |
 | `SUPPLIER` | Sells to the business. Requires a document. |
-| `USER` | Has an `AccessAccount` — a login. No document required. |
+| `USER` | Legacy: marked a person that had a login. No longer written (`docs/adr/0013`, addendum). |
 | `EMPLOYEE` | Works for the business, independent of whether they can log in. No document required. |
 
 `document`/`documentType` are conditionally required: only when `types` contains `CLIENT` or
@@ -29,17 +32,20 @@ combination is invalid before it reaches the database).
 
 ### AccessAccount
 
-Credentials only — no cadastral data lives here, that's `Person`'s job. `id` (int), `personId`
-(unique FK to `Person`), `email` (unique, the login credential — deliberately separate from
+The Platform identity: one login for every company the account belongs to, read before any company
+is known, so it is global and not under row-level security. `id` (int), `name` (display name),
+`email` (unique, the login credential — deliberately separate from
 `Person.email`, a contact field that can legitimately diverge), `login` (unique, nullable, reserved
 for ERP-style username login, not used for authentication yet), `password` (bcrypt hash), `active`
-(default `true`), `role` (`AccountRole`: `ADMIN` | `USER` | `SYSTEM` — technical access to system
-administration, not a business role), timestamps.
+(default `true`), `role` (`AccountRole`: `SUPER_ADMIN` | `USER` | `SYSTEM` — the role on the Platform,
+not a business role), timestamps. A member's record in a company's registry is linked from
+`Membership.personId`, per company and optional.
 
 Replaces the legacy `User` model, which mixed identity and credentials in one table. The migration
 (`prisma/migrations/20260729001500_access_account_and_identity_split`) turned every existing `User`
 row into a `Person` (`types: ["USER"]`) plus an `AccessAccount`, preserving ids, password hashes and
-timestamps.
+timestamps. Since tenant isolation (`20261110120000_tenant_isolation`) the account no longer points at a
+`Person`: it kept the person's name, and the link moved to the membership.
 
 ### AccessProfile
 

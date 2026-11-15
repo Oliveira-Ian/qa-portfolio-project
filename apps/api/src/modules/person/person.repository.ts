@@ -1,5 +1,5 @@
 import type { Person as PersonRow, Prisma } from '../../generated/prisma/client.js';
-import { prisma } from '../../config/prisma.js';
+import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
   FOREIGN_KEY_VIOLATION,
@@ -7,11 +7,14 @@ import {
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
+import { requireCompanyId } from '../../shared/request-context.js';
+import type { PersonWriteData } from './person.mapper.js';
 
 /**
- * A person's only unique constraint is `(document, documentType)`, so a unique
- * violation on a write can only mean the document is already registered. Two
- * people without a document never collide: Postgres treats nulls as distinct.
+ * A person's only unique constraint is `(companyId, document, documentType)`, so
+ * a unique violation on a write can only mean the document is already registered
+ * in this company. Two people without a document never collide: Postgres treats
+ * nulls as distinct.
  */
 const DOCUMENT_TAKEN = 'A person with this document already exists';
 
@@ -19,6 +22,10 @@ const DOCUMENT_TAKEN = 'A person with this document already exists';
  * The boundary where Prisma stops. Its error codes are translated into domain
  * errors here so nothing above has to know what `P2025` means — that's what
  * used to make `PUT`/`DELETE` on an unknown id answer 500 instead of 404.
+ *
+ * Every query is the caller's company's: the Prisma client scopes it and the
+ * database's row-level security enforces it (docs/adr/0012). Another company's
+ * id reads as "not found", exactly like an id that never existed.
  */
 export const personRepository = {
   findMany(
@@ -57,9 +64,9 @@ export const personRepository = {
     return prisma.person.findUnique({ where: { id } });
   },
 
-  async create(data: Prisma.PersonCreateInput): Promise<PersonRow> {
+  async create(data: PersonWriteData): Promise<PersonRow> {
     try {
-      return await prisma.person.create({ data });
+      return await prisma.person.create({ data: { ...data, companyId: requireCompanyId() } });
     } catch (error) {
       if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
         throw new ConflictError(DOCUMENT_TAKEN);
@@ -68,7 +75,7 @@ export const personRepository = {
     }
   },
 
-  async update(id: string, data: Prisma.PersonCreateInput): Promise<PersonRow> {
+  async update(id: string, data: PersonWriteData): Promise<PersonRow> {
     try {
       return await prisma.person.update({ where: { id }, data });
     } catch (error) {
@@ -89,10 +96,10 @@ export const personRepository = {
       if (isPrismaCode(error, RECORD_NOT_FOUND)) {
         throw new NotFoundError('Person not found');
       }
-      // AccessAccount.personId is `ON DELETE RESTRICT` on purpose (see
-      // prisma/schema.prisma) — silently cascading would destroy a login
-      // credential the moment someone deletes the person behind it. The
-      // fix here is a clear, actionable 409, not changing the constraint.
+      // Membership.personId is `ON DELETE RESTRICT` on purpose (see
+      // prisma/schema.prisma) — silently unlinking would leave a member's login
+      // pointing at nobody the moment someone deletes the person behind it.
+      // The fix here is a clear, actionable 409, not changing the constraint.
       if (isPrismaCode(error, FOREIGN_KEY_VIOLATION)) {
         throw new ConflictError(
           'This person has a linked access account. Remove the access account before deleting this person.',
@@ -109,7 +116,11 @@ export const personRepository = {
    */
   async deleteMany(ids: string[]): Promise<void> {
     try {
-      await prisma.$transaction(ids.map((id) => prisma.person.delete({ where: { id } })));
+      await withTransaction(async (tx) => {
+        for (const id of ids) {
+          await tx.person.delete({ where: { id } });
+        }
+      });
     } catch (error) {
       if (isPrismaCode(error, RECORD_NOT_FOUND)) {
         throw new NotFoundError('One or more people were not found');

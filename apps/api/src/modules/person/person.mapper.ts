@@ -12,7 +12,10 @@ import type { Person, PersonCreateInput } from '@oliveira/schemas';
  * schema-level validation already confirmed `types` doesn't require one — see
  * `personCreateSchema` in packages/schemas.
  */
-export function toPersonWriteData(input: PersonCreateInput): Prisma.PersonCreateInput {
+/** The company is not part of it: the repository adds the request's own (docs/adr/0012). */
+export type PersonWriteData = Omit<Prisma.PersonUncheckedCreateInput, 'companyId'>;
+
+export function toPersonWriteData(input: PersonCreateInput): PersonWriteData {
   return {
     name: input.name,
     email: input.email ?? null,

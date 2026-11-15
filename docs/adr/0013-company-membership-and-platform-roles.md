@@ -52,3 +52,20 @@ below is confirmed or adjusted there before anything is implemented.
   person with the default profile (`POST /api/auth/register`).
 - Nothing about branches, resellers or a hierarchy of tenants is designed, stubbed or tested until a
   new decision reopens it.
+
+## Addendum (2026-11-10): `User` and `Person` decoupled
+
+Done with the first company-scoped table (#60, [0012](0012-tenant-isolation-extension-and-rls.md)),
+because `Person` could not become company data while every account owned one: an account exists
+before it has a company (registration, `SUPER_ADMIN`, `SYSTEM`), and a person record is a company's.
+
+- `AccessAccount` keeps its own display `name`; `AccessAccount.personId` is gone. The session token,
+  the request's actor and `GET /api/auth/me` no longer carry a person.
+- `Membership.personId` (optional) links a member to their record **in that company's registry** — a
+  composite key `(companyId, personId)`, unique per company, `ON DELETE RESTRICT`.
+- `Person` has a NOT NULL `companyId` and is under row-level security; its document is unique per
+  company. Existing rows were assigned to the single company that existed.
+- Registration creates the login only. `Person.types = USER` is no longer written; the value is
+  left in the enum for the rows that have it.
+- The ERP's "give this person a login" keeps working: the account takes the person's name and joins
+  the company as a member linked to them.

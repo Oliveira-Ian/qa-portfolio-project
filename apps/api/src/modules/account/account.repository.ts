@@ -1,23 +1,28 @@
-import type { AccessAccount, AccountRole, Person, Prisma } from '../../generated/prisma/client.js';
-import { prisma } from '../../config/prisma.js';
+import type { AccessAccount, AccountRole, Prisma } from '../../generated/prisma/client.js';
+import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
   RECORD_NOT_FOUND,
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
+import { requireCompanyId } from '../../shared/request-context.js';
 import { withProfileManagerGuard } from '../company/company-guards.js';
 
-export type AccountWithPerson = AccessAccount & { person: Person };
-export type AccountWithProfiles = AccountWithPerson & {
+/**
+ * An account as the company sees it: with its profiles, and with its membership
+ * in the caller's company (only that one — never another company's) for the
+ * person it is linked to there.
+ */
+export type AccountWithProfiles = AccessAccount & {
   profiles: { profile: { id: number; name: string } }[];
+  memberships: { personId: string | null }[];
 };
 
 export interface CreateAccountData {
   name: string;
   email: string;
   passwordHash: string;
-  birthDate: Date | null;
 }
 
 export interface CreateAccountForPersonData {
@@ -26,6 +31,14 @@ export interface CreateAccountForPersonData {
   passwordHash: string;
   /** The company the new login joins, as a plain member. */
   companyId: string;
+}
+
+/** Profiles, plus the membership in the caller's company and nothing about any other. */
+function companyView() {
+  return {
+    profiles: { include: { profile: { select: { id: true, name: true } } } },
+    memberships: { where: { companyId: requireCompanyId() }, select: { personId: true } },
+  } as const;
 }
 
 function targetIncludes(error: unknown, field: string): boolean {
@@ -39,22 +52,17 @@ function targetIncludes(error: unknown, field: string): boolean {
  * without a database.
  */
 export const accountRepository = {
-  findByEmail(email: string): Promise<AccountWithPerson | null> {
-    return prisma.accessAccount.findUnique({ where: { email }, include: { person: true } });
+  /** Read before any company is known (sign-in, `requireAuth`): the global identity only. */
+  findByEmail(email: string): Promise<AccessAccount | null> {
+    return prisma.accessAccount.findUnique({ where: { email } });
   },
 
-  findById(id: number): Promise<AccountWithPerson | null> {
-    return prisma.accessAccount.findUnique({ where: { id }, include: { person: true } });
+  findById(id: number): Promise<AccessAccount | null> {
+    return prisma.accessAccount.findUnique({ where: { id } });
   },
 
   findByIdWithProfiles(id: number): Promise<AccountWithProfiles | null> {
-    return prisma.accessAccount.findUnique({
-      where: { id },
-      include: {
-        person: true,
-        profiles: { include: { profile: { select: { id: true, name: true } } } },
-      },
-    });
+    return prisma.accessAccount.findUnique({ where: { id }, include: companyView() });
   },
 
   /**
@@ -71,10 +79,7 @@ export const accountRepository = {
     return prisma.accessAccount.findMany({
       where,
       orderBy,
-      include: {
-        person: true,
-        profiles: { include: { profile: { select: { id: true, name: true } } } },
-      },
+      include: companyView(),
       ...(skip === undefined ? {} : { skip }),
       ...(take === undefined ? {} : { take }),
     });
@@ -96,58 +101,37 @@ export const accountRepository = {
   },
 
   /**
-   * Self-registration's path: creates the Person too (types: ["USER"]). The
-   * account starts with no membership, no seat and no profile — registering
-   * grants nothing (docs/adr/0018).
+   * Self-registration's path: the login and its name, nothing else — no
+   * membership, no seat, no profile (docs/adr/0018) and no Person: a person
+   * record belongs to a company's registry, and this account has no company yet
+   * (docs/adr/0013).
    */
-  createWithPerson(data: CreateAccountData): Promise<AccountWithPerson> {
-    return prisma.$transaction(async (tx) => {
-      const person = await tx.person.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          birthdate: data.birthDate,
-          types: ['USER'],
-        },
-      });
-
-      const account = await tx.accessAccount.create({
-        data: { personId: person.id, email: data.email, password: data.passwordHash },
-      });
-
-      return { ...account, person };
+  create(data: CreateAccountData): Promise<AccessAccount> {
+    return prisma.accessAccount.create({
+      data: { name: data.name, email: data.email, password: data.passwordHash },
     });
   },
 
   /**
-   * The admin-initiated path: grants a login to a Person who already exists
-   * in the registry, rather than creating a new one. Ensures `types`
-   * includes `USER` (a person with an account is a user by definition), and
-   * makes the account a plain member of the company — no seat and no profile:
-   * those are granted separately (docs/adr/0018).
+   * The admin-initiated path: gives a login to a Person of the caller's
+   * company. The account takes the person's name and joins the company as a
+   * plain member linked to that person — no seat and no profile: those are
+   * granted separately (docs/adr/0018). `Person.types` is left alone; it is the
+   * ERP's classification, not a record of who can sign in (docs/adr/0013).
    */
-  async createForPerson(data: CreateAccountForPersonData): Promise<AccountWithPerson> {
+  async createForPerson(data: CreateAccountForPersonData): Promise<AccessAccount> {
     try {
-      return await prisma.$transaction(async (tx) => {
+      return await withTransaction(async (tx) => {
         const person = await tx.person.findUniqueOrThrow({ where: { id: data.personId } });
 
-        if (!person.types.includes('USER')) {
-          await tx.person.update({
-            where: { id: person.id },
-            data: { types: { push: 'USER' } },
-          });
-        }
-
-        const account = await tx.accessAccount.create({
+        return tx.accessAccount.create({
           data: {
-            personId: data.personId,
+            name: person.name,
             email: data.email,
             password: data.passwordHash,
-            memberships: { create: { companyId: data.companyId } },
+            memberships: { create: { companyId: data.companyId, personId: person.id } },
           },
         });
-
-        return { ...account, person };
       });
     } catch (error) {
       if (isPrismaCode(error, RECORD_NOT_FOUND)) {
@@ -167,7 +151,7 @@ export const accountRepository = {
   async updateRoleActive(
     id: number,
     data: { role?: AccountRole | undefined; active?: boolean | undefined },
-  ): Promise<AccountWithPerson> {
+  ): Promise<AccessAccount> {
     // Prisma's update `data` type rejects explicit `undefined` values under
     // exactOptionalPropertyTypes, so unset fields are omitted entirely rather
     // than passed through as `undefined`.
@@ -180,7 +164,6 @@ export const accountRepository = {
       return await prisma.accessAccount.update({
         where: { id },
         data: patch,
-        include: { person: true },
       });
     } catch (error) {
       if (isPrismaCode(error, RECORD_NOT_FOUND)) {
