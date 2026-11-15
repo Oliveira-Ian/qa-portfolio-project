@@ -1,4 +1,12 @@
-import { Blocks, Building2, Home, LayoutDashboard, Users, type LucideIcon } from 'lucide-react';
+import {
+  Blocks,
+  Building2,
+  Home,
+  LayoutDashboard,
+  ShieldCheck,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Product, ProductPermissions } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 import { filterCatalogForAccount, flattenRoutines, type RoutinePath } from './catalog';
@@ -31,8 +39,10 @@ export interface NavItem {
 
 export interface NavSection {
   id: string;
-  /** The mono overline above the items; none for the first, unlabeled group. */
+  /** The group card's name (the catalog module); none for the first, unlabeled section (Overview / Home). */
   labelKey?: MessageKey;
+  /** The group card's icon tile — the module's own icon from the catalog (board F01). */
+  icon?: LucideIcon;
   items: NavItem[];
 }
 
@@ -67,6 +77,7 @@ export function buildNavigation(area: AreaKey, access: NavAccess): NavSection[] 
       sections.push({
         id: 'company-admin',
         labelKey: 'nav.platform.companyAdmin',
+        icon: ShieldCheck,
         items: [
           {
             href: ROUTES.company.overview,
@@ -95,7 +106,7 @@ export function buildNavigation(area: AreaKey, access: NavAccess): NavSection[] 
   }
 
   // A product's catalog is hierarchical (Module → Group → Category → Routine,
-  // ADR 0007); the sidebar shows a Module as an overline and its routines as items.
+  // ADR 0007); the sidebar shows a Module as a collapsible group card and its routines as items.
   const prefix = area.toLowerCase();
   const sections: NavSection[] = [
     {
@@ -118,6 +129,7 @@ export function buildNavigation(area: AreaKey, access: NavAccess): NavSection[] 
     sections.push({
       id: `${prefix}-${catalogModule.slug}`,
       labelKey: catalogModule.labelKey,
+      icon: catalogModule.icon,
       items: routines.map((entry) => ({
         href: entry.href,
         labelKey: entry.routine.labelKey,

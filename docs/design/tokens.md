@@ -55,6 +55,8 @@ Carmine `#7D2331` belongs to the logo only. It is never an error or a state colo
   --olv-shell-border: #2a2f39;
   --olv-shell-text: #c9ccd3;
   --olv-shell-text-muted: #9ca0a8;
+  --olv-shell-inset: #151920;  /* an open sidebar group card (board F01) */
+  --olv-shell-guide: #2f3541;  /* the guide line under a group, the flyout border */
   --olv-shell-focus: var(--olv-gold-300);
 }
 ```

@@ -726,7 +726,12 @@ export const en = {
   table: tableEn,
 
   shell: {
-    nav: { label: 'Main' },
+    nav: {
+      label: 'Main',
+      collapse: 'Collapse menu',
+      expand: 'Expand menu',
+      shortcut: 'Ctrl B',
+    },
     products: {
       heading: 'Products',
       switch: 'Switch product. Current: {product}',

@@ -170,7 +170,12 @@ export function MobileDrawer({
             })}
           </ul>
 
-          <ShellNav sections={sections} variant="drawer" onNavigate={() => setOpen(false)} />
+          <ShellNav
+            area={area}
+            sections={sections}
+            variant="drawer"
+            onNavigate={() => setOpen(false)}
+          />
         </div>
 
         <div className="flex shrink-0 items-center gap-3 border-t border-shell-border px-4 py-3">
