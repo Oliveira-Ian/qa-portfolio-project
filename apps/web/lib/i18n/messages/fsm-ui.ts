@@ -258,6 +258,27 @@ export const fsmUiEn = {
       done: '{date} · done',
     },
   },
+  workOrderType: {
+    defaults: 'Defaults for new work orders',
+    defaultsBody: 'Suggested when someone picks this type; they can still change them.',
+    priority: 'Priority',
+    noPriority: 'No suggestion',
+    duration: 'Estimated time on site',
+    noDuration: 'No suggestion',
+    sla: 'Due within (SLA)',
+    slaSuffix: 'hours after the visit',
+    slaPlaceholder: 'e.g. 24',
+    rules: 'Rules',
+    rulesBody: 'How the type behaves in the operation.',
+    requiresEquipment: 'Requires equipment',
+    requiresEquipmentBody:
+      "A work order of this type can't be created without choosing the equipment.",
+    countsAsPreventive: 'Counts as preventive maintenance',
+    countsAsPreventiveBody:
+      "Completing one resets the equipment's preventive interval (last / next preventive).",
+    usedBy:
+      "Used by {count, plural, one {# work order} other {# work orders}} · can't be deleted, only deactivated",
+  },
   workOrderList: {
     views: {
       label: 'Views',
@@ -737,6 +758,26 @@ export const fsmUiPtBR: DeepString<typeof fsmUiEn> = {
       },
       done: '{date} · concluída',
     },
+  },
+  workOrderType: {
+    defaults: 'Padrões para novas OS',
+    defaultsBody: 'Sugeridos quando alguém escolhe este tipo; ainda dá para alterar.',
+    priority: 'Prioridade',
+    noPriority: 'Sem sugestão',
+    duration: 'Tempo estimado no local',
+    noDuration: 'Sem sugestão',
+    sla: 'Prazo (SLA)',
+    slaSuffix: 'horas após a visita',
+    slaPlaceholder: 'ex.: 24',
+    rules: 'Regras',
+    rulesBody: 'Como o tipo se comporta na operação.',
+    requiresEquipment: 'Exige equipamento',
+    requiresEquipmentBody: 'Uma OS deste tipo não pode ser criada sem escolher o equipamento.',
+    countsAsPreventive: 'Conta como manutenção preventiva',
+    countsAsPreventiveBody:
+      'Concluir uma reinicia o intervalo de preventiva do equipamento (última / próxima preventiva).',
+    usedBy:
+      'Usado por {count, plural, one {# OS} other {# OS}} · não pode ser excluído, só desativado',
   },
   workOrderList: {
     views: {

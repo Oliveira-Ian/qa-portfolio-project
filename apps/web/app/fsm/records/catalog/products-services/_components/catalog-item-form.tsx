@@ -18,6 +18,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Combobox } from '@/components/ui/combobox';
+import { formatDuration } from '@/lib/fsm-format';
 import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { saveCatalogItemAction } from '../_actions/catalog-item-actions';
@@ -225,6 +227,34 @@ export function CatalogItemForm({ mode, item, canEdit = false }: CatalogItemForm
                   </FormItem>
                 )}
               />
+              {/* How long a service usually takes — a product has no duration. */}
+              {form.watch('kind') === 'SERVICE' ? (
+                <FormField
+                  control={form.control}
+                  name="estimatedMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('fsmUi.workOrderForm.duration')}</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          options={[
+                            { value: '', label: t('fsmUi.workOrderForm.noDuration') },
+                            ...[15, 30, 45, 60, 90, 120, 180, 240].map((minutes) => ({
+                              value: String(minutes),
+                              label: formatDuration(minutes, t),
+                            })),
+                          ]}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={disabled}
+                          data-testid="catalog-item-form-duration"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
             </div>
           </FormSection>
         </SectionBlock>
