@@ -127,10 +127,13 @@ npm run dev:doctor
 ```
 
 Runs `scripts/dev-doctor.ps1` — reports which PID actually owns ports 3000/3001, its memory, and
-flags (a) unusually high memory (>300MB) on a listener, and (b) any other node.exe process matching
-a `next dev` / `tsx watch src/server.ts` / `npm run dev -w apps/(web|api)` command line that isn't
-part of either listening process's tree — i.e. an orphaned duplicate from a server that was never
-cleanly stopped. It's read-only; it never kills anything itself.
+flags (a) unusually high memory (>300MB) on a listener, and (b) as `ORPHAN` any other node.exe
+process of a dev server — the npm wrapper (`npm-cli.js run dev -w apps/(web|api)`), the tsx watcher,
+the API server, `next dev` — that isn't part of either listening process's tree (walked through
+`cmd.exe` too, the way npm starts it on Windows), i.e. an orphaned duplicate from a server that was
+never cleanly stopped. Read-only by default; `npm run dev:doctor -- -StopOrphans` stops exactly what
+it flagged as orphaned, never a listener's tree. Orphans of this shape once left Windows unable to
+start Turbopack's PostCSS worker (`0xc0000142`, every page a 500).
 
 **Run `npm run dev:doctor` after every code change to this project (not just proposing one), before
 telling the user the system is ready to test.** Interpret what it reports and clean up anything it
