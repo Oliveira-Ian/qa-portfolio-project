@@ -1,8 +1,8 @@
 # Design — Oliveira FSM (Design System V2)
 
-**Status: approved 2026-11-15, not implemented yet.** This folder is the reference for rebuilding the
-Oliveira FSM frontend (`apps/web/app/fsm/**`). Until a phase of the implementation lands, the code
-still looks like FSM V1 — this folder describes the target, not the current screens.
+**Status: approved and implemented (2026-11-15, PRs #88–#92).** This folder is the reference the
+Oliveira FSM frontend (`apps/web/app/fsm/**`) is built from; a change to the FSM's look starts here and
+in the canvas.
 
 The Oliveira FSM has its own design system, **on top of** the shared Foundation. Everything else in
 `docs/design/` (tokens, typography, buttons, forms, layouts, listing pages) is **Foundation Design
@@ -65,6 +65,24 @@ copy the files again and regenerate the zip in the same commit, so the two never
 | Records | one page, stacked sections | equal-width tabs (Overview, Details, Sites…) |
 | Work order create / edit | — | four steps, the same for creating and editing |
 | Type scale | V1 (h1 28/34, mono overline) | FSM scale (page 24/32, record 22/28, card 15/22, Archivo overline) |
+
+## Where it lives in apps/web
+
+| Piece | File |
+|---|---|
+| Tokens | `app/oliveira-fsm-tokens.css`, the FSM block and the view-mode block of `app/globals.css` |
+| Marks (status pill, priority, overdue, criticality) | `components/fsm/status-pill.tsx`, `components/fsm/work-order-badges.tsx` |
+| Record layout (header, facts, equal-width tabs, card, section card, read-only field, callout, hint) | `components/fsm/record-layout.tsx` |
+| Person (avatar + name) | `components/fsm/person-chip.tsx` |
+| Dates, durations, due signal (business time zone) | `lib/fsm-format.ts` |
+| Work orders — record, list, steps | `app/fsm/operations/work-orders/work-orders/_components/` |
+| Customer, equipment | `app/fsm/records/customers/{customers,equipment}/_components/` |
+| Operations overview | `app/fsm/_components/operations-overview.tsx` |
+| Messages | `lib/i18n/messages/fsm-ui.ts` (`fsmUi.*`, EN + pt-BR) |
+| Confirm button | `components/ui/button.tsx`, variant `confirm` (FSM only) |
+
+Not redesigned beyond the tokens and the read-only view: the catalog, branch and access forms (they use
+the shared `RecordForm`, already narrow); phones (decision D4).
 
 ## Pending
 
