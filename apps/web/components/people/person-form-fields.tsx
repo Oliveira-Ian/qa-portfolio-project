@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Check } from 'lucide-react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import {
   requiresDocument,
@@ -9,7 +9,7 @@ import {
   type PersonTypeValue,
 } from '@oliveira/schemas';
 import { FormSection } from '@/components/forms/form-section';
-import { PersonTypeBadge } from '@/components/people/person-badges';
+import { PERSON_TYPE_ICON } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -23,11 +23,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
-import { MultiSelect } from '@/components/ui/multi-select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useT } from '@/lib/i18n/provider';
 import { maskDocument, maskPhone } from '@/lib/masks';
+import { cn } from '@/lib/utils';
 
 /**
  * The 12 fields of a person record, written once.
@@ -37,13 +36,23 @@ import { maskDocument, maskPhone } from '@/lib/masks';
  * form, not a different form. It replaces ~230 lines of near-identical
  * label/input/error blocks that had drifted far enough apart that nine of the
  * twelve fields had no way to show an error at all.
+ *
+ * The fields are four sections on one page (identification, contact, address,
+ * notes), not four tabs: everything a record holds is in sight and one scroll
+ * away, an error is never on a tab nobody is looking at, and the save bar
+ * (`FormCard`) stays reachable the whole way down.
  */
 interface PersonFormFieldsProps {
   disabled?: boolean;
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-5 pt-1 sm:grid-cols-2">{children}</div>;
+  return <div className="grid gap-5 sm:grid-cols-2">{children}</div>;
+}
+
+/** The padding and the hairline between two sections — one place, so they stay even. */
+function SectionBlock({ children }: { children: React.ReactNode }) {
+  return <div className="px-6 py-7 max-sm:px-4">{children}</div>;
 }
 
 const PERSON_TYPES: PersonTypeValue[] = ['CLIENT', 'SUPPLIER', 'USER', 'EMPLOYEE'];
@@ -91,30 +100,80 @@ const BRAZILIAN_STATES: ComboboxOption[] = [
   { value: 'TO', label: 'Tocantins' },
 ];
 
-type PersonFormTab = 'identification' | 'contact' | 'address' | 'notes';
-
-/** Which tab each field lives on — used to jump to the first invalid tab on a failed submit. */
-const TAB_FIELDS: Record<PersonFormTab, (keyof PersonFormValues)[]> = {
-  identification: ['name', 'types', 'documentType', 'document'],
-  contact: ['email', 'phone', 'birthdate', 'active'],
-  address: ['street', 'city', 'state', 'zipCode'],
-  notes: ['notes'],
-};
-
-const TAB_ORDER: PersonFormTab[] = ['identification', 'contact', 'address', 'notes'];
+interface TypeChipsProps extends Omit<React.ComponentProps<'div'>, 'onChange'> {
+  value: PersonTypeValue[];
+  onChange: (value: PersonTypeValue[]) => void;
+  disabled?: boolean;
+}
 
 /**
- * A person can hold more than one role at once, so this is a multi-select
- * bound to an array, not a single-select — a company can be a client and a
- * supplier on the very same record.
+ * The person's types as toggle chips. There are four, and a person can hold
+ * several at once (a company is a client *and* a supplier), so showing all four
+ * with their state beats a dropdown that hides them: one click toggles one, and
+ * the document fields that Client/Supplier require appear straight away. A
+ * selected chip carries a check as well as the fill — colour is never the only cue.
+ *
+ * Rendered inside `FormControl`, which hands its `id` and `aria-*` to whatever it
+ * wraps, so every extra prop goes on the group.
+ */
+function TypeChips({ value, onChange, disabled = false, className, ...props }: TypeChipsProps) {
+  const t = useT();
+
+  function handleToggle(type: PersonTypeValue) {
+    const next = new Set(value);
+
+    if (!next.delete(type)) {
+      next.add(type);
+    }
+
+    // Always in the canonical order, so the saved array doesn't depend on click order.
+    onChange(PERSON_TYPES.filter((candidate) => next.has(candidate)));
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label={t('erp.people.form.fields.type')}
+      className={cn('flex flex-wrap gap-2', className)}
+      {...props}
+    >
+      {PERSON_TYPES.map((type) => {
+        const isSelected = value.includes(type);
+        const Icon = isSelected ? Check : PERSON_TYPE_ICON[type];
+
+        return (
+          <button
+            key={type}
+            type="button"
+            aria-pressed={isSelected}
+            disabled={disabled}
+            onClick={() => handleToggle(type)}
+            data-testid={`person-form-type-${type.toLowerCase()}`}
+            className={cn(
+              'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-focus max-md:h-11 [&>svg]:size-4',
+              'disabled:cursor-not-allowed disabled:opacity-70',
+              isSelected
+                ? 'border-primary bg-primary text-primary-foreground hover:bg-primary-hover'
+                : 'border-input bg-surface text-text-2 hover:border-input-hover hover:bg-surface-2',
+            )}
+          >
+            <Icon aria-hidden="true" />
+            {t(PERSON_TYPE_LABEL[type])}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A person can hold more than one role at once, so this is bound to an array,
+ * not a single value — a company can be a client and a supplier on the very
+ * same record.
  */
 function TypesField({ disabled }: { disabled: boolean }) {
   const t = useT();
   const form = useFormContext<PersonFormValues>();
-  const options: ComboboxOption[] = PERSON_TYPES.map((type) => ({
-    value: type,
-    label: t(PERSON_TYPE_LABEL[type]),
-  }));
 
   return (
     <FormField
@@ -126,18 +185,14 @@ function TypesField({ disabled }: { disabled: boolean }) {
             {t('erp.people.form.fields.type')}
           </FormLabel>
           <FormControl>
-            <MultiSelect
-              options={options}
+            <TypeChips
               value={field.value}
               onChange={field.onChange}
               disabled={disabled}
-              placeholder={t('erp.people.form.fields.select')}
-              renderTag={(option, onRemove) => (
-                <PersonTypeBadge type={option.value as PersonTypeValue} onRemove={onRemove} />
-              )}
-              data-testid="person-form-multiselect-types"
+              data-testid="person-form-types"
             />
           </FormControl>
+          <FormDescription>{t('erp.people.form.fields.typeHelp')}</FormDescription>
           <FormMessage data-testid="person-form-error-types" />
         </FormItem>
       )}
@@ -198,7 +253,7 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
         control={form.control}
         name="document"
         render={({ field }) => (
-          <FormItem className="sm:col-span-2">
+          <FormItem>
             <FormLabel data-testid="person-form-label-document">
               {t('erp.people.form.fields.document')}
             </FormLabel>
@@ -226,49 +281,13 @@ function DocumentFields({ disabled }: { disabled: boolean }) {
 export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
   const t = useT();
   const form = useFormContext<PersonFormValues>();
-  const [activeTab, setActiveTab] = useState<PersonFormTab>('identification');
-
-  // Jump to the first tab holding an invalid field, once per submit attempt —
-  // adjusted during render (React's documented alternative to an effect for
-  // "derive state from a value that just changed") rather than in a
-  // `useEffect`, so fixing one field doesn't yank the user back on every
-  // keystroke afterward.
-  const [handledSubmitCount, setHandledSubmitCount] = useState(0);
-  const { submitCount, errors } = form.formState;
-
-  if (submitCount !== handledSubmitCount) {
-    setHandledSubmitCount(submitCount);
-
-    const erroredTab = TAB_ORDER.find((tab) => TAB_FIELDS[tab].some((field) => errors[field]));
-
-    if (erroredTab) {
-      setActiveTab(erroredTab);
-    }
-  }
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(value) => setActiveTab(value as PersonFormTab)}
-      className="gap-0"
-    >
-      <TabsList className="px-3">
-        <TabsTrigger value="identification" data-testid="person-form-tab-identification">
-          {t('erp.people.form.tabs.identification')}
-        </TabsTrigger>
-        <TabsTrigger value="contact" data-testid="person-form-tab-contact">
-          {t('erp.people.form.tabs.contact')}
-        </TabsTrigger>
-        <TabsTrigger value="address" data-testid="person-form-tab-address">
-          {t('erp.people.form.tabs.address')}
-        </TabsTrigger>
-        <TabsTrigger value="notes" data-testid="person-form-tab-notes">
-          {t('erp.people.form.tabs.notes')}
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="identification" className="px-6 py-7">
+    <div className="divide-y divide-border">
+      <SectionBlock>
         <FormSection
+          id="person-section-identification"
+          data-testid="person-form-section-identification"
           title={t('erp.people.form.sections.identification.title')}
           description={t('erp.people.form.sections.identification.body')}
         >
@@ -286,7 +305,7 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
                       {...field}
                       disabled={disabled}
                       autoComplete="organization"
-                      placeholder="Construtora Vale Verde"
+                      placeholder={t('erp.people.form.fields.namePlaceholder')}
                       data-testid="person-form-input-name"
                     />
                   </FormControl>
@@ -298,14 +317,35 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
 
             <TypesField disabled={disabled} />
             <DocumentFields disabled={disabled} />
+
+            <FormField
+              control={form.control}
+              name="active"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <label className="flex w-fit cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground">
+                    <Checkbox
+                      checked={field.value}
+                      disabled={disabled}
+                      data-testid="person-form-checkbox-active"
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                    />
+                    {t('erp.people.form.fields.active')}
+                  </label>
+                </FormItem>
+              )}
+            />
           </FieldGrid>
         </FormSection>
-      </TabsContent>
+      </SectionBlock>
 
-      <TabsContent value="contact" className="px-6 py-7">
+      <SectionBlock>
         <FormSection
+          id="person-section-contact"
+          data-testid="person-form-section-contact"
           title={t('erp.people.form.sections.contact.title')}
           description={t('erp.people.form.sections.contact.body')}
+          optionalLabel={t('erp.people.form.optional')}
         >
           <FieldGrid>
             <FormField
@@ -379,32 +419,17 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="active"
-              render={({ field }) => (
-                <FormItem className="justify-end">
-                  <label className="flex w-fit cursor-pointer items-center gap-2.5 py-2 text-sm text-foreground">
-                    <Checkbox
-                      checked={field.value}
-                      disabled={disabled}
-                      data-testid="person-form-checkbox-active"
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                    />
-                    {t('erp.people.form.fields.active')}
-                  </label>
-                </FormItem>
-              )}
-            />
           </FieldGrid>
         </FormSection>
-      </TabsContent>
+      </SectionBlock>
 
-      <TabsContent value="address" className="px-6 py-7">
+      <SectionBlock>
         <FormSection
+          id="person-section-address"
+          data-testid="person-form-section-address"
           title={t('erp.people.form.sections.address.title')}
           description={t('erp.people.form.sections.address.body')}
+          optionalLabel={t('erp.people.form.optional')}
         >
           <FieldGrid>
             <FormField
@@ -492,12 +517,15 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
             />
           </FieldGrid>
         </FormSection>
-      </TabsContent>
+      </SectionBlock>
 
-      <TabsContent value="notes" className="px-6 py-7">
+      <SectionBlock>
         <FormSection
+          id="person-section-notes"
+          data-testid="person-form-section-notes"
           title={t('erp.people.form.sections.notes.title')}
           description={t('erp.people.form.sections.notes.body')}
+          optionalLabel={t('erp.people.form.optional')}
         >
           <FieldGrid>
             <FormField
@@ -522,7 +550,7 @@ export function PersonFormFields({ disabled = false }: PersonFormFieldsProps) {
             />
           </FieldGrid>
         </FormSection>
-      </TabsContent>
-    </Tabs>
+      </SectionBlock>
+    </div>
   );
 }

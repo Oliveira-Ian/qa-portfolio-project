@@ -55,7 +55,7 @@ export const personCreateSchema = z
     document: z.string().trim().nullable().optional(),
     email: z.string().trim().email('Invalid email').nullable().optional(),
     phone: z.string().trim().nullable().optional(),
-    birthdate: z.coerce.date().nullable().optional(),
+    birthdate: z.coerce.date({ error: 'Invalid birth date' }).nullable().optional(),
     active: z.boolean().optional(),
     street: z.string().trim().nullable().optional(),
     city: z.string().trim().nullable().optional(),

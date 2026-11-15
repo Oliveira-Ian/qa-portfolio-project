@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { authMessages, loginFormSchema, type LoginFormValues } from '@oliveira/schemas';
 import { requestLogin } from '@/lib/api/auth';
 import type { ActionResult } from '@/lib/actions';
+import { getSafeRedirectPath } from '@/lib/navigation/safe-path';
 import { createSession } from '@/lib/session';
 
 /**
@@ -32,7 +33,8 @@ export async function loginAction(values: LoginFormValues, next?: string): Promi
 
   await createSession({ token: result.data.token, account: result.data.user });
 
-  // Only same-origin paths, or a crafted `?next=https://evil.example` would
-  // turn the sign-in form into an open redirect.
-  redirect(next?.startsWith('/') ? next : '/home');
+  // Only paths on this site, or a crafted `?next=https://evil.example` — or the
+  // protocol-relative `?next=//evil.example` — would turn the sign-in form into an
+  // open redirect.
+  redirect(getSafeRedirectPath(next, '/home'));
 }

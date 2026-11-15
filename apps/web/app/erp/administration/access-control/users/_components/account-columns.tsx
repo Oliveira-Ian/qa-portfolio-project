@@ -66,6 +66,8 @@ export interface AccountColumnCallbacks {
   onRoleChange: (account: AccountDto, role: AccountRole) => void;
   onToggleActive: (account: AccountDto) => void;
   onManageProfiles: (account: AccountDto) => void;
+  /** Role and active flag are a `SUPER_ADMIN`'s to change (the API refuses anyone else with 403). */
+  canManageAccountState: boolean;
   isPending: boolean;
 }
 
@@ -74,7 +76,7 @@ interface AccountCellProps extends Omit<AccountColumnCallbacks, 'isPending'> {
   isPending: boolean;
 }
 
-function RoleCell({ account, onRoleChange, isPending }: AccountCellProps) {
+function RoleCell({ account, onRoleChange, canManageAccountState, isPending }: AccountCellProps) {
   const t = useT();
 
   if (account.role === 'SYSTEM') {
@@ -84,13 +86,14 @@ function RoleCell({ account, onRoleChange, isPending }: AccountCellProps) {
   return (
     <Select
       value={account.role}
-      disabled={isPending}
+      disabled={isPending || !canManageAccountState}
       onValueChange={(role: AccountRole) => onRoleChange(account, role)}
     >
       <SelectTrigger
         size="sm"
         className="w-36"
         aria-label={`${t('erp.columns.role')}: ${account.personName}`}
+        {...(canManageAccountState ? {} : { title: t('erp.users.superAdminOnly') })}
         data-testid="account-list-select-role"
       >
         <SelectValue />
@@ -106,8 +109,22 @@ function RoleCell({ account, onRoleChange, isPending }: AccountCellProps) {
   );
 }
 
-function StatusCell({ account, onToggleActive, isPending }: AccountCellProps) {
+function StatusCell({
+  account,
+  onToggleActive,
+  canManageAccountState,
+  isPending,
+}: AccountCellProps) {
   const t = useT();
+
+  // Not a button when it would only answer 403: a control that never works is worse than none.
+  if (!canManageAccountState) {
+    return (
+      <StatusBadge tone={account.active ? 'success' : 'neutral'}>
+        {t(account.active ? 'erp.status.active' : 'erp.status.inactive')}
+      </StatusBadge>
+    );
+  }
 
   return (
     <Button
@@ -160,9 +177,16 @@ export function buildAccountColumns({
   onRoleChange,
   onToggleActive,
   onManageProfiles,
+  canManageAccountState,
   isPending,
 }: AccountColumnCallbacks): ColumnDef<AccountDto>[] {
-  const callbacks = { onRoleChange, onToggleActive, onManageProfiles, isPending };
+  const callbacks = {
+    onRoleChange,
+    onToggleActive,
+    onManageProfiles,
+    canManageAccountState,
+    isPending,
+  };
 
   return [
     {

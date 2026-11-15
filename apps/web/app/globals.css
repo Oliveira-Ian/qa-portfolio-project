@@ -460,3 +460,11 @@
     font-stretch: var(--olv-font-condensed-stretch);
   }
 }
+
+/* A page with a sticky action bar (`FormCard`'s footer) lifts the toasts above it. The design
+   puts them bottom-right, 24px from the edge — which is exactly where Save sits, so a toast
+   would cover it. Sonner sets its offsets inline, hence the `!important`. */
+body:has([data-sticky-actions]) [data-sonner-toaster] {
+  --offset-bottom: 96px !important;
+  --mobile-offset-bottom: 96px !important;
+}

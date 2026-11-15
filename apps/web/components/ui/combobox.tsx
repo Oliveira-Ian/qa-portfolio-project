@@ -72,7 +72,7 @@ export function Combobox({
           disabled={disabled}
           data-slot="combobox-trigger"
           className={cn(
-            'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20',
+            'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:border-border disabled:bg-background disabled:text-text-muted aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20',
             className,
           )}
           {...props}

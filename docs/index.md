@@ -25,6 +25,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
   - HTTP response standardization: `docs/api/http_responses.md`
 - **QA selectors (`data-testid`)**:
   - Single source of truth: `docs/qa/testids.md`
+- **What is validated, what still needs a person, and the open decisions**: `docs/qa/manual-validation.md`
+  (the active and disabled automated specs: `docs/qa/testing-status.md`)
 - **Logs, metrics, traces, dashboards, alerts** (adding a metric or a span, investigating a failure
   by its trace id): `docs/operations/observability.md` (reasoning: `docs/adr/0017`).
 - **System rules / domain**:

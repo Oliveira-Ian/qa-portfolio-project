@@ -51,8 +51,11 @@ function csvEscape(value: string): string {
   return value;
 }
 
+/** Excel opens a CSV as the local ANSI code page unless it starts with a byte-order mark, which garbles accents ("Construção"). */
+const UTF8_BOM = '﻿';
+
 function downloadCsv(csv: string, fileName: string) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([UTF8_BOM, csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -65,9 +68,12 @@ function downloadCsv(csv: string, fileName: string) {
  * Column choice/order for the export, pre-filled from the grid's current
  * visible columns and order but edited independently of it — changing what
  * you export doesn't change what the grid shows. The rows exported are
- * `table.getSortedRowModel()` (filtered + sorted, not just the current
- * page) — per the spec, export reflects the grid's current configuration,
- * not only what's on screen.
+ * `table.getSortedRowModel()`: since listings paginate on the server
+ * (`manualPagination`), that is **only the page on screen**, sorted and filtered
+ * as the API returned it — not every row the filters match, which is what the
+ * spec asks for and what the original client-side grid did. Exporting them all
+ * needs the API to stream or page through the whole result; until then the dialog
+ * says how many rows it will write, so the file is never a silent surprise.
  *
  * The parent remounts this component (a changing `key`) each time the
  * Export button is clicked, so the working column list is always seeded
@@ -123,6 +129,8 @@ export function ExportModal<TData>({
   }
 
   const includedCount = working.filter((column) => column.included).length;
+  const pageRowCount = table.getSortedRowModel().rows.length;
+  const totalRowCount = table.getRowCount();
 
   function handleExport() {
     const selected = working.filter((column) => column.included);
@@ -182,6 +190,12 @@ export function ExportModal<TData>({
             </li>
           ))}
         </ul>
+
+        {totalRowCount > pageRowCount ? (
+          <p className="text-sm text-muted-foreground" data-testid={`${testIdPrefix}-export-scope`}>
+            {t('table.export.scope', { count: pageRowCount, total: totalRowCount })}
+          </p>
+        ) : null}
 
         <DialogFooter>
           <Button

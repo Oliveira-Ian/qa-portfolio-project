@@ -125,6 +125,8 @@ export function LoginForm({ next }: LoginFormProps) {
                 <FormControl>
                   <EmailInput
                     {...field}
+                    // `username` is what a password manager pairs with `current-password`.
+                    autoComplete="username"
                     placeholder={t('auth.fields.emailPlaceholder')}
                     data-testid="auth-login-input-email"
                   />
@@ -147,7 +149,7 @@ export function LoginForm({ next }: LoginFormProps) {
                     type="button"
                     className="rounded-xs text-[13px] font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
                     data-testid="auth-login-link-forgot"
-                    onClick={() => toast.warning(t('auth.signIn.notImplemented'))}
+                    onClick={() => toast.warning(t('auth.signIn.forgotUnavailable'))}
                   >
                     {t('auth.signIn.forgot')}
                   </button>

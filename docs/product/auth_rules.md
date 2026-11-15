@@ -60,6 +60,8 @@ Provide a realistic, testable authentication flow.
 - All fields required
 - Email must be valid
 - Email must be unique (backend)
+- Birth date must be a real day (`YYYY-MM-DD`), not in the future and not before 1900
+- There is **no password policy yet** (any non-empty password is accepted) — a business decision, see `docs/qa/manual-validation.md`
 
 ---
 
@@ -73,7 +75,7 @@ Provide a realistic, testable authentication flow.
 - fullName → "Full name is required"
 - email → "Invalid email"
 - password → "Password is required"
-- birthDate → "Birth date is required"
+- birthDate → "Birth date is required", or "Invalid birth date" (the API answers 400 with the same sentence)
 
 #### Success
 - Redirect to: `/login`

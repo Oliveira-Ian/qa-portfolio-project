@@ -36,8 +36,10 @@ What the design asks for and what is **not** built, because the backend has no s
 - **No password-rules checklist and no terms consent.** The backend has no password policy (an empty
   password is the only refusal) and there are no Terms or Privacy pages. The footer has no Privacy / Terms
   links for the same reason. `birthDate` stays on Create account because the API requires it.
-- **Forgot password** is the existing "Not implemented" toast. **Remember me** remembers the e-mail in
-  `localStorage` (it does not keep the session longer).
+- **Forgot password** only says it isn't available yet (a toast) — nothing sends an e-mail: the API has no
+  mail provider (`NoopEmailService`) and no reset token. **Remember my email** remembers the e-mail in
+  `localStorage` (it does not keep the session longer, and never the password — that is the browser's own
+  password manager, which the fields' `autocomplete` values let it fill).
 
 ### Errors
 

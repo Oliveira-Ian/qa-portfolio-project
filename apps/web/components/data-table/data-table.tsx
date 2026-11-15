@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { flexRender, type Table as TanstackTable } from '@tanstack/react-table';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   ContextMenu,
@@ -69,6 +70,16 @@ export function DataTable<TData>({
   const columnCount = table.getVisibleLeafColumns().length + (enableSelection ? 1 : 0);
   const isAllSelected = table.getIsAllPageRowsSelected();
   const isSomeSelected = table.getIsSomePageRowsSelected();
+  // "No rows" means two different things: nothing was ever registered, or the
+  // search/filters in force match nothing. Telling someone with 27 people on file
+  // that "the registry is empty" — and offering to add the first — is wrong.
+  const { columnFilters, globalFilter } = table.getState();
+  const isFiltered = columnFilters.length > 0 || String(globalFilter ?? '').trim() !== '';
+
+  function handleClearFilters() {
+    table.resetColumnFilters();
+    table.setGlobalFilter('');
+  }
 
   return (
     <div className="overflow-x-auto" data-testid={`${testIdPrefix}-table-container`}>
@@ -113,7 +124,24 @@ export function DataTable<TData>({
           {rows.length === 0 ? (
             <TableRow>
               <TableCell colSpan={columnCount}>
-                <EmptyState {...emptyState} />
+                {isFiltered ? (
+                  <EmptyState
+                    title={t('table.noResults.title')}
+                    description={t('table.noResults.body')}
+                    action={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClearFilters}
+                        data-testid={`${testIdPrefix}-no-results-button-clear`}
+                      >
+                        {t('table.noResults.clear')}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <EmptyState {...emptyState} />
+                )}
               </TableCell>
             </TableRow>
           ) : (

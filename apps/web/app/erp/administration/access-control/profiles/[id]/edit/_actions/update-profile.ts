@@ -22,7 +22,14 @@ export async function updateProfileAction(
   const result = await requestProfileUpdate(token, id, parsed.data);
 
   if (!result.success) {
-    return { success: false, message: result.error };
+    // Only a repeated name belongs to the Name field: a 409 can also be the last-manager guard.
+    return {
+      success: false,
+      message: result.error,
+      ...(result.status === 409 && result.error === 'A profile with this name already exists'
+        ? { field: 'name' }
+        : {}),
+    };
   }
 
   revalidatePath(ROUTES.profiles.list);

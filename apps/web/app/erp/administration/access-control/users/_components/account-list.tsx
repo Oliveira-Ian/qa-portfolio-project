@@ -43,6 +43,8 @@ interface AccountListProps {
   total: number;
   profiles: ProfileDto[];
   gridPreference: GridColumnPreferenceDto | null;
+  /** Whether the viewer may change an account's role and active flag — a `SUPER_ADMIN` only. */
+  canManageAccountState: boolean;
 }
 
 /**
@@ -56,7 +58,13 @@ interface AccountListProps {
  * values, which is why those columns are built by a function taking
  * callbacks rather than declared as a static array.
  */
-export function AccountList({ accounts, total, profiles, gridPreference }: AccountListProps) {
+export function AccountList({
+  accounts,
+  total,
+  profiles,
+  gridPreference,
+  canManageAccountState,
+}: AccountListProps) {
   const t = useT();
   const router = useRouter();
   const { query, setQuery } = useListNavigation(ACCOUNT_FILTERABLE_COLUMNS);
@@ -150,6 +158,7 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
         onRoleChange: handleRoleChange,
         onToggleActive: handleToggleActive,
         onManageProfiles: handleManageProfiles,
+        canManageAccountState,
         isPending,
       }),
       {
@@ -165,7 +174,14 @@ export function AccountList({ accounts, total, profiles, gridPreference }: Accou
         ),
       },
     ],
-    [isPending, handleRoleChange, handleToggleActive, handleManageProfiles, getRowActions],
+    [
+      isPending,
+      canManageAccountState,
+      handleRoleChange,
+      handleToggleActive,
+      handleManageProfiles,
+      getRowActions,
+    ],
   );
 
   const table = useDataTable({

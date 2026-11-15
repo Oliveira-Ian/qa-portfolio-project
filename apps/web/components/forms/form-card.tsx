@@ -66,13 +66,20 @@ export function FormCard<TFieldValues extends FieldValues>({
         </Alert>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      {/* `overflow-clip`, not `-hidden`: it rounds the corners the same way but does not
+          make the card a scroll container, which would stop the footer sticking. */}
+      <div className="overflow-clip rounded-xl border border-border bg-surface">
         <Form {...form}>
           <form data-testid={formTestId} onSubmit={onSubmit} noValidate>
             {children}
 
+            {/* Sticky: on a long form the actions stay in reach instead of at the very bottom. */}
             {footer ? (
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-2 px-6 py-4">
+              <div
+                data-testid={`${formTestId}-actions`}
+                data-sticky-actions
+                className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-2 px-6 py-4 max-sm:px-4"
+              >
                 {footer}
               </div>
             ) : null}

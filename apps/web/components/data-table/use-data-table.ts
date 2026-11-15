@@ -40,8 +40,14 @@ export interface UseDataTableOptions<TData> {
  */
 const TYPING_DEBOUNCE_MS = 400;
 
+/**
+ * Patches that arrive inside the same debounce window are merged, not replaced:
+ * "clear the search *and* the column filters" is two table-state changes in a row,
+ * and keeping only the last one's patch left the other still applied in the URL.
+ */
 function useDebouncedPatch(onQueryChange: (patch: Partial<ListQueryState>) => void) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<Partial<ListQueryState>>({});
 
   useEffect(() => {
     return () => {
@@ -56,7 +62,13 @@ function useDebouncedPatch(onQueryChange: (patch: Partial<ListQueryState>) => vo
       clearTimeout(timerRef.current);
     }
 
-    timerRef.current = setTimeout(() => onQueryChange(patch), TYPING_DEBOUNCE_MS);
+    pendingRef.current = { ...pendingRef.current, ...patch };
+
+    timerRef.current = setTimeout(() => {
+      const merged = pendingRef.current;
+      pendingRef.current = {};
+      onQueryChange(merged);
+    }, TYPING_DEBOUNCE_MS);
   };
 }
 

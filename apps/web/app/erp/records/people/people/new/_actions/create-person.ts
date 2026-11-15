@@ -23,7 +23,12 @@ export async function createPersonAction(values: PersonFormValues): Promise<Acti
   const result = await requestPersonCreate(token, personFormValuesToPayload(parsed.data));
 
   if (!result.success) {
-    return { success: false, message: result.error };
+    // 409: the document is the only thing a person can collide on.
+    return {
+      success: false,
+      message: result.error,
+      ...(result.status === 409 ? { field: 'document' } : {}),
+    };
   }
 
   revalidatePath(ROUTES.people.list);

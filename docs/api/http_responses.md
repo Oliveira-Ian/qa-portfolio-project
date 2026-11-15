@@ -95,6 +95,13 @@ is the only place a status code and envelope shape are decided.
   "error": "Invalid email"
 }
 ```
+- **400** (Invalid birth date — not `YYYY-MM-DD`, not a real day such as `2026-02-31`, in the future, or before 1900):
+```json
+{
+  "success": false,
+  "error": "Invalid birth date"
+}
+```
 - **400** (Email exists):
 ```json
 {
@@ -248,7 +255,9 @@ see `docs/product/domain.md`) or `EMPLOYEE` doesn't need a document to exist.
 
 **Error Responses (400):** first validation issue found, e.g. `"Name is required"`,
 `"At least one type is required"`, `"Document is required"`, `"Document type is required"`,
-`"Invalid document format"` (CPF must have 11 digits, CNPJ 14), `"Invalid email"`.
+`"Invalid document format"` (CPF must have 11 digits, CNPJ 14), `"Invalid email"`, `"Invalid birth date"`.
+
+**409** `{ "success": false, "error": "A person with this document already exists" }` — `(documentType, document)` is unique. People without a document never collide. (It used to answer a bare 500.)
 
 > Person validation did not exist in the legacy Express API (only the frontend validated it). It was added during the Fastify migration as a single Zod schema shared with the frontend (`packages/schemas`) — see `docs/index.md`.
 
@@ -256,7 +265,7 @@ see `docs/product/domain.md`) or `EMPLOYEE` doesn't need a document to exist.
 Requires `person:edit`. Same body and validation as `POST /api/persons` — this is a full replace, not a patch.
 
 **Success Response (200):** `{ "success": true, "data": { "message": "Person updated successfully" } }`
-**Error Responses:** **404** `{ "success": false, "error": "Person not found" }` for an unknown id (previously a bare 500).
+**Error Responses:** **404** `{ "success": false, "error": "Person not found" }` for an unknown id (previously a bare 500); **409** `"A person with this document already exists"` when the new document belongs to someone else.
 
 ### DELETE /api/persons/:id
 Requires `person:delete`.
@@ -288,7 +297,7 @@ The catalog, read-only — whatever's seeded from `packages/schemas/src/permissi
 nested `permissions` array (the full `PermissionDto`, not just ids).
 
 ### GET /api/profiles/:id
-**Error Responses:** **404** `{ "success": false, "error": "Profile not found" }`
+**Error Responses:** **404** `{ "success": false, "error": "Profile not found" }` — also for an id that cannot exist (`abc`, `-3`, a number past `integer`), which used to answer 500. The same goes for `PUT`/`DELETE /api/profiles/:id` and `/api/accounts/:id`.
 
 ### POST /api/profiles / PUT /api/profiles/:id
 **Request Body:**
@@ -299,7 +308,11 @@ Unlike `/api/persons`, these return the full created/updated `ProfileDto` (id, p
 greenfield surface with no legacy "message only" contract to preserve, and the admin UI needs the id
 right away. **Success Response:** **201** (POST) / **200** (PUT).
 
-**Error Responses (400):** `"Name is required"`.
+**Error Responses:**
+- **400** `"Name is required"`, or `"One or more permissions do not exist"` for an unknown permission id.
+- **409** `{ "success": false, "error": "A profile with this name already exists" }` — profile names are unique. (It used to answer a bare 500.)
+
+Repeated ids in `permissionIds` are collapsed to one.
 
 `isSystem`/`isDefault` are absent from the request body on purpose — they're seed-managed, not
 admin-editable per profile. A system profile (`isSystem: true`) **can** still be renamed and have its
