@@ -1,0 +1,207 @@
+/* =============================================================================
+   Oliveira FSM — Design System V2 · tokens
+   Approved 2026-11-15. Source of truth: the "Oliveira — Design System" canvas
+   (FSM-01 foundations, FSM-02 components, FSM-00 handoff).
+
+   HOW THIS FILE RELATES TO FOUNDATION V1
+   - Load it AFTER `oliveira-tokens.css` (Foundation Design System V1).
+   - Every rule is scoped to [data-product="fsm"], so nothing here can reach the
+     Oliveira Platform or the Oliveira ERP: they keep V1 exactly as it is.
+   - Section A REDEFINES V1 semantic tokens (--olv-*) inside the FSM only, so
+     shared primitives (shadcn aliases in globals.css) pick up the FSM look
+     without a per-component fork.
+   - Section B ADDS FSM-only tokens (--fsm-*) for things V1 does not have
+     (confirm button, work-order status, signals, steps…).
+   - NOT redefined (stay V1 inside the FSM too): the dark shell tokens
+     (--olv-shell-*), brand palette, fonts, the success/warning/danger/info
+     tones used by Alert and Toast, motion, toast tokens. The global bar is
+     Platform-owned and identical in every product.
+   - Light only. Dark mode is not designed for the FSM either.
+   ========================================================================== */
+
+[data-product='fsm'] {
+  /* ---------------------------------------------------------------------------
+     A. V1 semantic tokens, redefined for the FSM content area
+     ------------------------------------------------------------------------ */
+
+  /* Accent — same terracotta hue as V1; tints re-stepped for the slate ground.
+     Used for selection, current step, focus, links. NEVER a button fill,
+     never a status, never a large background. */
+  --olv-accent-600: #a4502b; /* 5.6:1 on white */
+  --olv-accent-700: #8a4221; /* hover; text on accent tint */
+  --olv-accent-800: #71361b; /* pressed */
+  --olv-accent-300: #e39a70; /* on the dark shell (product name, sidebar marker) */
+  --olv-accent-100: #f5dccd; /* borders on tint */
+  --olv-accent-50: #fbf1eb; /* selected tint, selected tab count, callout fill */
+
+  /* Neutrals — slate replaces the V1 beige inside the FSM content area */
+  --olv-bg: #f2f4f7; /* page ground */
+  --olv-surface: #ffffff; /* cards, tables, inputs */
+  --olv-surface-2: #f8f9fb; /* table header, step/card footers */
+  --olv-surface-hover: #f5f7fa; /* row and tab hover */
+  --olv-subtle: #f1f3f6; /* chips, neutral pill fill, disabled input fill */
+  --olv-divider: #eef0f3; /* row separators inside cards */
+  --olv-border: #e3e6eb; /* cards, tables, tab rail */
+  --olv-border-button: #cdd2da; /* secondary buttons, filter chips */
+  --olv-border-control: #8a92a0; /* inputs, checkboxes — ≥ 3:1 on white */
+  --olv-border-control-hover: #5b6474;
+
+  --olv-text: #111827; /* ink 1 — 17.7:1 */
+  --olv-text-2: #384152; /* ink 2 — 10.6:1 · labels, secondary text */
+  --olv-text-3: #5b6474; /* ink 3 — 6.0:1 · meta, help, small */
+  --olv-text-placeholder: #8a92a0; /* ink 4 — placeholder and "—" only, never content */
+  --olv-text-disabled: #a7aeb9;
+
+  --olv-focus: var(--olv-accent-600); /* ring: 0 0 0 2px surface, 0 0 0 4px focus */
+
+  /* Radius — controls 8, cards and tables 12 (V1: 6 and 10) */
+  --olv-radius-sm: 8px;
+  --olv-radius-md: 12px;
+
+  /* ---------------------------------------------------------------------------
+     B. FSM-only tokens
+     ------------------------------------------------------------------------ */
+
+  /* Neutrals with no V1 equivalent */
+  --fsm-track: #e7eaee; /* segmented-control track */
+  --fsm-ghost-hover: #eaedf1; /* ghost button hover */
+  --fsm-border-button-hover: #b9bfc9;
+  --fsm-input-disabled-border: #dde1e7;
+  --fsm-row-selected: #fdf6f2; /* selected table row (+ 3px accent edge) */
+  --fsm-input-focus-ring: rgba(164, 80, 43, 0.18); /* 3px around a focused input */
+
+  /* Action colours — what the button does, not which product it is */
+  --fsm-confirm-bg: #44c38a; /* Complete, Save, Save changes, Continue, Create work order, Add note */
+  --fsm-confirm-border: #2fa56f;
+  --fsm-confirm-fg: #053d27; /* dark text: 5.3:1 (white on this green fails AA) */
+  --fsm-confirm-bg-hover: #36b27a;
+  --fsm-confirm-border-hover: #25915f;
+  --fsm-confirm-ring: #1f8a5b; /* focus: 0 0 0 2px #fff, 0 0 0 4px ring */
+
+  --fsm-create-fg: #0f6b4a; /* New …, Add … (outline) */
+  --fsm-create-border: #9fd6c0;
+  --fsm-create-hover-bg: #f0faf5;
+  --fsm-create-hover-border: #6cc3a0;
+
+  --fsm-edit-fg: #7a4e0c; /* Edit (outline amber) */
+  --fsm-edit-border: #e3c48c;
+  --fsm-edit-hover-bg: #fdf7ec;
+  --fsm-edit-hover-border: #d4a85a;
+
+  --fsm-danger-fg: #b42318; /* Cancel order, Delete, Remove (outline red) */
+  --fsm-danger-border: #f0b9b3;
+  --fsm-danger-hover-bg: #fef3f2;
+  --fsm-danger-hover-border: #e58a80;
+
+  /* Validation */
+  --fsm-error: #d92d20; /* input border on error */
+  --fsm-error-ring: rgba(217, 45, 32, 0.12);
+  --fsm-required: #b42318; /* the * after a label */
+  --fsm-error-count-bg: #fee4e2; /* red count on a tab / step with errors */
+  --fsm-error-count-fg: #b42318;
+
+  /* Work-order lifecycle — one hue per status, everywhere (pill dot, chart
+     series, timeline marker). Validated as a categorical set (light): CVD ΔE
+     worst adjacent 27.1, normal vision 32.8. Amber and aqua dots are < 3:1 on
+     white: a status is ALWAYS dot + word, never the dot alone. */
+  --fsm-status-open: #8a92a0;
+  --fsm-status-open-bg: #f1f3f6;
+  --fsm-status-open-fg: #384152;
+  --fsm-status-scheduled: #2a78d6;
+  --fsm-status-scheduled-bg: #eaf2fc;
+  --fsm-status-scheduled-fg: #1c4f95;
+  --fsm-status-in-progress: #eda100;
+  --fsm-status-in-progress-bg: #fdf3dc;
+  --fsm-status-in-progress-fg: #6e4a00;
+  --fsm-status-on-hold: #6250d6;
+  --fsm-status-on-hold-bg: #f0eefb;
+  --fsm-status-on-hold-fg: #4636b0;
+  --fsm-status-completed: #1baf7a;
+  --fsm-status-completed-bg: #e5f5ee;
+  --fsm-status-completed-fg: #0f6b4a;
+  --fsm-status-cancelled: #c3c8d0;
+  --fsm-status-cancelled-bg: #f1f3f6;
+  --fsm-status-cancelled-fg: #5b6474;
+  /* Record status (customer, equipment): Active = completed tones; Under maintenance = in-progress tones; Inactive = open tones. */
+
+  /* Signals — reserved; never a chart series; always icon + word */
+  --fsm-signal-critical: #d03b3b;
+  --fsm-signal-critical-bg: #feeceb;
+  --fsm-signal-critical-fg: #b42318; /* overdue, urgent, high criticality */
+  --fsm-signal-warning: #eda100;
+  --fsm-signal-warning-bg: #fdf3dc;
+  --fsm-signal-warning-fg: #6e4a00; /* due soon, unsaved changes, high priority */
+  --fsm-overdue-fg: #b42318; /* "3 d late" in the Due cell */
+
+  /* Hints and callouts */
+  --fsm-info-bg: #eaf2fc;
+  --fsm-info-border: #cfe0f7;
+  --fsm-info-fg: #1c3e6e; /* system hints ("Suggested by the type…") */
+  /* Service-instruction callout = accent-50 fill, accent-100 border, accent-700 title. */
+
+  /* People — avatar tints (initials) */
+  --fsm-avatar-1-bg: #dce9fa;
+  --fsm-avatar-1-fg: #1c4f95;
+  --fsm-avatar-2-bg: #f5dccd;
+  --fsm-avatar-2-fg: #71361b;
+  --fsm-avatar-3-bg: #ddf3ea;
+  --fsm-avatar-3-fg: #0f6b4a;
+  --fsm-avatar-4-bg: #ece9fb;
+  --fsm-avatar-4-fg: #4636b0;
+  --fsm-avatar-0-bg: #eef0f3;
+  --fsm-avatar-0-fg: #5b6474; /* unassigned */
+
+  /* Tooltip */
+  --fsm-tooltip-bg: #111827;
+  --fsm-tooltip-fg: #ffffff;
+
+  /* Typography (Archivo + JetBrains Mono, as V1; the SCALE is FSM-specific) */
+  --fsm-text-page-title: 600 24px/32px var(--olv-font-sans); /* letter-spacing -0.015em */
+  --fsm-text-record-title: 600 22px/28px var(--olv-font-sans); /* 20/26 in edit headers and below 768 */
+  --fsm-text-section: 600 16px/24px var(--olv-font-sans); /* step titles, section titles */
+  --fsm-text-card-title: 600 15px/22px var(--olv-font-sans);
+  --fsm-text-body: 400 14px/20px var(--olv-font-sans);
+  --fsm-text-sub: 400 13.5px/20px var(--olv-font-sans); /* descriptions under titles */
+  --fsm-text-label: 500 13px/18px var(--olv-font-sans);
+  --fsm-text-small: 400 12.5px/18px var(--olv-font-sans); /* meta lines, sublines in rows */
+  --fsm-text-overline: 600 11px/16px var(--olv-font-sans); /* uppercase, +0.06em — Archivo, NOT mono (V1 overline is mono) */
+  --fsm-text-code: 500 12.5px/18px var(--olv-font-mono); /* #1014, tags, CNPJ, serials */
+  --fsm-text-kpi: 600 30px/36px var(--olv-font-sans); /* -0.02em, tabular-nums */
+  --fsm-text-read-only: 500 14.5px/21px var(--olv-font-sans); /* view-mode value */
+
+  /* Radius */
+  --fsm-radius-control: 8px; /* buttons, inputs, step cards' inner controls */
+  --fsm-radius-control-sm: 7px; /* sm buttons, chips, seg buttons */
+  --fsm-radius-card: 12px; /* cards, tables, sections, sticky bar */
+  --fsm-radius-step: 10px; /* step cards, callouts, hints, seg track */
+  --fsm-radius-tile: 8px; /* icon tiles (12px when 48px) */
+  --fsm-radius-pill: 999px; /* status pills, filter chips, counts, avatars */
+
+  /* Sizing */
+  --fsm-button-h: 36px;
+  --fsm-button-h-sm: 32px;
+  --fsm-button-h-lg: 44px;
+  --fsm-input-h: 40px; /* 44 below 768 (touch) */
+  --fsm-tab-h: 46px;
+  --fsm-row-h: 60px;
+  --fsm-row-h-head: 40px;
+  --fsm-row-h-compact: 48px;
+  --fsm-pill-h: 24px;
+  --fsm-chip-h: 26px;
+  --fsm-filter-h: 32px;
+  --fsm-count-h: 20px;
+  --fsm-avatar: 26px;
+  --fsm-avatar-lg: 36px;
+  --fsm-tile: 32px;
+  --fsm-tile-lg: 48px;
+  --fsm-aside-w: 340px; /* record side panel */
+  --fsm-record-max-w: 1128px; /* record and form stacks */
+  --fsm-page-pad: 24px 32px 32px; /* 16px gutters below 768 */
+  --fsm-grid-gap: 18px 20px; /* 12-column field grid: row × column */
+
+  /* Elevation — borders do the work; shadows stay faint */
+  --fsm-elev-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --fsm-elev-button: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --fsm-elev-floating: 0 8px 24px rgba(16, 24, 40, 0.08); /* sticky save bar, menus */
+  --fsm-elev-tooltip: 0 8px 24px rgba(16, 24, 40, 0.25);
+}

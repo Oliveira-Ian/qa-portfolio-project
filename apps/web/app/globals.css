@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './oliveira-tokens.css';
+@import './oliveira-fsm-tokens.css';
 
 /*
  * Kept so the `dark:` classes already inside the shadcn components keep
@@ -108,6 +109,32 @@
 
   --border-focus: var(--olv-accent-600);
   --ring: var(--olv-focus);
+}
+
+/*
+ * Oliveira FSM — Design System V2 (docs/design/fsm/). `oliveira-fsm-tokens.css`
+ * redefines the neutrals, ink, borders, accent tints and radius inside
+ * [data-product="fsm"]; the shadcn aliases that read them are declared once on
+ * :root above, so they are re-declared here for the FSM root — the Platform
+ * and the ERP never see any of this.
+ */
+[data-product='fsm'] {
+  --background: var(--olv-bg);
+  --foreground: var(--olv-text);
+  --card: var(--olv-surface);
+  --card-foreground: var(--olv-text);
+  --popover: var(--olv-surface);
+  --popover-foreground: var(--olv-text);
+  --secondary: var(--olv-subtle);
+  --secondary-foreground: var(--olv-text);
+  --muted: var(--olv-subtle);
+  --muted-foreground: var(--olv-text-3);
+  --text-muted: var(--olv-text-placeholder);
+  --border: var(--olv-border);
+  --border-hover: var(--olv-border-button);
+  --input: var(--olv-border-control);
+  --input-hover: var(--olv-border-control-hover);
+  --input-background: var(--olv-surface);
 }
 
 /*
@@ -242,6 +269,59 @@
   --color-accent-600: var(--olv-accent-600);
   --color-accent-50: var(--olv-accent-50);
   --color-accent-100: var(--olv-accent-100);
+
+  /* Oliveira FSM only (oliveira-fsm-tokens.css): these resolve inside [data-product="fsm"]. */
+  --color-accent-700: var(--olv-accent-700);
+  --color-fsm-confirm: var(--fsm-confirm-bg);
+  --color-fsm-confirm-hover: var(--fsm-confirm-bg-hover);
+  --color-fsm-confirm-border: var(--fsm-confirm-border);
+  --color-fsm-confirm-border-hover: var(--fsm-confirm-border-hover);
+  --color-fsm-confirm-fg: var(--fsm-confirm-fg);
+  --color-fsm-confirm-ring: var(--fsm-confirm-ring);
+  --color-fsm-open: var(--fsm-status-open);
+  --color-fsm-open-bg: var(--fsm-status-open-bg);
+  --color-fsm-open-fg: var(--fsm-status-open-fg);
+  --color-fsm-scheduled: var(--fsm-status-scheduled);
+  --color-fsm-scheduled-bg: var(--fsm-status-scheduled-bg);
+  --color-fsm-scheduled-fg: var(--fsm-status-scheduled-fg);
+  --color-fsm-in-progress: var(--fsm-status-in-progress);
+  --color-fsm-in-progress-bg: var(--fsm-status-in-progress-bg);
+  --color-fsm-in-progress-fg: var(--fsm-status-in-progress-fg);
+  --color-fsm-on-hold: var(--fsm-status-on-hold);
+  --color-fsm-on-hold-bg: var(--fsm-status-on-hold-bg);
+  --color-fsm-on-hold-fg: var(--fsm-status-on-hold-fg);
+  --color-fsm-completed: var(--fsm-status-completed);
+  --color-fsm-completed-bg: var(--fsm-status-completed-bg);
+  --color-fsm-completed-fg: var(--fsm-status-completed-fg);
+  --color-fsm-cancelled: var(--fsm-status-cancelled);
+  --color-fsm-cancelled-bg: var(--fsm-status-cancelled-bg);
+  --color-fsm-cancelled-fg: var(--fsm-status-cancelled-fg);
+  --color-fsm-critical: var(--fsm-signal-critical);
+  --color-fsm-critical-bg: var(--fsm-signal-critical-bg);
+  --color-fsm-critical-fg: var(--fsm-signal-critical-fg);
+  --color-fsm-warning: var(--fsm-signal-warning);
+  --color-fsm-warning-bg: var(--fsm-signal-warning-bg);
+  --color-fsm-warning-fg: var(--fsm-signal-warning-fg);
+  --color-fsm-overdue: var(--fsm-overdue-fg);
+  --color-fsm-info-bg: var(--fsm-info-bg);
+  --color-fsm-info-border: var(--fsm-info-border);
+  --color-fsm-info-fg: var(--fsm-info-fg);
+  --color-fsm-track: var(--fsm-track);
+  --color-fsm-row-selected: var(--fsm-row-selected);
+  --color-fsm-error: var(--fsm-error);
+  --color-fsm-required: var(--fsm-required);
+  --color-fsm-avatar-0: var(--fsm-avatar-0-bg);
+  --color-fsm-avatar-0-fg: var(--fsm-avatar-0-fg);
+  --color-fsm-avatar-1: var(--fsm-avatar-1-bg);
+  --color-fsm-avatar-1-fg: var(--fsm-avatar-1-fg);
+  --color-fsm-avatar-2: var(--fsm-avatar-2-bg);
+  --color-fsm-avatar-2-fg: var(--fsm-avatar-2-fg);
+  --color-fsm-avatar-3: var(--fsm-avatar-3-bg);
+  --color-fsm-avatar-3-fg: var(--fsm-avatar-3-fg);
+  --color-fsm-avatar-4: var(--fsm-avatar-4-bg);
+  --color-fsm-avatar-4-fg: var(--fsm-avatar-4-fg);
+  --shadow-fsm-card: var(--fsm-elev-card);
+  --shadow-fsm-floating: var(--fsm-elev-floating);
 
   --shadow-card: var(--olv-elev-xs);
   --shadow-input: var(--olv-elev-xs);
@@ -469,4 +549,35 @@
 body:has([data-sticky-actions]) [data-sonner-toaster] {
   --offset-bottom: 96px !important;
   --mobile-offset-bottom: 96px !important;
+}
+
+/*
+ * Oliveira FSM — type scale and overline of Design System V2 (HANDOFF-FSM § 4),
+ * inside the FSM's content area only. The shell keeps the Foundation's.
+ */
+@layer base {
+  [data-product='fsm'] main h1 {
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: -0.015em;
+  }
+
+  [data-product='fsm'] main h2 {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  [data-product='fsm'] main h3 {
+    font-size: 15px;
+    line-height: 22px;
+  }
+}
+
+@layer components {
+  [data-product='fsm'] main .olv-overline {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+  }
 }

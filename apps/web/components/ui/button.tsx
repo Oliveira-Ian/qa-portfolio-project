@@ -41,6 +41,11 @@ const buttonVariants = cva(
         create:
           'border-success/45 bg-surface text-success shadow-xs hover:border-success hover:bg-success-light hover:text-success-on active:bg-success-light active:shadow-[inset_0_1px_2px_rgba(18,21,27,.1)] disabled:border-success/25 disabled:text-success/45 disabled:shadow-none aria-disabled:border-success/25 aria-disabled:text-success/45',
         edit: 'border-warning/45 bg-surface text-warning shadow-xs hover:border-warning hover:bg-warning-light hover:text-warning-on active:bg-warning-light active:shadow-[inset_0_1px_2px_rgba(18,21,27,.1)] disabled:border-warning/25 disabled:text-warning/45 disabled:shadow-none aria-disabled:border-warning/25 aria-disabled:text-warning/45',
+        // Oliveira FSM only (Design System V2): the filled confirm — Complete, Save, Continue,
+        // Create work order. Mint with dark text (5.3:1); white on that green fails AA. Its
+        // tokens exist only inside [data-product="fsm"], so nothing else may use it.
+        confirm:
+          'border-fsm-confirm-border bg-fsm-confirm font-semibold text-fsm-confirm-fg shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_1px_2px_rgba(16,24,40,.1)] hover:border-fsm-confirm-border-hover hover:bg-fsm-confirm-hover [--olv-focus:var(--fsm-confirm-ring)] active:shadow-[inset_0_1px_3px_rgba(0,0,0,.18)] disabled:opacity-45 disabled:shadow-none aria-disabled:opacity-45',
         link: 'h-auto rounded-xs px-0 py-0.5 font-semibold text-primary underline decoration-transparent decoration-[1.5px] underline-offset-3 shadow-none hover:decoration-current active:translate-y-0 active:text-primary-active disabled:text-text-disabled disabled:no-underline',
         shell:
           'border-shell-border bg-shell-control text-shell-text hover:border-[#363C48] hover:bg-shell-control-hover hover:text-white focus-visible:ring-focus-shell',
