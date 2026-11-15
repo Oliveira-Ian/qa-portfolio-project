@@ -49,23 +49,25 @@ timestamps. Since tenant isolation (`20261110120000_tenant_isolation`) the accou
 
 ### AccessProfile
 
-A named, reusable bundle of permissions — "Gerente", "Financeiro", the seeded "Administrador". `id`
-(int), `name` (unique), `description` (nullable), `isSystem` (protects a profile from deletion — the
-Administrador and the self-registration default), `isDefault` (the one profile self-registration links
-new accounts to; at most one row should carry this), plus its `Permission`/`AccessAccount` links.
+A named bundle of one product's permissions, owned by a company — "Manager", "Technician", the
+reference "Administrator". `id` (int), `companyId`, `product`, `name` (unique per company and
+product), `description` (nullable), `isSystem` (protects a reference profile from deletion),
+`isDefault` (the profile a member's first seat in the product links; one per company and product).
+Company data under row-level security. See `docs/product/access_control.md`.
 
 ### Permission
 
-A sealed catalog entry — `resource`/`action` (`"person"`/`"view"`), `label` (nullable, human-readable),
-`@@unique([resource, action])`. Defined in code (`packages/schemas/src/permissions.ts`) and seeded into
+A sealed catalog entry of one product — `product`, `resource`/`action` (`"person"`/`"view"`), `label`
+(nullable, human-readable), `@@unique([product, resource, action])`. Global, the same for every company. Defined in code (`packages/schemas/src/permissions.ts`) and seeded into
 this table; nothing in the admin UI can create a permission that isn't also checked somewhere in code.
 See `docs/product/access_control.md`.
 
-### ProfilePermission / AccountProfile
+### ProfilePermission / MembershipProfile
 
-Join tables. `ProfilePermission` attaches `Permission`s to an `AccessProfile`. `AccountProfile`
-attaches `AccessProfile`s to an `AccessAccount` — an account's effective permissions are the union of
-every profile it's linked to here. Both cascade-delete with their parent row.
+Join tables, both company data. `ProfilePermission` attaches `Permission`s to an `AccessProfile`.
+`MembershipProfile` attaches `AccessProfile`s to a `Membership` — a member's effective permissions in
+a product are the union of that product's profiles linked here. Composite keys `(companyId, …)` keep
+both sides in the same company; both cascade-delete with their parent row.
 
 ## Authorization at a glance
 

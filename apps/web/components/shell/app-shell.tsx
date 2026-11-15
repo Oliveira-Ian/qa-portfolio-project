@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { PermissionKey, Product } from '@oliveira/schemas';
+import type { Product, ProductPermissions } from '@oliveira/schemas';
 import { useT } from '@/lib/i18n/provider';
 import { buildNavigation, buildSearchEntries, type AreaKey } from '@/lib/navigation/nav';
 import { areaScope } from '@/lib/products';
@@ -19,8 +19,8 @@ interface AppShellProps {
   isCompanyAdmin: boolean;
   /** The products the caller may open. */
   products: readonly Product[];
-  /** The caller's ERP permissions — they decide which ERP screens the sidebar lists. */
-  permissions: readonly PermissionKey[];
+  /** The caller's permissions per product — they decide which screens each product's sidebar lists. */
+  permissions: ProductPermissions;
   /** The guard states (no access to a product) show the global bar only, with no product sidebar. */
   hideNavigation?: boolean;
   children: React.ReactNode;

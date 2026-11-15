@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewPersonPage() {
-  if (!(await can('person:create'))) {
+  if (!(await can('ERP', 'person:create'))) {
     redirect(ROUTES.people.list);
   }
 

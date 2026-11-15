@@ -24,6 +24,7 @@ import { ROUTES } from '@/lib/navigation/routes';
 import { PLATFORM_NAME } from '@/lib/products';
 import { EmailInput, PasswordInput } from '../../_components/auth-fields';
 import { registerAction } from '../_actions/register';
+import { reportInvalidFields } from '@/components/forms/report-invalid-fields';
 
 /** Long enough to read the confirmation, short enough not to feel stuck. */
 const REDIRECT_DELAY_MS = 1_500;
@@ -77,12 +78,15 @@ export function RegisterForm() {
     });
   }
 
-  function handleInvalid() {
+  function handleInvalid(errors: Record<string, unknown>) {
     const values = form.getValues();
 
     if (!values.fullName || !values.email || !values.password || !values.birthDate) {
       toast.error(translateApiMessage(authMessages.register.missingFields, t));
+      return;
     }
+
+    reportInvalidFields(Object.keys(errors).length, t);
   }
 
   return (

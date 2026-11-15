@@ -1,51 +1,48 @@
 import type { Metadata } from 'next';
+import { UserList } from '@/components/access-control/user-list';
+import { USER_FILTERABLE_COLUMNS } from '@/components/access-control/user-filter-fields';
 import { NoPermission } from '@/components/platform/no-permission';
 import { getTranslator } from '@/lib/i18n/server';
-import { EMPTY_LIST_QUERY, parseListQuery, toURLSearchParams } from '@/lib/list-query';
-import { can, getMe } from '@/lib/permissions';
-import { AccountList } from './_components/account-list';
-import { ACCOUNT_FILTERABLE_COLUMNS } from './_components/account-filter-fields';
+import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
+import { ROUTES } from '@/lib/navigation/routes';
+import { can } from '@/lib/permissions';
+import { getProfileFilterOptions } from '@/lib/profile-filter-options';
+import { saveAccountGridPreferenceAction } from './_actions/save-grid-preferences';
 import { getAccountGridPreference } from './_data-access/get-grid-preferences';
 import { listAccounts } from './_data-access/list-accounts';
-import { listProfiles } from '../profiles/_data-access/list-profiles';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
 
-  return { title: t('erp.users.title') };
+  return { title: t('accessControl.users.title') };
 }
 
 interface UsersPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+/** The ERP's users — every member of the company, with the one ERP profile each holds. */
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  if (!(await can('profile:manage'))) {
-    return <NoPermission screen="erp.users.title" />;
+  if (!(await can('ERP', 'profile:manage'))) {
+    return <NoPermission screen="accessControl.users.title" />;
   }
 
-  const query = parseListQuery(toURLSearchParams(await searchParams), ACCOUNT_FILTERABLE_COLUMNS);
-  // An account's role and active flag are the Platform's to change: the API answers 403 to
-  // anyone but a `SUPER_ADMIN` (`PATCH /api/accounts/:id`), so the controls are offered only to one.
-  const canManageAccountState = (await getMe()).account.role === 'SUPER_ADMIN';
-
-  const [accountsResult, profilesResult, gridPreference] = await Promise.all([
+  const query = parseListQuery(toURLSearchParams(await searchParams), USER_FILTERABLE_COLUMNS);
+  const [accounts, gridPreference, profileOptions] = await Promise.all([
     listAccounts(query),
-    // The "manage profiles" picker needs every profile, not one page of
-    // them — profiles are a small, admin-managed catalog (not a business
-    // table like Person), so a generous single page from the same
-    // paginated endpoint covers it without a second, unpaginated one.
-    listProfiles({ ...EMPTY_LIST_QUERY, pageSize: 100 }),
     getAccountGridPreference(),
+    getProfileFilterOptions('ERP'),
   ]);
 
   return (
-    <AccountList
-      accounts={accountsResult.items}
-      total={accountsResult.total}
-      profiles={profilesResult.items}
+    <UserList
+      product="ERP"
+      accounts={accounts.items}
+      total={accounts.total}
       gridPreference={gridPreference}
-      canManageAccountState={canManageAccountState}
+      saveGridPreferenceAction={saveAccountGridPreferenceAction}
+      profileOptions={profileOptions}
+      basePath={ROUTES.accounts.list}
     />
   );
 }

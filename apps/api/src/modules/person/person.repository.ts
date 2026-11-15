@@ -1,4 +1,5 @@
-import type { Person as PersonRow, Prisma } from '../../generated/prisma/client.js';
+import type { AddressWriteInput, ContactWriteInput } from '@oliveira/schemas';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
@@ -8,7 +9,49 @@ import {
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
 import { requireCompanyId } from '../../shared/request-context.js';
-import type { PersonWriteData } from './person.mapper.js';
+import {
+  ADDRESS_ORDER,
+  CONTACT_ORDER,
+  syncAddresses,
+  syncContacts,
+} from '../address/address-sync.js';
+import type { PersonRowWithRelations, PersonWriteData } from './person.mapper.js';
+
+/** A person's addresses and contact people, written as complete sets. */
+export interface PersonLists {
+  addresses: AddressWriteInput[];
+  contacts: ContactWriteInput[];
+}
+
+const NO_LISTS: PersonLists = { addresses: [], contacts: [] };
+
+/** What a list needs of each person: the primary address, for its city and state. */
+export const PRIMARY_ADDRESS = {
+  addresses: { where: { isPrimary: true }, take: 1 },
+} satisfies Prisma.PersonInclude;
+
+/** A record: both lists, primary first. */
+export const FULL_RECORD = {
+  addresses: { orderBy: ADDRESS_ORDER },
+  contacts: { orderBy: CONTACT_ORDER },
+} satisfies Prisma.PersonInclude;
+
+const ADDRESS_IN_USE = 'An address in use by equipment or work orders cannot be removed';
+
+/** What a failed write means: a taken document, an unknown person, or an address still in use. */
+function translateWriteError(error: unknown): unknown {
+  if (isPrismaCode(error, RECORD_NOT_FOUND)) {
+    return new NotFoundError('Person not found');
+  }
+  if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
+    return new ConflictError(DOCUMENT_TAKEN);
+  }
+  if (isPrismaCode(error, FOREIGN_KEY_VIOLATION)) {
+    return new ConflictError(ADDRESS_IN_USE);
+  }
+
+  return error;
+}
 
 /**
  * A person's only unique constraint is `(companyId, document, documentType)`, so
@@ -33,8 +76,8 @@ export const personRepository = {
     orderBy: Prisma.PersonOrderByWithRelationInput[],
     skip: number,
     take: number,
-  ): Promise<PersonRow[]> {
-    return prisma.person.findMany({ where, orderBy, skip, take });
+  ): Promise<PersonRowWithRelations[]> {
+    return prisma.person.findMany({ where, orderBy, skip, take, include: PRIMARY_ADDRESS });
   },
 
   count(where: Prisma.PersonWhereInput): Promise<number> {
@@ -47,45 +90,64 @@ export const personRepository = {
     clients: number;
     suppliers: number;
     inactive: number;
-    recent: PersonRow[];
+    recent: PersonRowWithRelations[];
   }> {
     const [total, clients, suppliers, inactive, recent] = await Promise.all([
       prisma.person.count(),
       prisma.person.count({ where: { types: { has: 'CLIENT' } } }),
       prisma.person.count({ where: { types: { has: 'SUPPLIER' } } }),
       prisma.person.count({ where: { active: false } }),
-      prisma.person.findMany({ orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], take: 5 }),
+      prisma.person.findMany({
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        take: 5,
+        include: PRIMARY_ADDRESS,
+      }),
     ]);
 
     return { total, clients, suppliers, inactive, recent };
   },
 
-  findById(id: string): Promise<PersonRow | null> {
-    return prisma.person.findUnique({ where: { id } });
+  findById(id: string): Promise<PersonRowWithRelations | null> {
+    return prisma.person.findUnique({ where: { id }, include: FULL_RECORD });
   },
 
-  async create(data: PersonWriteData): Promise<PersonRow> {
+  /** The person and its lists in one transaction — all saved or none. */
+  async create(
+    data: PersonWriteData,
+    lists: PersonLists = NO_LISTS,
+  ): Promise<PersonRowWithRelations> {
     try {
-      return await prisma.person.create({ data: { ...data, companyId: requireCompanyId() } });
+      return await withTransaction(async (tx) => {
+        const companyId = requireCompanyId();
+        const person = await tx.person.create({ data: { ...data, companyId } });
+
+        await syncAddresses(tx, companyId, { personId: person.id }, lists.addresses);
+        await syncContacts(tx, companyId, person.id, lists.contacts);
+
+        return tx.person.findUniqueOrThrow({ where: { id: person.id }, include: FULL_RECORD });
+      });
     } catch (error) {
-      if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
-        throw new ConflictError(DOCUMENT_TAKEN);
-      }
-      throw error;
+      throw translateWriteError(error);
     }
   },
 
-  async update(id: string, data: PersonWriteData): Promise<PersonRow> {
+  async update(
+    id: string,
+    data: PersonWriteData,
+    lists: PersonLists,
+  ): Promise<PersonRowWithRelations> {
     try {
-      return await prisma.person.update({ where: { id }, data });
+      return await withTransaction(async (tx) => {
+        const companyId = requireCompanyId();
+
+        await tx.person.update({ where: { id }, data });
+        await syncAddresses(tx, companyId, { personId: id }, lists.addresses);
+        await syncContacts(tx, companyId, id, lists.contacts);
+
+        return tx.person.findUniqueOrThrow({ where: { id }, include: FULL_RECORD });
+      });
     } catch (error) {
-      if (isPrismaCode(error, RECORD_NOT_FOUND)) {
-        throw new NotFoundError('Person not found');
-      }
-      if (isPrismaCode(error, UNIQUE_CONSTRAINT_VIOLATION)) {
-        throw new ConflictError(DOCUMENT_TAKEN);
-      }
-      throw error;
+      throw translateWriteError(error);
     }
   },
 

@@ -4,11 +4,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import type { FieldValues, UseFormReturn } from 'react-hook-form';
 import { PageHeader } from '@/components/layout/page-header';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { useT } from '@/lib/i18n/provider';
-import type { MessageKey } from '@/lib/i18n/translate';
 
 interface FormCardProps<TFieldValues extends FieldValues> {
   /** e.g. `"person-form-container"` / `"profile-form-container"`. */
@@ -22,8 +19,6 @@ interface FormCardProps<TFieldValues extends FieldValues> {
   onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
   /** The action buttons — usually a `<FormCardActions>`, in the card's footer. Omit for a read-only form. */
   footer?: ReactNode;
-  /** The sentence under "Check N fields" when a submit fails — the entity says what wasn't saved. */
-  errorBodyKey?: MessageKey;
   /** Rendered after the form, inside the same card — e.g. the Person record's `AccountSection`. */
   after?: ReactNode;
   children: ReactNode;
@@ -46,25 +41,15 @@ export function FormCard<TFieldValues extends FieldValues>({
   form,
   onSubmit,
   footer,
-  errorBodyKey,
   after,
   children,
 }: FormCardProps<TFieldValues>) {
-  const t = useT();
-  const { submitCount, errors } = form.formState;
-  const errorCount = Object.keys(errors).length;
-  const hasSummary = submitCount > 0 && errorCount > 0 && errorBodyKey !== undefined;
-
+  // No error summary above the card: a failed save turns the fields red and says
+  // what is wrong in a toast, so the layout never moves (docs/design/components/forms.md).
   return (
-    <div className="max-w-[60rem]" data-testid={containerTestId}>
+    // 80rem: the sections lay their fields out in columns across the card's width.
+    <div className="max-w-[80rem]" data-testid={containerTestId}>
       {header}
-
-      {hasSummary ? (
-        <Alert variant="destructive" className="mb-5" data-testid={`${formTestId}-error-summary`}>
-          <AlertTitle>{t('common.checkFields', { count: errorCount })}</AlertTitle>
-          <AlertDescription>{t(errorBodyKey)}</AlertDescription>
-        </Alert>
-      ) : null}
 
       {/* `overflow-clip`, not `-hidden`: it rounds the corners the same way but does not
           make the card a scroll container, which would stop the footer sticking. */}
@@ -125,7 +110,11 @@ interface FormCardActionsProps {
   cancelLabel: string;
 }
 
-/** Cancel (ghost) and Save (primary, rightmost — with the loading state) for a form footer. */
+/**
+ * Cancel (ghost) and Save (rightmost, with the loading state) for a form footer.
+ * Save is the `create` tone — green on white — the colour of every action that
+ * adds or commits a record (docs/design/components/buttons.md).
+ */
 export function FormCardActions({
   isPending,
   saveLabel,
@@ -139,7 +128,7 @@ export function FormCardActions({
       <Button type="button" variant="ghost" asChild data-testid={cancelTestId}>
         <Link href={cancelHref}>{cancelLabel}</Link>
       </Button>
-      <Button type="submit" data-testid={saveTestId} loading={isPending}>
+      <Button type="submit" variant="create" data-testid={saveTestId} loading={isPending}>
         {saveLabel}
       </Button>
     </>

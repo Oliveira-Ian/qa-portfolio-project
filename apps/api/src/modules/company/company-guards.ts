@@ -1,3 +1,4 @@
+import { PRODUCTS, type Product } from '@oliveira/schemas';
 import { withTransaction, type TransactionClient } from '../../config/prisma.js';
 import { ConflictError } from '../../shared/errors.js';
 import { requireCompanyId } from '../../shared/request-context.js';
@@ -19,29 +20,49 @@ export async function lockCompany(tx: TransactionClient, companyId: string): Pro
 }
 
 /**
- * Active members of the company who hold a seat in the ERP and a profile that
- * carries `profile:manage` — the ones who can still change who may do what there.
+ * Active members of the company who hold a seat in `product` and one of that
+ * product's profiles carrying `profile:manage` — the ones who can still change
+ * who may do what there.
  */
-export function countProfileManagers(tx: TransactionClient, companyId: string): Promise<number> {
-  return tx.accessAccount.count({
+export function countProfileManagers(
+  tx: TransactionClient,
+  companyId: string,
+  product: Product,
+): Promise<number> {
+  return tx.membership.count({
     where: {
-      active: true,
-      memberships: {
-        some: {
-          companyId,
-          status: 'ACTIVE',
-          productAccess: { some: { product: 'ERP' } },
-        },
-      },
+      companyId,
+      status: 'ACTIVE',
+      account: { active: true },
+      productAccess: { some: { product } },
       profiles: {
         some: {
           profile: {
-            permissions: { some: { permission: { resource: 'profile', action: 'manage' } } },
+            product,
+            permissions: {
+              some: { permission: { product, resource: 'profile', action: 'manage' } },
+            },
           },
         },
       },
     },
   });
+}
+
+/** The products that have at least one profile manager — compared before and after a change. */
+export async function productsWithProfileManagers(
+  tx: TransactionClient,
+  companyId: string,
+): Promise<Product[]> {
+  const managed: Product[] = [];
+
+  for (const product of PRODUCTS) {
+    if ((await countProfileManagers(tx, companyId, product)) > 0) {
+      managed.push(product);
+    }
+  }
+
+  return managed;
 }
 
 /** Active administrators of the company (`Membership.role = ADMIN`) whose account is active too. */
@@ -54,13 +75,14 @@ export function countCompanyAdmins(tx: TransactionClient, companyId: string): Pr
 /**
  * Runs `mutation` in a transaction on the caller's company and refuses (409,
  * rolling everything back) if it leaves the company with nobody able to manage
- * the ERP's profiles — unless nobody could before it either.
+ * `product`'s profiles — unless nobody could before it either.
  *
  * For repositories whose change *may* remove that ability: unlinking a profile,
  * editing or deleting a profile that carries `profile:manage`. The company is
  * the request context's (`requireCompanyId`), so callers don't pass it.
  */
 export async function withProfileManagerGuard<T>(
+  product: Product,
   mutation: (tx: TransactionClient) => Promise<T>,
 ): Promise<T> {
   const companyId = requireCompanyId();
@@ -68,10 +90,10 @@ export async function withProfileManagerGuard<T>(
   return withTransaction(async (tx) => {
     await lockCompany(tx, companyId);
 
-    const before = await countProfileManagers(tx, companyId);
+    const before = await countProfileManagers(tx, companyId, product);
     const result = await mutation(tx);
 
-    if (before > 0 && (await countProfileManagers(tx, companyId)) === 0) {
+    if (before > 0 && (await countProfileManagers(tx, companyId, product)) === 0) {
       throw new ConflictError('At least one member must keep the ability to manage profiles');
     }
 

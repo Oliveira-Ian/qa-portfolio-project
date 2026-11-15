@@ -3,8 +3,7 @@ import { ShellFor } from '@/components/shell/shell-for';
 import { getMe } from '@/lib/permissions';
 
 /**
- * The Oliveira FSM's area — a placeholder for now (docs/adr/0019), guarded like
- * any product so its structure is ready when the first screen arrives: no seat,
+ * The Oliveira FSM's area (docs/adr/0019), guarded like any product: no seat,
  * no page.
  */
 export default async function FsmLayout({ children }: { children: React.ReactNode }) {

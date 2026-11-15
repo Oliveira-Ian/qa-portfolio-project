@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import {
   useForm,
@@ -12,22 +13,15 @@ import { toast } from 'sonner';
 import type { ActionResult } from '@/lib/actions';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
+import { reportInvalidFields } from './report-invalid-fields';
 
-type SubmitResult = ActionResult | void;
+type SubmitResult = (ActionResult & { id?: string }) | void;
 
-/**
- * A form is one long page of sections, so the first invalid field may be below the
- * fold. react-hook-form focuses the ones that forward their ref; this also covers
- * the custom controls that do not (a chip group, a combobox) and brings the field
- * into the middle of the screen rather than leaving it under the sticky actions.
- */
-function scrollToFirstInvalidField() {
-  requestAnimationFrame(() => {
-    const field = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
-
-    field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    field?.focus({ preventScroll: true });
-  });
+/** What a successful save says and where it goes next. */
+export interface EntityFormSuccess {
+  message: string;
+  /** Where to go next — or, given the saved record's id (a new one's), where to go. */
+  href: string | ((id: string | undefined) => string);
 }
 
 /**
@@ -48,13 +42,18 @@ function scrollToFirstInvalidField() {
  *
  * `useTransition` rather than a `submitting` boolean: React keeps the form
  * interactive while the action runs and the pending flag comes for free.
+ *
+ * `onSuccess`: a save that worked says so in a toast and moves on to
+ * `href` — every save confirms itself, the same way every failure does.
  */
 export function useEntityForm<TValues extends FieldValues>(
   resolver: Resolver<TValues, unknown, TValues>,
   defaultValues: TValues,
   submit: (values: TValues) => Promise<SubmitResult>,
+  onSuccess?: EntityFormSuccess,
 ) {
   const t = useT();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   // All three type args pinned explicitly: left to inference/defaults, a
@@ -74,8 +73,16 @@ export function useEntityForm<TValues extends FieldValues>(
   const onSubmit = form.handleSubmit(
     (values) => {
       startTransition(async () => {
-        // A successful action redirects, so nothing comes back to handle.
         const result = await submit(values);
+
+        if (result?.success && onSuccess) {
+          toast.success(onSuccess.message);
+          router.push(
+            typeof onSuccess.href === 'string' ? onSuccess.href : onSuccess.href(result.id),
+          );
+          router.refresh();
+          return;
+        }
 
         if (result?.success === false) {
           toast.error(translateApiMessage(result.message ?? '', t));
@@ -92,9 +99,8 @@ export function useEntityForm<TValues extends FieldValues>(
         }
       });
     },
-    () => {
-      toast.error(t('common.fixErrors'));
-      scrollToFirstInvalidField();
+    (errors) => {
+      reportInvalidFields(Object.keys(errors).length, t);
     },
   );
 

@@ -13,7 +13,12 @@ import {
 } from '@oliveira/schemas';
 import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
-import { countCompanyAdmins, countProfileManagers, lockCompany } from './company-guards.js';
+import {
+  countCompanyAdmins,
+  countProfileManagers,
+  lockCompany,
+  productsWithProfileManagers,
+} from './company-guards.js';
 
 export type MembershipWithAccess = Membership & {
   company: Company & { products: CompanyProduct[] };
@@ -124,7 +129,7 @@ export const companyRepository = {
       }
 
       const adminsBefore = await countCompanyAdmins(tx, companyId);
-      const managersBefore = await countProfileManagers(tx, companyId);
+      const managedBefore = await productsWithProfileManagers(tx, companyId);
 
       await tx.membership.update({ where: { id }, data: patch });
 
@@ -132,7 +137,9 @@ export const companyRepository = {
         throw new ConflictError(LAST_ADMIN_MESSAGE);
       }
 
-      if (managersBefore > 0 && (await countProfileManagers(tx, companyId)) === 0) {
+      const managedAfter = await productsWithProfileManagers(tx, companyId);
+
+      if (managedBefore.some((product) => !managedAfter.includes(product))) {
         throw new ConflictError(LAST_PROFILE_MANAGER_MESSAGE);
       }
 
@@ -142,10 +149,10 @@ export const companyRepository = {
 
   /**
    * Grants the member a seat in the product, inside the company's contract.
-   * Returns false when the member already held it (nothing to do). The first
-   * ERP seat of an account with no profile also links the `isDefault` profile —
+   * Returns false when the member already held it (nothing to do). A member with
+   * no profile in that product also gets the product's `isDefault` one —
    * registration grants nothing, so this is where a member gets a starting point
-   * (docs/adr/0018).
+   * (docs/adr/0018). Default profiles are never administrative.
    */
   grantSeat(input: {
     membershipId: string;
@@ -199,20 +206,16 @@ export const companyRepository = {
 
       await tx.productAccess.create({ data: { membershipId, product, grantedById } });
 
-      if (product === 'ERP') {
-        const profileLinks = await tx.accountProfile.count({
-          where: { accountId: membership.accountId },
-        });
-        const defaultProfile =
-          profileLinks === 0
-            ? await tx.accessProfile.findFirst({ where: { isDefault: true } })
-            : null;
+      const profileLinks = await tx.membershipProfile.count({ where: { membershipId, product } });
+      const defaultProfile =
+        profileLinks === 0
+          ? await tx.accessProfile.findFirst({ where: { product, isDefault: true } })
+          : null;
 
-        if (defaultProfile) {
-          await tx.accountProfile.create({
-            data: { accountId: membership.accountId, profileId: defaultProfile.id },
-          });
-        }
+      if (defaultProfile) {
+        await tx.membershipProfile.create({
+          data: { companyId, membershipId, product, profileId: defaultProfile.id },
+        });
       }
 
       return true;
@@ -221,7 +224,7 @@ export const companyRepository = {
 
   /**
    * Takes the seat away. Returns false when the member had none. Refused (409)
-   * if it would leave the company with no one able to manage the ERP's
+   * if it would leave the company with no one able to manage that product's
    * profiles. Profile links are left in place — dormant without the seat.
    */
   revokeSeat(input: {
@@ -240,10 +243,10 @@ export const companyRepository = {
         throw new NotFoundError('Member not found');
       }
 
-      const managersBefore = await countProfileManagers(tx, companyId);
+      const managersBefore = await countProfileManagers(tx, companyId, product);
       const { count } = await tx.productAccess.deleteMany({ where: { membershipId, product } });
 
-      if (managersBefore > 0 && (await countProfileManagers(tx, companyId)) === 0) {
+      if (managersBefore > 0 && (await countProfileManagers(tx, companyId, product)) === 0) {
         throw new ConflictError(LAST_PROFILE_MANAGER_MESSAGE);
       }
 

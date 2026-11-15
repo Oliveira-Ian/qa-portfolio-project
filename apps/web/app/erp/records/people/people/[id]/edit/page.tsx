@@ -18,7 +18,7 @@ interface EditPersonPageProps {
 }
 
 export default async function EditPersonPage({ params }: EditPersonPageProps) {
-  if (!(await can('person:edit'))) {
+  if (!(await can('ERP', 'person:edit'))) {
     redirect(ROUTES.people.list);
   }
 

@@ -9,6 +9,8 @@ export function toMemberDto(row: MemberRow): CompanyMemberDto {
     email: row.account.email,
     role: row.role,
     status: row.status,
+    accountRole: row.account.role,
+    accountActive: row.account.active,
     products: PRODUCTS.filter((product) =>
       row.productAccess.some((seat) => seat.product === product),
     ),

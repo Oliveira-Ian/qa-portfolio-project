@@ -150,6 +150,7 @@ export function ProductAccessEditor({ company, product }: ProductAccessEditorPro
               {t('company.access.discard')}
             </Button>
             <Button
+              variant="create"
               loading={isPending}
               disabled={!isDirty || isOverLimit}
               onClick={handleSave}

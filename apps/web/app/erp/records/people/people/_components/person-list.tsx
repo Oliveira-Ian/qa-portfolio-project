@@ -1,10 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GridColumnPreferenceDto, Person } from '@oliveira/schemas';
 import {
@@ -23,7 +22,6 @@ import { ExportModal } from '@/components/data-table/export-modal';
 import { FilterDrawer } from '@/components/data-table/filter-drawer';
 import { GridCustomizationModal } from '@/components/data-table/grid-customization-modal';
 import { Pagination } from '@/components/data-table/pagination';
-import { RowActionsMenu, type RowAction } from '@/components/data-table/row-actions-menu';
 import { ToolbarList } from '@/components/data-table/toolbar-list';
 import { useDataTable } from '@/components/data-table/use-data-table';
 import { useListingScreen } from '@/components/data-table/use-listing-screen';
@@ -111,64 +109,7 @@ export function PersonList({
     saveGridPreferenceAction: savePersonGridPreferenceAction,
   });
 
-  // Shared by the "⋮" column cell and `DataTable`'s `rowActions` (right-click
-  // menu) — declared once so both paths always show the identical list.
-  const getRowActions = useCallback(
-    (person: Person): RowAction[] => {
-      const actions: RowAction[] = [
-        {
-          key: 'view',
-          label: t('erp.people.view'),
-          icon: Eye,
-          onSelect: () => router.push(ROUTES.people.view(person.id)),
-          testId: `${TESTID_PREFIX}-row-action-view`,
-        },
-      ];
-
-      if (canEdit) {
-        actions.push({
-          key: 'edit',
-          label: t('erp.people.edit'),
-          icon: Pencil,
-          onSelect: () => router.push(ROUTES.people.edit(person.id)),
-          testId: `${TESTID_PREFIX}-row-action-edit`,
-        });
-      }
-
-      if (canDelete) {
-        actions.push({
-          key: 'delete',
-          label: t('erp.people.delete'),
-          icon: Trash2,
-          variant: 'destructive',
-          onSelect: () => setPendingDeleteIds([person.id]),
-          testId: `${TESTID_PREFIX}-row-action-delete`,
-        });
-      }
-
-      return actions;
-    },
-    [router, canEdit, canDelete, t],
-  );
-
-  const columns = useMemo<ColumnDef<Person>[]>(
-    () => [
-      ...personColumns,
-      {
-        id: 'actions',
-        header: '',
-        enableSorting: false,
-        enableHiding: false,
-        cell: ({ row }) => (
-          <RowActionsMenu
-            actions={getRowActions(row.original)}
-            testId={`${TESTID_PREFIX}-row-actions-trigger`}
-          />
-        ),
-      },
-    ],
-    [getRowActions],
-  );
+  const columns = personColumns;
 
   const table = useDataTable({
     data: people,
@@ -261,7 +202,7 @@ export function PersonList({
             ) : null}
             {canEdit ? (
               <Button
-                variant="outline"
+                variant="edit"
                 data-testid={`${TESTID_PREFIX}-button-edit`}
                 disabled={!selectedId}
                 onClick={handleEdit}
@@ -271,7 +212,7 @@ export function PersonList({
               </Button>
             ) : null}
             {canCreate ? (
-              <Button asChild data-testid={`${TESTID_PREFIX}-button-add`}>
+              <Button asChild variant="create" data-testid={`${TESTID_PREFIX}-button-add`}>
                 <Link href={ROUTES.people.new}>
                   <Plus aria-hidden="true" />
                   {t('erp.people.add')}
@@ -331,13 +272,13 @@ export function PersonList({
         <DataTable
           table={table}
           testIdPrefix={TESTID_PREFIX}
-          rowActions={getRowActions}
+          onRowOpen={(person) => router.push(ROUTES.people.view(person.id))}
           getRowLabel={(person) => person.name}
           emptyState={{
             title: t('erp.people.empty.title'),
             description: t('erp.people.empty.body'),
             action: canCreate ? (
-              <Button asChild data-testid={`${TESTID_PREFIX}-empty-button-add`}>
+              <Button asChild variant="create" data-testid={`${TESTID_PREFIX}-empty-button-add`}>
                 <Link href={ROUTES.people.new}>
                   <Plus aria-hidden="true" />
                   {t('erp.people.addFirst')}

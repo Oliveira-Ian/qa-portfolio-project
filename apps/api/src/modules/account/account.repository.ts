@@ -1,4 +1,5 @@
 import type { AccessAccount, AccountRole, Prisma } from '../../generated/prisma/client.js';
+import type { Product } from '@oliveira/schemas';
 import { prisma, withTransaction } from '../../config/prisma.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
 import {
@@ -10,13 +11,16 @@ import { requireCompanyId } from '../../shared/request-context.js';
 import { withProfileManagerGuard } from '../company/company-guards.js';
 
 /**
- * An account as the company sees it: with its profiles, and with its membership
- * in the caller's company (only that one — never another company's) for the
- * person it is linked to there.
+ * An account as a company sees it in one product: its membership in the
+ * caller's company (only that one — never another company's), the person it is
+ * linked to there, and its profiles of that product.
  */
 export type AccountWithProfiles = AccessAccount & {
-  profiles: { profile: { id: number; name: string } }[];
-  memberships: { personId: string | null }[];
+  memberships: {
+    id: string;
+    personId: string | null;
+    profiles: { profile: { id: number; name: string } }[];
+  }[];
 };
 
 export interface CreateAccountData {
@@ -33,11 +37,20 @@ export interface CreateAccountForPersonData {
   companyId: string;
 }
 
-/** Profiles, plus the membership in the caller's company and nothing about any other. */
-function companyView() {
+/** The membership in the caller's company and its profiles in `product` — nothing about any other. */
+function companyView(product: Product) {
   return {
-    profiles: { include: { profile: { select: { id: true, name: true } } } },
-    memberships: { where: { companyId: requireCompanyId() }, select: { personId: true } },
+    memberships: {
+      where: { companyId: requireCompanyId() },
+      select: {
+        id: true,
+        personId: true,
+        profiles: {
+          where: { product },
+          select: { profile: { select: { id: true, name: true } } },
+        },
+      },
+    },
   } as const;
 }
 
@@ -61,8 +74,8 @@ export const accountRepository = {
     return prisma.accessAccount.findUnique({ where: { id } });
   },
 
-  findByIdWithProfiles(id: number): Promise<AccountWithProfiles | null> {
-    return prisma.accessAccount.findUnique({ where: { id }, include: companyView() });
+  findByIdWithProfiles(product: Product, id: number): Promise<AccountWithProfiles | null> {
+    return prisma.accessAccount.findUnique({ where: { id }, include: companyView(product) });
   },
 
   /**
@@ -71,6 +84,7 @@ export const accountRepository = {
    * filter/sort on that computed value in memory.
    */
   findMany(
+    product: Product,
     where: Prisma.AccessAccountWhereInput,
     orderBy: Prisma.AccessAccountOrderByWithRelationInput[],
     skip?: number,
@@ -79,7 +93,7 @@ export const accountRepository = {
     return prisma.accessAccount.findMany({
       where,
       orderBy,
-      include: companyView(),
+      include: companyView(product),
       ...(skip === undefined ? {} : { skip }),
       ...(take === undefined ? {} : { take }),
     });
@@ -173,19 +187,33 @@ export const accountRepository = {
     }
   },
 
-  /** Idempotent — linking a profile that's already attached is not an error. */
-  async linkProfile(accountId: number, profileId: number): Promise<void> {
-    await prisma.accountProfile.upsert({
-      where: { accountId_profileId: { accountId, profileId } },
-      update: {},
-      create: { accountId, profileId },
-    });
-  },
+  /**
+   * Replaces the member's profile in `product` with `profileId`, or removes it
+   * (`null`). Refused (404) for a profile of another product or company, and
+   * (409) if it would leave the company with no one able to manage this
+   * product's profiles.
+   */
+  async setProfile(
+    product: Product,
+    membershipId: string,
+    profileId: number | null,
+  ): Promise<void> {
+    await withProfileManagerGuard(product, async (tx) => {
+      if (profileId !== null) {
+        const profile = await tx.accessProfile.findFirst({ where: { id: profileId, product } });
 
-  /** Refused (409) if it would leave the company with no one able to manage profiles. */
-  async unlinkProfile(accountId: number, profileId: number): Promise<void> {
-    await withProfileManagerGuard((tx) =>
-      tx.accountProfile.deleteMany({ where: { accountId, profileId } }),
-    );
+        if (!profile) {
+          throw new NotFoundError('Profile not found');
+        }
+      }
+
+      await tx.membershipProfile.deleteMany({ where: { membershipId, product } });
+
+      if (profileId !== null) {
+        await tx.membershipProfile.create({
+          data: { companyId: requireCompanyId(), membershipId, product, profileId },
+        });
+      }
+    });
   },
 };

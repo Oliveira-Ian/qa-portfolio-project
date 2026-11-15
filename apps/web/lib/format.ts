@@ -1,3 +1,5 @@
+import { BUSINESS_TIME_ZONE } from '@oliveira/schemas';
+
 /**
  * Locale-aware formatting in one place.
  *
@@ -157,6 +159,38 @@ export function formatDateMedium(value: string | null | undefined, locale: strin
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
     mediumDateFormatters.set(locale, formatter);
+  }
+
+  return formatter.format(date);
+}
+
+const dateTimeMediumFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * "Nov 20, 2026, 09:00" / "20 de nov. de 2026, 09:00": a moment — a work
+ * order's schedule — in the interface language and the business time zone,
+ * so the server and the browser render the same text.
+ */
+export function formatDateTimeMedium(value: string | null | undefined, locale: string): string {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  let formatter = dateTimeMediumFormatters.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: BUSINESS_TIME_ZONE,
+    });
+    dateTimeMediumFormatters.set(locale, formatter);
   }
 
   return formatter.format(date);

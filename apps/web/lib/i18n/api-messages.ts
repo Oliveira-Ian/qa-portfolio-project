@@ -37,6 +37,7 @@ const EXACT: Record<string, MessageKey> = {
   'Unknown product': 'api.validation.unknownProduct',
   'Invalid birth date': 'api.validation.invalidBirthDate',
   'One or more permissions do not exist': 'api.validation.unknownPermission',
+  'Code is required': 'api.validation.codeRequired',
 
   // Auth
   'Please fill in email and password': 'api.auth.missingFields',
@@ -60,6 +61,8 @@ const EXACT: Record<string, MessageKey> = {
   'Person not found': 'api.notFound.person',
   'One or more people were not found': 'api.notFound.people',
   'Profile not found': 'api.notFound.profile',
+  'Branch not found': 'api.notFound.branch',
+  'The demo account cannot be changed': 'api.guard.demoLocked',
   'The company must keep at least one administrator': 'api.guard.lastCompanyAdmin',
   'At least one member must keep the ability to manage profiles': 'api.guard.lastProfileManager',
   'Cannot remove the last active super admin': 'api.guard.lastSuperAdmin',
@@ -67,6 +70,46 @@ const EXACT: Record<string, MessageKey> = {
   'This profile is protected and cannot be deleted': 'api.guard.protectedProfile',
   'A person with this document already exists': 'api.guard.documentTaken',
   'A profile with this name already exists': 'api.guard.profileNameTaken',
+  'A branch with this code already exists': 'api.guard.branchCodeTaken',
+  'This branch is in use. Deactivate it instead.': 'api.guard.branchInUse',
+  'An address in use by equipment or work orders cannot be removed': 'api.guard.addressInUse',
+  'Contact name is required': 'api.validation.contactNameRequired',
+
+  // Oliveira FSM's records
+  'Customer not found': 'api.notFound.customer',
+  'Equipment not found': 'api.notFound.equipment',
+  'Product or service not found': 'api.notFound.catalogItem',
+  'Work order type not found': 'api.notFound.workOrderType',
+  'This customer has equipment or work orders. Deactivate it instead.': 'api.guard.customerInUse',
+  'This equipment has work orders. Deactivate it instead.': 'api.guard.equipmentInUse',
+  'An equipment with this tag already exists': 'api.guard.equipmentTagTaken',
+  "The address must be one of the customer's addresses": 'api.guard.equipmentAddress',
+  'A product or service with this code already exists': 'api.guard.catalogItemCodeTaken',
+  'This product or service is in use. Deactivate it instead.': 'api.guard.catalogItemInUse',
+  'A work order type with this name already exists': 'api.guard.workOrderTypeNameTaken',
+  'This work order type is in use. Deactivate it instead.': 'api.guard.workOrderTypeInUse',
+  'Customer is required': 'api.validation.customerRequired',
+  'Unit is required': 'api.validation.unitRequired',
+  'Invalid price': 'api.validation.invalidPrice',
+  'Invalid date': 'api.validation.invalidDate',
+  'Work order not found': 'api.notFound.workOrder',
+  'Item not found': 'api.notFound.workOrderItem',
+  'A completed or cancelled work order cannot be changed': 'api.guard.workOrderFinal',
+  'The customer cannot change once the work has started': 'api.guard.workOrderCustomerLocked',
+  "The equipment must be one of the customer's": 'api.guard.workOrderEquipment',
+  'The technician must have the FSM and permission to execute work orders':
+    'api.guard.workOrderTechnician',
+  'Materials and services are recorded while the work is in progress':
+    'api.guard.workOrderItemsLocked',
+  'Type is required': 'api.validation.workOrderTypeRequired',
+  'Title is required': 'api.validation.titleRequired',
+  'The due date cannot be before the scheduled date': 'api.validation.dueBeforeSchedule',
+  'A reason is required': 'api.validation.reasonRequired',
+  'Describe the work done to complete the work order': 'api.validation.resolutionRequired',
+  'Write the note': 'api.validation.noteRequired',
+  'Choose a product or service': 'api.validation.itemRequired',
+  'Invalid quantity': 'api.validation.invalidQuantity',
+  'The warranty cannot end before the installation': 'api.validation.warrantyBeforeInstall',
 
   // Confirmations a Server Action sends back
   'Person created successfully': 'api.done.personCreated',
@@ -105,6 +148,42 @@ const PATTERNS: readonly MessagePattern[] = [
   },
   { pattern: /^(\d+) people deleted$/, key: 'api.done.peopleDeleted', vars: countVars },
   { pattern: /^(\d+) profiles deleted$/, key: 'api.done.profilesDeleted', vars: countVars },
+  {
+    pattern: /^A work order cannot go from \w+ to \w+$/,
+    key: 'api.guard.workOrderTransition',
+    vars: () => ({}),
+  },
+  { pattern: /^Branch deleted$/, key: 'api.done.branchesDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(d+) branches deleted$/, key: 'api.done.branchesDeleted', vars: countVars },
+  { pattern: /^Customer deleted$/, key: 'api.done.customersDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(\d+) customers deleted$/, key: 'api.done.customersDeleted', vars: countVars },
+  { pattern: /^Equipment deleted$/, key: 'api.done.equipmentDeleted', vars: () => ({ count: 1 }) },
+  { pattern: /^(\d+) equipment deleted$/, key: 'api.done.equipmentDeleted', vars: countVars },
+  {
+    pattern: /^Product or service deleted$/,
+    key: 'api.done.catalogItemsDeleted',
+    vars: () => ({ count: 1 }),
+  },
+  {
+    pattern: /^(\d+) products and services deleted$/,
+    key: 'api.done.catalogItemsDeleted',
+    vars: countVars,
+  },
+  {
+    pattern: /^Work order type deleted$/,
+    key: 'api.done.workOrderTypesDeleted',
+    vars: () => ({ count: 1 }),
+  },
+  {
+    pattern: /^(\d+) work order types deleted$/,
+    key: 'api.done.workOrderTypesDeleted',
+    vars: countVars,
+  },
+  {
+    pattern: /^Use at most (\d+) characters$/,
+    key: 'api.validation.tooLong',
+    vars: (match) => ({ max: Number(match[1]) }),
+  },
 ];
 
 /** The message in the user's language, or the original when it isn't one the app knows. */

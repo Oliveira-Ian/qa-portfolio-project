@@ -162,15 +162,44 @@ a persisted, queryable trail belongs to F-15 (#7).
 
 ## Adding a new permission
 
-1. Add the entry to `PERMISSION_CATALOG` in `packages/schemas/src/permissions.ts`
-   (`{ resource: 'service-order', action: 'approve', label: 'Approve service orders' }`).
-2. Re-run `npm run db:seed` — `seedPermissions()` upserts by `(resource, action)`, so this is safe to
-   run against a database that already has data. The seeded Administrator profile is re-synced to hold
-   the whole catalog.
-3. Guard the route: `app.addHook('preHandler', requirePermission('service-order:approve'))`, or per-route,
-   after the product's `requireProductAccess`.
-4. The profiles screen needs no code change — its permission picker reads the live catalog from
-   `GET /api/permissions` and groups by `resource` automatically.
+1. Add the entry to the product's section of `PERMISSION_CATALOG` in
+   `packages/schemas/src/permissions.ts` (`FSM: [{ resource: 'work-order', action: 'approve', … }]`).
+2. Re-run `npm run db:seed` — the catalog is upserted by `(product, resource, action)`, so this is safe
+   against a database that already has data. Each company's protected Administrator profile of that
+   product gains the new permission; every other profile is the company's and is left alone.
+3. Guard the route after the product's `requireProductAccess`:
+   `requirePermission('FSM', 'work-order:approve')`. The key is typed per product, so an ERP key on an
+   FSM route does not compile.
+4. The profile editors need no code change — each reads its product's live catalog
+   (`GET /api/permissions` for the ERP, `GET /api/fsm/permissions` for the FSM).
 
-When the FSM has its first permission the catalog gains a product dimension (ADR 0018); until then every
-entry is the ERP's.
+## Profiles per company and per product (since `20261110130000_product_scoped_profiles`)
+
+- A profile belongs to **one company and one product** (`AccessProfile.companyId`, `.product`), holds
+  only that product's permissions, and is under row-level security. The ERP's and the FSM's profiles,
+  editors and routes are separate: `/api/profiles`, `/api/permissions`, `/api/accounts` are the ERP's;
+  `/api/fsm/profiles`, `/api/fsm/permissions`, `/api/fsm/accounts` the FSM's. The product comes from
+  the route, never from the request body.
+- A member holds **one profile per product** (`MembershipProfile`, unique per membership and product,
+  decided 2026-11-10), linked to the **membership**, so the same login can do different things in
+  different companies. `PUT /api/accounts/:id/profile` (ERP) and `/api/fsm/accounts/:id/profile` (FSM)
+  set or clear it. It is set on each product's Users screen and on the Platform's member page — there
+  only for someone who manages that product's profiles, through the same product API. A later branch
+  restriction would be a column on the link.
+- Reference profiles (`prisma/reference-profiles.ts`) are copied into a company for each product it
+  contracts: ERP — Administrator, Manager, Finance, Cashier, Default User; FSM — Administrator,
+  Manager, Technician. The company edits, duplicates (`POST …/profiles/:id/duplicate`) and adds to
+  them; the protected ones (`isSystem`) cannot be deleted.
+- A member's first seat in a product links that product's default profile (ERP Default User, FSM
+  Technician) — never an administrative one. The "last member able to manage profiles" guard is per
+  product.
+- The FSM's catalog: `customer:*`, `equipment:*`, `catalog-item:*` and `branch:*` (view, create,
+  edit, delete), `work-order-type:manage`, `work-order:view|create|edit|assign|change-status|execute`,
+  `dashboard:view`, `profile:manage`. A list another record's form picks from is also readable with
+  that form's permission: customers, equipment, branches and work order types with
+  `work-order:create`/`edit`, products and services with `work-order:execute`/`edit`. Branches are
+  Foundation data managed inside each product with that product's `branch:*`
+  (docs/adr/0013, addendum); only the FSM mounts them today (`/api/fsm/branches`).
+- Each product manages its profiles and users on its own screens, built from the same components
+  (`components/profiles/`, `components/access-control/`): `/erp/administration/access-control/…` and
+  `/fsm/administration/access-control/…`. The profile editor shows that product's catalog only.

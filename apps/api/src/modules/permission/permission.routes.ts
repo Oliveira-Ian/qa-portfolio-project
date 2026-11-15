@@ -1,13 +1,21 @@
 import type { FastifyInstance } from 'fastify';
+import type { ProductRouteOptions } from '../../shared/product-route.js';
 import { requireAuth } from '../auth/require-auth.js';
 import { requirePermission, requireProductAccess } from '../auth/authorize.js';
-import { permissionController } from './permission.controller.js';
+import { createPermissionController } from './permission.controller.js';
 
-/** The catalog itself — read by whoever manages the ERP's profiles, like the rest of it. */
-export async function permissionRoutes(app: FastifyInstance) {
+/**
+ * A product's permission catalog, read-only — what its profile editor offers.
+ * Registered once per product (`/api/permissions` is the ERP's,
+ * `/api/fsm/permissions` the FSM's), each behind that product's seat and its own
+ * `profile:manage`.
+ */
+export async function permissionRoutes(app: FastifyInstance, { product }: ProductRouteOptions) {
+  const controller = createPermissionController(product);
+
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireProductAccess('ERP'));
-  app.addHook('preHandler', requirePermission('profile:manage'));
+  app.addHook('preHandler', requireProductAccess(product));
+  app.addHook('preHandler', requirePermission(product, 'profile:manage'));
 
   app.get(
     '/',
@@ -15,6 +23,6 @@ export async function permissionRoutes(app: FastifyInstance) {
       schema: { tags: ['permissions'], security: [{ bearerAuth: [] }] },
       config: { errorMessage: 'Failed to list permissions' },
     },
-    permissionController.list,
+    controller.list,
   );
 }

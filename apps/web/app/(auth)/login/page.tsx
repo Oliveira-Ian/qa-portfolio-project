@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getDemoLogin, isPublicRegistrationEnabled } from '@/lib/deployment';
 import { getTranslator } from '@/lib/i18n/server';
 import { LoginForm } from './_components/login-form';
 
@@ -20,5 +21,7 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { next } = await searchParams;
 
-  return <LoginForm next={next} />;
+  return (
+    <LoginForm next={next} canRegister={isPublicRegistrationEnabled()} demo={getDemoLogin()} />
+  );
 }

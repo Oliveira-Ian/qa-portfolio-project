@@ -15,6 +15,7 @@ export function CreatePersonForm() {
     zodResolver(personFormSchema),
     emptyPersonFormValues,
     createPersonAction,
+    { message: t('api.done.personCreated'), href: ROUTES.people.list },
   );
 
   return (
@@ -23,7 +24,6 @@ export function CreatePersonForm() {
       formTestId="person-form"
       form={form}
       onSubmit={onSubmit}
-      errorBodyKey="erp.people.form.errorBody"
       header={
         <FormCardHeader
           title={t('erp.people.form.newTitle')}

@@ -22,6 +22,24 @@ export interface FilterFieldDescriptor {
 
 export type FilterFieldMap = Record<string, FilterFieldDescriptor>;
 
+/**
+ * A multi-select filter's values (`f_city=Campinas,São Paulo`), or undefined
+ * when the parameter is absent or empty. For filters a `FilterFieldMap` can't
+ * express — a value on a related row, say.
+ */
+export function readListParam(query: Record<string, unknown>, key: string): string[] | undefined {
+  const value = query[key];
+  const values =
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+
+  return values.length > 0 ? values : undefined;
+}
+
 /** `page`/`pageSize` (1-based) → Prisma's `skip`/`take`. */
 export function toSkipTake(pagination: PaginationQuery): { skip: number; take: number } {
   return { skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize };

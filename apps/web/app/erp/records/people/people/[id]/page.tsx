@@ -11,7 +11,7 @@ interface PersonPageProps {
 
 /** The record's own name in the tab, so several open sheets stay tellable apart. */
 export async function generateMetadata({ params }: PersonPageProps): Promise<Metadata> {
-  if (!(await can('person:view'))) {
+  if (!(await can('ERP', 'person:view'))) {
     return {};
   }
 
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PersonPageProps): Promise<Met
 }
 
 export default async function PersonPage({ params }: PersonPageProps) {
-  if (!(await can('person:view'))) {
+  if (!(await can('ERP', 'person:view'))) {
     return <NoPermission screen="nav.erp.people" />;
   }
 
@@ -31,7 +31,7 @@ export default async function PersonPage({ params }: PersonPageProps) {
   const [person, admin, canEdit] = await Promise.all([
     getPerson(id),
     isCompanyAdmin(),
-    can('person:edit'),
+    can('ERP', 'person:edit'),
   ]);
   // The accounts endpoint is ADMIN-only and only meaningful for USER-typed
   // people — skip the call entirely rather than let it fail on purpose.

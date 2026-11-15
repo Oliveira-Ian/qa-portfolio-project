@@ -11,6 +11,7 @@ import {
 } from '@oliveira/schemas';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors.js';
 import { requireCompanyId } from '../../shared/request-context.js';
+import { assertNotDemoMembership } from '../auth/demo-guard.js';
 import { toMemberDto } from './company.mapper.js';
 import { companyRepository } from './company.repository.js';
 
@@ -117,11 +118,15 @@ export const companyService = {
   },
 
   async updateMember(id: string, input: MemberUpdateInput): Promise<CompanyMemberDto> {
+    await assertNotDemoMembership(id);
+
     return toMemberDto(await companyRepository.updateMember(id, requireCompanyId(), input));
   },
 
   /** `changed` is false when the member already held the seat. */
   async grantSeat(id: string, product: Product, grantedById: number): Promise<SeatChangeDto> {
+    await assertNotDemoMembership(id);
+
     const changed = await companyRepository.grantSeat({
       membershipId: id,
       companyId: requireCompanyId(),
@@ -134,6 +139,8 @@ export const companyService = {
 
   /** `changed` is false when the member held no such seat. */
   async revokeSeat(id: string, product: Product): Promise<SeatChangeDto> {
+    await assertNotDemoMembership(id);
+
     const changed = await companyRepository.revokeSeat({
       membershipId: id,
       companyId: requireCompanyId(),
@@ -146,9 +153,9 @@ export const companyService = {
   /**
    * 404 unless the account is a member of the company — the company's own data
    * (its accounts) is invisible from outside it, and "not found" doesn't say
-   * whether the account exists elsewhere.
+   * whether the account exists elsewhere. Returns the membership's id.
    */
-  async requireMember(accountId: number, companyId: string, product?: Product): Promise<void> {
+  async requireMember(accountId: number, companyId: string, product?: Product): Promise<string> {
     const membership = await companyRepository.findMembership(accountId, companyId);
 
     if (!membership) {
@@ -158,5 +165,7 @@ export const companyService = {
     if (product && !membership.productAccess.some((seat) => seat.product === product)) {
       throw new ConflictError(`This account has no access to ${PRODUCT_LABELS[product]}`);
     }
+
+    return membership.id;
   },
 };

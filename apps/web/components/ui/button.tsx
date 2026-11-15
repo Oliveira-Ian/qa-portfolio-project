@@ -35,6 +35,12 @@ const buttonVariants = cva(
           'bg-destructive text-destructive-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_1px_2px_rgba(18,21,27,.2)] hover:bg-destructive-hover active:bg-[var(--olv-danger-800)] active:shadow-[inset_0_1px_3px_rgba(0,0,0,.28)] disabled:bg-danger-border/60 disabled:text-danger-on/60 disabled:shadow-none',
         'destructive-soft':
           'border-danger-border bg-surface text-destructive shadow-xs hover:border-destructive/50 hover:bg-danger-light active:bg-danger-light disabled:border-danger-border/50 disabled:text-destructive/40 disabled:shadow-none',
+        // An action's colour says what it does (decided 2026-11-15): create and save green,
+        // edit amber, delete red (`destructive-soft`) — all on white. Text ≥ 4.99:1 on
+        // white, ≥ 7:1 on the hover tint. The product accent stays for other actions.
+        create:
+          'border-success/45 bg-surface text-success shadow-xs hover:border-success hover:bg-success-light hover:text-success-on active:bg-success-light active:shadow-[inset_0_1px_2px_rgba(18,21,27,.1)] disabled:border-success/25 disabled:text-success/45 disabled:shadow-none aria-disabled:border-success/25 aria-disabled:text-success/45',
+        edit: 'border-warning/45 bg-surface text-warning shadow-xs hover:border-warning hover:bg-warning-light hover:text-warning-on active:bg-warning-light active:shadow-[inset_0_1px_2px_rgba(18,21,27,.1)] disabled:border-warning/25 disabled:text-warning/45 disabled:shadow-none aria-disabled:border-warning/25 aria-disabled:text-warning/45',
         link: 'h-auto rounded-xs px-0 py-0.5 font-semibold text-primary underline decoration-transparent decoration-[1.5px] underline-offset-3 shadow-none hover:decoration-current active:translate-y-0 active:text-primary-active disabled:text-text-disabled disabled:no-underline',
         shell:
           'border-shell-border bg-shell-control text-shell-text hover:border-[#363C48] hover:bg-shell-control-hover hover:text-white focus-visible:ring-focus-shell',

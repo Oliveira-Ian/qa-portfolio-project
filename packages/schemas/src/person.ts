@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { isValidEmail } from './email.js';
+import { addressToFormValues, addressWriteSchema, type AddressDto } from './address.js';
+import { contactToFormValues, contactWriteSchema, type ContactDto } from './contact.js';
+import { maxLengthMessage } from './messages.js';
 import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
+
+/** Optional text in the API's write: `null` or a string within `max`. */
+const optionalText = (max: number) =>
+  z.string().trim().max(max, maxLengthMessage(max)).nullable().optional();
 
 /**
  * A Person can hold more than one role at once — a company can be a client
@@ -47,45 +54,76 @@ const requiredText = (message: string) =>
  * once the base shape parses, so a person with no type at all still reports
  * "At least one type is required" rather than a confusing document error.
  */
+/**
+ * The document rule, shared by every write of a person: when one is given it
+ * needs its type and the right number of digits; `required` says whether an
+ * empty one is an error too (the ERP's CLIENT and SUPPLIER).
+ */
+function checkDocument(
+  data: { document?: string | null | undefined; documentType?: DocumentType | null | undefined },
+  ctx: z.RefinementCtx,
+  required: boolean,
+): void {
+  const document = data.document?.trim() ?? '';
+
+  if (document === '') {
+    if (required) {
+      ctx.addIssue({ code: 'custom', message: 'Document is required', path: ['document'] });
+    }
+    return;
+  }
+
+  if (!data.documentType) {
+    ctx.addIssue({ code: 'custom', message: 'Document type is required', path: ['documentType'] });
+    return;
+  }
+
+  if (document.replace(/\D/g, '').length !== documentLengthByType[data.documentType]) {
+    ctx.addIssue({ code: 'custom', message: 'Invalid document format', path: ['document'] });
+  }
+}
+
+/** Every field of a person's write except the ERP's `types` — what the FSM's customer writes too. */
+const personWriteShape = {
+  name: requiredText('Name is required'),
+  documentType: documentTypeSchema.nullable().optional(),
+  document: z.string().trim().nullable().optional(),
+  tradeName: optionalText(160),
+  stateRegistration: optionalText(20),
+  municipalRegistration: optionalText(20),
+  email: z.string().trim().email('Invalid email').nullable().optional(),
+  phone: optionalText(20),
+  mobile: optionalText(20),
+  birthdate: z.coerce.date({ error: 'Invalid birth date' }).nullable().optional(),
+  active: z.boolean().optional(),
+  notes: z.string().trim().nullable().optional(),
+  /** Every address of the record — sent in full, the API syncs the set. */
+  addresses: z.array(addressWriteSchema).default([]),
+  /** Every contact person of the record — sent in full, like `addresses`. */
+  contacts: z.array(contactWriteSchema).default([]),
+};
+
 export const personCreateSchema = z
   .object({
-    name: requiredText('Name is required'),
+    ...personWriteShape,
     types: z.array(personTypeValueSchema).min(1, 'At least one type is required'),
-    documentType: documentTypeSchema.nullable().optional(),
-    document: z.string().trim().nullable().optional(),
-    email: z.string().trim().email('Invalid email').nullable().optional(),
-    phone: z.string().trim().nullable().optional(),
-    birthdate: z.coerce.date({ error: 'Invalid birth date' }).nullable().optional(),
-    active: z.boolean().optional(),
-    street: z.string().trim().nullable().optional(),
-    city: z.string().trim().nullable().optional(),
-    state: z.string().trim().nullable().optional(),
-    zipCode: z.string().trim().nullable().optional(),
-    notes: z.string().trim().nullable().optional(),
   })
   .superRefine((data, ctx) => {
-    if (!requiresDocument(data.types)) {
-      return;
-    }
-
-    if (!data.document || data.document.trim().length === 0) {
-      ctx.addIssue({ code: 'custom', message: 'Document is required', path: ['document'] });
-      return;
-    }
-
-    if (!data.documentType) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Document type is required',
-        path: ['documentType'],
-      });
-      return;
-    }
-
-    if (data.document.replace(/\D/g, '').length !== documentLengthByType[data.documentType]) {
-      ctx.addIssue({ code: 'custom', message: 'Invalid document format', path: ['document'] });
+    if (requiresDocument(data.types)) {
+      checkDocument(data, ctx, true);
     }
   });
+
+/**
+ * An FSM customer's person (docs/adr/0019): the same record, written without
+ * the ERP's `types` — a product never extends that classification. The
+ * document is optional, and checked when given.
+ */
+export const customerPersonWriteSchema = z
+  .object(personWriteShape)
+  .superRefine((data, ctx) => checkDocument(data, ctx, false));
+
+export type CustomerPersonWriteInput = z.infer<typeof customerPersonWriteSchema>;
 
 // PUT is a full replace, not a patch (docs/api/http_responses.md documents the
 // same body for POST and PUT). It also cannot be `.partial()`: the
@@ -157,85 +195,88 @@ export type PersonListQuery = z.infer<typeof personListQuerySchema>;
  * the behaviour we want: an empty document on a CLIENT reads "Document is
  * required", and a short one reads "Invalid document format".
  */
-export const personFormSchema = z
-  .object({
-    name: z.string().trim().min(1, 'Name is required'),
-    types: z.array(personTypeValueSchema).min(1, 'At least one type is required'),
-    documentType: documentTypeSchema.nullable(),
-    document: z.string().trim(),
-    email: z.string().trim(),
-    phone: z.string().trim(),
-    birthdate: z.string(),
-    active: z.boolean(),
-    street: z.string().trim(),
-    city: z.string().trim(),
-    state: z.string().trim(),
-    zipCode: z.string().trim(),
-    notes: z.string().trim(),
-  })
+const personFormShape = {
+  name: z.string().trim().min(1, 'Name is required'),
+  tradeName: z.string().trim().max(160, maxLengthMessage(160)),
+  types: z.array(personTypeValueSchema).min(1, 'At least one type is required'),
+  documentType: documentTypeSchema.nullable(),
+  document: z.string().trim(),
+  stateRegistration: z.string().trim().max(20, maxLengthMessage(20)),
+  municipalRegistration: z.string().trim().max(20, maxLengthMessage(20)),
+  email: z.string().trim(),
+  phone: z.string().trim(),
+  mobile: z.string().trim(),
+  birthdate: z.string(),
+  active: z.boolean(),
+  notes: z.string().trim(),
+  addresses: z.array(addressWriteSchema),
+  contacts: z.array(contactWriteSchema),
+};
+
+function checkEmail(data: { email: string }, ctx: z.RefinementCtx): void {
+  if (data.email !== '' && !isValidEmail(data.email)) {
+    ctx.addIssue({ code: 'custom', message: 'Invalid email', path: ['email'] });
+  }
+}
+
+export const personFormSchema = z.object(personFormShape).superRefine((data, ctx) => {
+  checkEmail(data, ctx);
+
+  if (requiresDocument(data.types)) {
+    checkDocument(data, ctx, true);
+  }
+});
+
+/**
+ * The FSM customer's form: the person's form values (one shape, one field
+ * layout), with `types` left alone and the document optional.
+ */
+export const customerFormSchema = z
+  .object({ ...personFormShape, types: z.array(personTypeValueSchema) })
   .superRefine((data, ctx) => {
-    if (data.email !== '' && !isValidEmail(data.email)) {
-      ctx.addIssue({ code: 'custom', message: 'Invalid email', path: ['email'] });
-    }
-
-    if (!requiresDocument(data.types)) {
-      return;
-    }
-
-    if (data.document === '') {
-      ctx.addIssue({ code: 'custom', message: 'Document is required', path: ['document'] });
-      return;
-    }
-
-    if (!data.documentType) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Document type is required',
-        path: ['documentType'],
-      });
-      return;
-    }
-
-    if (data.document.replace(/\D/g, '').length !== documentLengthByType[data.documentType]) {
-      ctx.addIssue({ code: 'custom', message: 'Invalid document format', path: ['document'] });
-    }
+    checkEmail(data, ctx);
+    checkDocument(data, ctx, false);
   });
 
 export type PersonFormValues = z.infer<typeof personFormSchema>;
 
 export const emptyPersonFormValues: PersonFormValues = {
   name: '',
+  tradeName: '',
   types: [],
   documentType: null,
   document: '',
+  stateRegistration: '',
+  municipalRegistration: '',
   email: '',
   phone: '',
+  mobile: '',
   birthdate: '',
   active: true,
-  street: '',
-  city: '',
-  state: '',
-  zipCode: '',
   notes: '',
+  addresses: [],
+  contacts: [],
 };
 
 /** Wire record → form values. An absent field is an empty string, never null. */
 export function personToFormValues(person: Person): PersonFormValues {
   return {
     name: person.name,
+    tradeName: person.tradeName ?? '',
     types: person.types,
     documentType: person.documentType,
     document: person.document ?? '',
+    stateRegistration: person.stateRegistration ?? '',
+    municipalRegistration: person.municipalRegistration ?? '',
     email: person.email ?? '',
     phone: person.phone ?? '',
+    mobile: person.mobile ?? '',
     // `<input type="date">` wants the calendar day, not the instant.
     birthdate: person.birthdate ? person.birthdate.slice(0, 10) : '',
     active: person.active,
-    street: person.street ?? '',
-    city: person.city ?? '',
-    state: person.state ?? '',
-    zipCode: person.zipCode ?? '',
     notes: person.notes ?? '',
+    addresses: person.addresses.map(addressToFormValues),
+    contacts: person.contacts.map(contactToFormValues),
   };
 }
 
@@ -248,16 +289,30 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
     types: values.types,
     documentType: requiresDocument(values.types) ? values.documentType : null,
     document: requiresDocument(values.types) ? orNull(values.document) : null,
+    tradeName: orNull(values.tradeName),
+    stateRegistration: orNull(values.stateRegistration),
+    municipalRegistration: orNull(values.municipalRegistration),
     email: orNull(values.email),
     phone: orNull(values.phone),
+    mobile: orNull(values.mobile),
     birthdate: values.birthdate ? new Date(values.birthdate) : null,
     active: values.active,
-    street: orNull(values.street),
-    city: orNull(values.city),
-    state: orNull(values.state),
-    zipCode: orNull(values.zipCode),
     notes: orNull(values.notes),
+    addresses: values.addresses.map((address) => addressWriteSchema.parse(address)),
+    contacts: values.contacts.map((contact) => contactWriteSchema.parse(contact)),
   };
+}
+
+/** Form values → an FSM customer's person: no `types`, the document kept whenever it was typed. */
+export function customerFormValuesToPayload(values: PersonFormValues): CustomerPersonWriteInput {
+  // `CLIENT` only so the document is kept whenever it was typed; `types` itself is dropped.
+  const payload: Partial<PersonCreateInput> = personFormValuesToPayload({
+    ...values,
+    types: ['CLIENT'],
+  });
+  delete payload.types;
+
+  return payload as CustomerPersonWriteInput;
 }
 
 /**
@@ -268,18 +323,25 @@ export function personFormValuesToPayload(values: PersonFormValues): PersonCreat
 export interface Person {
   id: string;
   name: string;
+  tradeName: string | null;
   email: string | null;
   phone: string | null;
+  mobile: string | null;
   birthdate: string | null;
   types: PersonTypeValue[];
   documentType: DocumentType | null;
   document: string | null;
+  stateRegistration: string | null;
+  municipalRegistration: string | null;
   active: boolean;
-  street: string | null;
+  /** City and state of the primary address — what a list shows; `null` without one. */
   city: string | null;
   state: string | null;
-  zipCode: string | null;
   notes: string | null;
+  /** Every address, primary first. Lists leave them out (`[]`). */
+  addresses: AddressDto[];
+  /** Every contact person, primary first. Lists leave them out (`[]`). */
+  contacts: ContactDto[];
   createdAt: string;
   updatedAt: string;
 }

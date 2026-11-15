@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { ArrowRight, Building2, Blocks, ShieldCheck, Users } from 'lucide-react';
-import { PRODUCT_LABELS } from '@oliveira/schemas';
+import { ArrowRight, Building2, Blocks, Pencil, ShieldCheck, Users } from 'lucide-react';
+import { PRODUCT_LABELS, type CompanyProfileDto } from '@oliveira/schemas';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge, StatusBadge } from '@/components/ui/badge';
+import { DescriptionList } from '@/components/ui/description-list';
 import {
   Table,
   TableBody,
@@ -13,8 +14,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getTranslator } from '@/lib/i18n/server';
+import { maskDocument } from '@/lib/masks';
 import { ROUTES } from '@/lib/navigation/routes';
 import { getCompanyMembers } from '../_data-access/get-company-members';
+import { getCompanyProfile } from '../_data-access/get-company-profile';
+
+/** "Rua X, 100 — Sala 2 · Centro · São Paulo/SP · 01310-100", leaving out whatever is empty. */
+function formatAddress(company: CompanyProfileDto): string {
+  const street = [company.street, company.number].filter(Boolean).join(', ');
+  const line = [street, company.complement].filter(Boolean).join(' — ');
+  const place = [company.city, company.state].filter(Boolean).join('/');
+
+  return [line, company.district, place, company.zipCode].filter(Boolean).join(' · ');
+}
 
 /**
  * The company, read-only (handoff § 9a: "content defined by ADRs/specs — not
@@ -24,7 +36,12 @@ import { getCompanyMembers } from '../_data-access/get-company-members';
  * the two places where something can be done: members and product access.
  */
 export async function CompanyOverview() {
-  const [t, company] = await Promise.all([getTranslator(), getCompanyMembers()]);
+  const [t, company, profile] = await Promise.all([
+    getTranslator(),
+    getCompanyMembers(),
+    getCompanyProfile(),
+  ]);
+  const dash = '—';
   const activeMembers = company.members.filter((member) => member.status === 'ACTIVE').length;
 
   return (
@@ -35,6 +52,12 @@ export async function CompanyOverview() {
         meta={t('company.overview.meta', { count: activeMembers })}
         actions={
           <>
+            <Button asChild variant="edit" data-testid="company-overview-edit">
+              <Link href={ROUTES.company.edit}>
+                <Pencil aria-hidden="true" />
+                {t('company.overview.editCompany')}
+              </Link>
+            </Button>
             <Button asChild variant="outline" data-testid="company-overview-members">
               <Link href={ROUTES.company.members}>
                 <Users aria-hidden="true" />
@@ -67,6 +90,38 @@ export async function CompanyOverview() {
             <ShieldCheck aria-hidden="true" />
             {t('company.members.role.admin')}
           </Badge>
+        </div>
+      </section>
+
+      <section aria-labelledby="company-registration-heading" className="mb-8">
+        <h2 id="company-registration-heading">{t('company.profile.heading')}</h2>
+        <p className="mt-1 mb-4 text-[13px] text-text-3">{t('company.profile.note')}</p>
+        <div className="rounded-xl border border-border bg-surface px-6 py-6">
+          <DescriptionList
+            items={[
+              { label: t('company.profile.fields.legalName'), value: profile.legalName },
+              {
+                label: t('company.profile.fields.document'),
+                value: (
+                  <span className="olv-data">
+                    {profile.document ? maskDocument(profile.document, 'CNPJ') : dash}
+                  </span>
+                ),
+              },
+              { label: t('company.profile.fields.tradeName'), value: profile.tradeName ?? dash },
+              {
+                label: t('company.profile.fields.stateRegistration'),
+                value: profile.stateRegistration ?? dash,
+              },
+              { label: t('company.profile.fields.email'), value: profile.email ?? dash },
+              { label: t('company.profile.fields.phone'), value: profile.phone ?? dash },
+              {
+                label: t('company.profile.fields.address'),
+                value: formatAddress(profile) || dash,
+                className: 'sm:col-span-2',
+              },
+            ]}
+          />
         </div>
       </section>
 

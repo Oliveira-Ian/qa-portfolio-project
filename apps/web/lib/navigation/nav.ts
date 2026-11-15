@@ -1,5 +1,5 @@
-import { Building2, Home, LayoutDashboard, Users, Blocks, type LucideIcon } from 'lucide-react';
-import type { PermissionKey, Product } from '@oliveira/schemas';
+import { Blocks, Building2, Home, LayoutDashboard, Users, type LucideIcon } from 'lucide-react';
+import type { Product, ProductPermissions } from '@oliveira/schemas';
 import type { MessageKey } from '@/lib/i18n/translate';
 import { filterCatalogForAccount, flattenRoutines, type RoutinePath } from './catalog';
 import { ROUTES } from './routes';
@@ -37,7 +37,7 @@ export interface NavSection {
 }
 
 export interface NavAccess {
-  permissions: readonly PermissionKey[];
+  permissions: ProductPermissions;
   isCompanyAdmin: boolean;
 }
 
@@ -94,44 +94,40 @@ export function buildNavigation(area: AreaKey, access: NavAccess): NavSection[] 
     return sections;
   }
 
-  if (area === 'ERP') {
-    const sections: NavSection[] = [
-      {
-        id: 'erp-home',
-        items: [
-          {
-            href: ROUTES.erp.home,
-            labelKey: 'nav.erp.overview',
-            icon: LayoutDashboard,
-            testId: 'nav-erp-overview',
-            exact: true,
-          },
-        ],
-      },
-    ];
+  // A product's catalog is hierarchical (Module → Group → Category → Routine,
+  // ADR 0007); the sidebar shows a Module as an overline and its routines as items.
+  const prefix = area.toLowerCase();
+  const sections: NavSection[] = [
+    {
+      id: `${prefix}-home`,
+      items: [
+        {
+          href: AREA_HOME[area],
+          labelKey: area === 'ERP' ? 'nav.erp.overview' : 'nav.fsm.overview',
+          icon: LayoutDashboard,
+          testId: `nav-${prefix}-overview`,
+          exact: true,
+        },
+      ],
+    },
+  ];
 
-    // The catalog is hierarchical (Module → Group → Category → Routine, ADR 0007);
-    // the sidebar shows a Module as an overline and its routines as items.
-    for (const catalogModule of filterCatalogForAccount({ permissions: access.permissions })) {
-      const routines = flattenRoutines([catalogModule]);
+  for (const catalogModule of filterCatalogForAccount(area, access.permissions[area])) {
+    const routines = flattenRoutines(area, [catalogModule]);
 
-      sections.push({
-        id: `erp-${catalogModule.slug}`,
-        labelKey: catalogModule.labelKey,
-        items: routines.map((entry) => ({
-          href: entry.href,
-          labelKey: entry.routine.labelKey,
-          icon: entry.routine.icon,
-          testId: `nav-erp-${entry.module.slug}-${entry.routine.slug}`,
-        })),
-      });
-    }
-
-    return sections;
+    sections.push({
+      id: `${prefix}-${catalogModule.slug}`,
+      labelKey: catalogModule.labelKey,
+      items: routines.map((entry) => ({
+        href: entry.href,
+        labelKey: entry.routine.labelKey,
+        icon: entry.routine.icon,
+        testId: `nav-${prefix}-${entry.module.slug}-${entry.routine.slug}`,
+      })),
+    });
   }
 
-  // Oliveira FSM is a placeholder: no modules yet, so no sidebar items.
-  return [];
+  return sections;
 }
 
 /** One searchable screen of the current area. */

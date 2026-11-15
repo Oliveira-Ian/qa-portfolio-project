@@ -2,16 +2,16 @@ import type { FastifyRequest } from 'fastify';
 import {
   PRODUCT_LABELS,
   type AccountRole,
-  type PermissionKey,
   type Product,
+  type ProductPermissionKey,
 } from '@oliveira/schemas';
 import { ForbiddenError, UnauthorizedError } from '../../shared/errors.js';
 import { getEffectivePermissions } from './permissions.service.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    /** Memoized per request by `requirePermission` — see `resolvePermissions`. */
-    permissions?: Set<PermissionKey>;
+    /** Memoized per request and per product by `resolvePermissions`. */
+    permissions?: Partial<Record<Product, Set<string>>>;
   }
 }
 
@@ -73,6 +73,21 @@ export const requireCompanyAdmin: RouteGuard = async function requireCompanyAdmi
   }
 };
 
+/**
+ * Layer 2, read side: the caller is a member of an active company — for
+ * company data every member may read whatever product they work in (the
+ * company's branches). Must run after `requireAuth`.
+ */
+export const requireCompanyMember: RouteGuard = async function requireCompanyMember(request) {
+  if (!request.account) {
+    throw new UnauthorizedError();
+  }
+
+  if (!request.access?.membership || !request.access.isCompanyActive) {
+    throw new ForbiddenError();
+  }
+};
+
 /** Lets the request through if **any** guard does — a refusal is a `ForbiddenError`; anything else propagates. */
 export function requireAnyOf(...guards: RouteGuard[]): RouteGuard {
   return async function requireAnyOfHook(request: FastifyRequest): Promise<void> {
@@ -95,32 +110,46 @@ export function requireAnyOf(...guards: RouteGuard[]): RouteGuard {
   };
 }
 
-async function resolvePermissions(request: FastifyRequest): Promise<Set<PermissionKey>> {
-  if (!request.permissions) {
-    // request.account is guaranteed by this point — requirePermission checks
-    // it before ever calling this function.
-    request.permissions = await getEffectivePermissions(request.account!.id);
+/**
+ * The caller's permissions in `product`, memoized on the request. Empty without
+ * a membership: a permission is something a company's profile grants.
+ */
+export async function resolvePermissions<P extends Product>(
+  request: FastifyRequest,
+  product: P,
+): Promise<Set<ProductPermissionKey<P>>> {
+  request.permissions ??= {};
+
+  if (!request.permissions[product]) {
+    const membershipId = request.access?.membership?.id;
+
+    request.permissions[product] = membershipId
+      ? await getEffectivePermissions(membershipId, product)
+      : new Set();
   }
 
-  return request.permissions;
+  return request.permissions[product] as Set<ProductPermissionKey<P>>;
 }
 
 /**
- * Layer 4: the caller's profiles grant this permission — the catalog in
- * packages/schemas/src/permissions.ts, which today is the ERP's. Must run
- * after `requireAuth` and, on a product's routes, after `requireProductAccess`.
+ * Layer 4: the caller's profiles **in that product** grant this permission —
+ * the product's section of the catalog in packages/schemas/src/permissions.ts.
+ * Must run after `requireAuth` and after `requireProductAccess(product)`.
  *
  * No role is exempt: neither `SUPER_ADMIN` nor a company `ADMIN` gets a
  * permission from being an administrator (docs/adr/0018, which removes the
  * bypass of 0004). Whoever needs one gets it from a profile like anyone else.
  */
-export function requirePermission(key: PermissionKey): RouteGuard {
+export function requirePermission<P extends Product>(
+  product: P,
+  key: ProductPermissionKey<P>,
+): RouteGuard {
   return async function requirePermissionHook(request: FastifyRequest): Promise<void> {
     if (!request.account) {
       throw new UnauthorizedError();
     }
 
-    const permissions = await resolvePermissions(request);
+    const permissions = await resolvePermissions(request, product);
 
     if (!permissions.has(key)) {
       throw new ForbiddenError();

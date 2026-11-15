@@ -4,12 +4,6 @@ import type { ReactNode } from 'react';
 import { flexRender, type Table as TanstackTable } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useT } from '@/lib/i18n/provider';
 import {
@@ -20,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { RowAction } from './row-actions-menu';
 
 interface DataTableProps<TData> {
   table: TanstackTable<TData>;
@@ -29,11 +22,11 @@ interface DataTableProps<TData> {
   /** Off for tables that don't select rows at all (none yet — every listing screen selects). */
   enableSelection?: boolean;
   /**
-   * Wires the same actions a row's `RowActionsMenu` ("⋮" button, declared as
-   * a regular column by the routine) exposes into a right-click menu on the
-   * row itself — both paths land on the identical list, declared once.
+   * Opens a record — its view page — on a double click or Enter on the row.
+   * There are no per-row actions: editing and deleting act on the selection,
+   * from the page header (docs/design/patterns/listing_pages.md).
    */
-  rowActions?: (row: TData) => RowAction[];
+  onRowOpen?: (row: TData) => void;
   /**
    * Feeds the row checkbox's `aria-label` and the row's own — e.g. a
    * person's name, an account's email. Falls back to the row id (still
@@ -48,17 +41,17 @@ interface DataTableProps<TData> {
  * primitives — sorting, filtering, pagination and selection state all live
  * on the table instance (`useDataTable`), this component only reads it.
  *
- * Per `docs/especificacoes/levantamento_cadastro_pessoa.md`: "clicking a row
- * only selects the record" — there is no click/double-click navigation here
- * on purpose. Viewing/editing/deleting a row goes through `rowActions`, not
- * the row itself.
+ * A click selects the row (Space too); a double click or Enter opens it
+ * (`onRowOpen`). Edit and Delete live in the page header and act on the
+ * selection — there is no menu on each row (decided 2026-11-10,
+ * docs/design/patterns/listing_pages.md).
  */
 export function DataTable<TData>({
   table,
   testIdPrefix,
   emptyState,
   enableSelection = true,
-  rowActions,
+  onRowOpen,
   getRowLabel,
 }: DataTableProps<TData>) {
   const t = useT();
@@ -110,11 +103,9 @@ export function DataTable<TData>({
                           : undefined
                   }
                 >
-                  {header.isPlaceholder ? null : header.column.id === 'actions' ? (
-                    <span className="sr-only">{t('table.rowActions')}</span>
-                  ) : (
-                    flexRender(header.column.columnDef.header, header.getContext())
-                  )}
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -148,23 +139,27 @@ export function DataTable<TData>({
             rows.map((row) => {
               const rowLabel = getRowLabel?.(row.original) ?? row.id;
 
-              const tableRow = (
+              return (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() ? 'selected' : undefined}
                   aria-selected={enableSelection ? row.getIsSelected() : undefined}
                   tabIndex={enableSelection ? 0 : undefined}
                   onClick={enableSelection ? () => row.toggleSelected() : undefined}
-                  // Guarded by `target !== currentTarget`: the checkbox and
-                  // the row-actions button are focusable descendants with
-                  // their own Space/Enter handling (Radix's checkbox,
-                  // the menu trigger button) — without the guard, pressing
-                  // Space on either would toggle selection twice, once from
-                  // its own handler and once from this bubbled event.
+                  onDoubleClick={onRowOpen ? () => onRowOpen(row.original) : undefined}
+                  // Guarded by `target !== currentTarget`: the checkbox is a
+                  // focusable descendant with its own Space handling — without
+                  // the guard, Space on it would toggle selection twice.
                   onKeyDown={
                     enableSelection
                       ? (event) => {
                           if (event.target !== event.currentTarget) {
+                            return;
+                          }
+
+                          if (event.key === 'Enter' && onRowOpen) {
+                            event.preventDefault();
+                            onRowOpen(row.original);
                             return;
                           }
 
@@ -195,42 +190,12 @@ export function DataTable<TData>({
                     const labelKey = cell.column.columnDef.meta?.labelKey;
 
                     return (
-                      <TableCell
-                        key={cell.id}
-                        {...(labelKey ? { 'data-label': t(labelKey) } : {})}
-                        {...(cell.column.id === 'actions' ? { 'data-card-corner': true } : {})}
-                      >
+                      <TableCell key={cell.id} {...(labelKey ? { 'data-label': t(labelKey) } : {})}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
                 </TableRow>
-              );
-
-              if (!rowActions) {
-                return tableRow;
-              }
-
-              const actions = rowActions(row.original);
-
-              return (
-                <ContextMenu key={row.id}>
-                  <ContextMenuTrigger asChild>{tableRow}</ContextMenuTrigger>
-                  <ContextMenuContent>
-                    {actions.map((action) => (
-                      <ContextMenuItem
-                        key={action.key}
-                        disabled={action.disabled ?? false}
-                        variant={action.variant ?? 'default'}
-                        onSelect={action.onSelect}
-                        data-testid={action.testId}
-                      >
-                        <action.icon aria-hidden="true" />
-                        {action.label}
-                      </ContextMenuItem>
-                    ))}
-                  </ContextMenuContent>
-                </ContextMenu>
               );
             })
           )}

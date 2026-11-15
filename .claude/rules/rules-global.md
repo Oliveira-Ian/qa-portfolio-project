@@ -134,7 +134,7 @@ cleanly stopped. It's read-only; it never kills anything itself.
 
 **Run `npm run dev:doctor` after every code change to this project (not just proposing one), before
 telling the user the system is ready to test.** Interpret what it reports and clean up anything it
-flags (`taskkill //F //PID <pid>`) before restarting — don't restart blindly without looking first,
+flags (`taskkill //F //PID <pid>`, or every flagged orphan at once with `npm run dev:doctor -- -StopOrphans`) before restarting — don't restart blindly without looking first,
 and don't leave a flagged duplicate/high-memory process running just because the ports already
 respond. Then bring `apps/web` and `apps/api` back up and leave them running at
 `http://localhost:3000`/`:3001` so the user can immediately test in a browser — don't stop them at

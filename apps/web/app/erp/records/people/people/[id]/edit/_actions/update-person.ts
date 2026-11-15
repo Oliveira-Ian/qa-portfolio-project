@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import {
   personFormSchema,
   personFormValuesToPayload,
@@ -37,5 +36,5 @@ export async function updatePersonAction(
   // Both the list and this record's own pages hold a copy of what changed.
   revalidatePath(ROUTES.people.list);
   revalidatePath(ROUTES.people.view(id));
-  redirect(ROUTES.people.list);
+  return { success: true };
 }

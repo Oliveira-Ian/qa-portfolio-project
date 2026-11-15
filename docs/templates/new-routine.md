@@ -117,11 +117,33 @@ like `"person-list"`). Copy People's pair verbatim and rename.
 ### Create/edit/view forms
 
 Built on `useEntityForm` (`@/components/forms/use-entity-form`) + `FormCard`/`FormCardHeader`/
-`FormCardActions` (`@/components/forms/form-card`) — see any of the five existing forms
-(`create-person-form.tsx`, `edit-person-form.tsx`, `person-record.tsx`, `create-profile-form.tsx`,
-`edit-profile-form.tsx`). A schema field with a `.default(...)` needs the same
-`zodResolver(schema) as Resolver<Input, unknown, Input>` cast the Profile forms use — see the comment
-in `create-profile-form.tsx` for why.
+`FormCardActions` (`@/components/forms/form-card`) — see the person forms
+(`create-person-form.tsx`, `edit-person-form.tsx`, `person-record.tsx`) and the shared
+`components/profiles/profile-form.tsx`. A schema field with a `.default(...)` needs the
+`zodResolver(schema) as Resolver<Input, unknown, Input>` cast — see the comment in `profile-form.tsx`.
+A save that works confirms itself: the action returns `{ success: true, id? }` and `useEntityForm`'s
+`onSuccess` shows the toast and navigates (`docs/design/components/forms.md`).
+
+## 2b. The short form — Oliveira FSM's records
+
+Every FSM record (`app/fsm/records/…`, `app/fsm/settings/…`) is built from shared pieces, so a
+routine is a handful of short files. Work order types
+(`apps/web/app/fsm/settings/work-orders/work-order-types/`) are the smallest example:
+
+| File | What it holds |
+|---|---|
+| `_data-access/<entity>-access.ts` | `createRecordAccess({ api, listPath, schema })` (`lib/fsm-records.ts`) — list, get (404 → not-found), save, deleteMany — plus `createGridPreferenceAccess('<grid-key>')` |
+| `_actions/<entity>-actions.ts` | `'use server'`: one-line Server Actions over the access — save (create, or update with an id), delete (bulk, all or nothing), save grid |
+| `_components/<entity>-filters.ts` | Filterable columns and drawer fields — **not** a client module, `page.tsx` parses the URL with them |
+| `_components/<entity>-list.tsx` | Columns (`components/data-table/column-kit.tsx`) and `EntityList` (`components/data-table/entity-list.tsx`): header actions, double click, toolbar, export, customize, delete dialog |
+| `_components/<entity>-form.tsx` | One form for create, edit and view: `RecordForm` (`components/forms/record-form.tsx`) + `useEntityForm` |
+| `page.tsx`, `new/page.tsx`, `[id]/page.tsx`, `[id]/edit/page.tsx` | Permission check (`can('FSM', …)`, `NoPermission product="FSM"`), read, render |
+
+The API side is the same idea: `registerCrudRoutes` (`apps/api/src/modules/fsm/crud-routes.ts`) gives
+a record its list, read, create, update and bulk delete with one guard per action. A field that picks
+another record searched on the server uses `AsyncCombobox` (`components/ui/async-combobox.tsx`).
+Never pass a function from a page to a client component (a route helper like `ROUTES.x.view` is one):
+let the client component choose it, as `PROFILE_ROUTES[product]` does.
 
 ## 3. `data-testid` checklist
 

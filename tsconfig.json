@@ -9,6 +9,7 @@
     "tests/unit/**/*.ts",
     "tests/api/**/*.ts",
     "tests/e2e/**/*.ts",
-    "prisma/seed.ts"
+    "prisma/seed.ts",
+    "prisma/demo-seed.ts"
   ]
 }

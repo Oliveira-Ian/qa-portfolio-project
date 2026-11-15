@@ -4,24 +4,29 @@ import { fileURLToPath } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { config as loadEnv } from 'dotenv';
-import { PERMISSION_CATALOG, SEED_PROFILE_NAMES, permissionKey } from '@oliveira/schemas';
+import { PRODUCTS, SEED_PROFILE_NAMES, type Product } from '@oliveira/schemas';
 import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
+import {
+  provisionFsmReferenceData,
+  provisionProductProfiles,
+  seedPermissionCatalog,
+} from './reference-profiles.js';
 
-// `npm run db:seed` runs this from the repo root, but DATABASE_URL and the
-// admin-bootstrap vars live in prisma/.env (the same file prisma.config.ts loads
-// for the Prisma CLI) — resolved from this file's own location so it works
+// `npm run db:seed` runs this from the repo root, but the connection strings and
+// the admin-bootstrap vars live in prisma/.env (the same file prisma.config.ts
+// loads for the Prisma CLI) — resolved from this file's own location so it works
 // regardless of the caller's working directory.
 loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 /**
  * Bootstraps the access data every environment needs to be usable: the
- * permission catalog, a handful of starting ERP profiles, a reserved SYSTEM
- * account, the (single, until #60) company with its contracts, and — if the env
- * vars are set — the first administrator.
+ * permission catalog of every product, a reserved SYSTEM account, the bootstrap
+ * company with its contracts, the reference profiles of each contracted product
+ * in every company, and — if the env vars are set — the first administrator.
  *
- * Safe to run repeatedly: every step upserts by a natural key (permission's
- * resource+action, profile's name, account's e-mail) rather than inserting
- * blindly, so re-running after `db:migrate` never creates duplicates.
+ * Safe to run repeatedly: every step upserts by a natural key (a permission's
+ * product+resource+action, a profile's company+product+name, an account's
+ * e-mail) and never overwrites what a company made of its profiles.
  */
 
 // The generated client lives in apps/api (see the generator block in schema.prisma) and, like
@@ -47,85 +52,29 @@ const SALT_ROUNDS = 10;
 
 const SYSTEM_ACCOUNT_EMAIL = process.env.SYSTEM_ACCOUNT_EMAIL ?? 'system@oliveira.internal';
 
-interface ProfileSeed {
-  name: string;
-  description: string;
-  isSystem: boolean;
-  isDefault: boolean;
-  /** Permission keys (`"resource:action"`) this profile starts with. */
-  permissions: string[];
-}
+type MembershipRoleName = 'ADMIN' | 'MEMBER';
 
-const ALL_PERMISSION_KEYS = PERMISSION_CATALOG.map((entry) =>
-  permissionKey(entry.resource, entry.action),
-);
+/** Profile ids by product, then by name, for one company. */
+type CompanyProfiles = Record<Product, Map<string, number>>;
 
-const PROFILE_SEEDS: ProfileSeed[] = [
-  {
-    name: SEED_PROFILE_NAMES.ADMINISTRATOR,
-    description: 'Full access to every business permission in the catalog.',
-    isSystem: true,
-    isDefault: false,
-    permissions: ALL_PERMISSION_KEYS,
-  },
-  {
-    name: SEED_PROFILE_NAMES.MANAGER,
-    description: 'Day-to-day operation: can view, create and edit, but not delete.',
-    isSystem: false,
-    isDefault: false,
-    permissions: ['person:view', 'person:create', 'person:edit'],
-  },
-  {
-    name: SEED_PROFILE_NAMES.FINANCE,
-    description: 'Read access for billing and collections work.',
-    isSystem: false,
-    isDefault: false,
-    permissions: ['person:view'],
-  },
-  {
-    name: SEED_PROFILE_NAMES.CASHIER,
-    description: 'Read access at the point of sale.',
-    isSystem: false,
-    isDefault: false,
-    permissions: ['person:view'],
-  },
-  {
-    name: SEED_PROFILE_NAMES.DEFAULT_USER,
-    description: 'Linked to a member the first time they are granted a seat in the ERP.',
-    isSystem: true,
-    isDefault: true,
-    permissions: ['person:view'],
-  },
-];
+async function seedPermissions(): Promise<Record<Product, Map<string, number>>> {
+  const catalogs = {} as Record<Product, Map<string, number>>;
 
-async function seedPermissions(): Promise<Map<string, number>> {
-  const idByKey = new Map<string, number>();
-
-  for (const entry of PERMISSION_CATALOG) {
-    const row = await prisma.permission.upsert({
-      where: { resource_action: { resource: entry.resource, action: entry.action } },
-      update: { label: entry.label },
-      create: { resource: entry.resource, action: entry.action, label: entry.label },
-    });
-
-    idByKey.set(permissionKey(entry.resource, entry.action), row.id);
+  for (const product of PRODUCTS) {
+    catalogs[product] = await seedPermissionCatalog(prisma, product);
   }
 
-  console.log(`  permissions: ${idByKey.size} in catalog`);
-  return idByKey;
+  console.log(
+    `  permissions: ${PRODUCTS.map((product) => `${product} ${catalogs[product].size}`).join(', ')}`,
+  );
+  return catalogs;
 }
 
-// The seeded profile names moved from Portuguese to English (the project's
+// The seeded ERP profile names moved from Portuguese to English (the project's
 // Language Standard, `.claude/rules/rules-global.md`) after some databases had
-// already been seeded under the old names. `seedProfiles()` upserts by `name`
-// (`AccessProfile.name` is the unique key — there's no separate slug/id), so
-// swapping `SEED_PROFILE_NAMES` alone would upsert a brand-new English row
-// and leave the old Portuguese one orphaned, silently duplicating "Admin",
-// "Default user", etc. This renames any surviving old-named row in place
-// first — preserves its id and every existing `AccountProfile`/
-// `ProfilePermission` link — before the normal upsert-by-new-name runs. A
-// no-op once every database has been renamed once (no row left with the old
-// name for `updateMany` to match).
+// already been seeded under the old names. Renamed in place first — keeping
+// their ids and links — so provisioning finds them instead of adding English
+// duplicates. A no-op once every database has been renamed.
 const LEGACY_PROFILE_NAMES: Record<string, string> = {
   Administrador: SEED_PROFILE_NAMES.ADMINISTRATOR,
   Gerente: SEED_PROFILE_NAMES.MANAGER,
@@ -139,7 +88,7 @@ async function renameLegacyProfileNames(): Promise<void> {
 
   for (const [oldName, newName] of Object.entries(LEGACY_PROFILE_NAMES)) {
     const result = await prisma.accessProfile.updateMany({
-      where: { name: oldName },
+      where: { product: 'ERP', name: oldName },
       data: { name: newName },
     });
 
@@ -149,46 +98,6 @@ async function renameLegacyProfileNames(): Promise<void> {
   if (renamed > 0) {
     console.log(`  profiles: renamed ${renamed} from legacy Portuguese names`);
   }
-}
-
-async function seedProfiles(permissionIdByKey: Map<string, number>): Promise<Map<string, number>> {
-  await renameLegacyProfileNames();
-
-  const idByName = new Map<string, number>();
-
-  for (const seed of PROFILE_SEEDS) {
-    const profile = await prisma.accessProfile.upsert({
-      where: { name: seed.name },
-      update: { description: seed.description, isSystem: seed.isSystem, isDefault: seed.isDefault },
-      create: {
-        name: seed.name,
-        description: seed.description,
-        isSystem: seed.isSystem,
-        isDefault: seed.isDefault,
-      },
-    });
-
-    // Re-synced from scratch on every run rather than diffed — simple, and
-    // correct as long as these seeded profiles stay system-managed. A profile
-    // a company creates through the admin UI is never touched by this script.
-    await prisma.profilePermission.deleteMany({ where: { profileId: profile.id } });
-    await prisma.profilePermission.createMany({
-      data: seed.permissions.map((key) => {
-        const permissionId = permissionIdByKey.get(key);
-
-        if (!permissionId) {
-          throw new Error(`Profile "${seed.name}" references unknown permission "${key}"`);
-        }
-
-        return { profileId: profile.id, permissionId };
-      }),
-    });
-
-    idByName.set(seed.name, profile.id);
-  }
-
-  console.log(`  profiles: ${idByName.size} seeded`);
-  return idByName;
 }
 
 async function seedSystemAccount(): Promise<void> {
@@ -201,9 +110,8 @@ async function seedSystemAccount(): Promise<void> {
     return;
   }
 
-  // A random, never-shared password — role SYSTEM can't log in interactively
-  // once the authorization engine enforces that (a later phase), so nothing
-  // about this hash needs to be known by anyone.
+  // A random, never-shared password — role SYSTEM can't log in interactively,
+  // so nothing about this hash needs to be known by anyone.
   const passwordHash = await bcrypt.hash(randomUUID(), SALT_ROUNDS);
 
   await prisma.accessAccount.create({
@@ -213,15 +121,12 @@ async function seedSystemAccount(): Promise<void> {
   console.log(`  system account: created (${SYSTEM_ACCOUNT_EMAIL})`);
 }
 
-type ProductName = 'ERP' | 'FSM';
-type MembershipRoleName = 'ADMIN' | 'MEMBER';
-
 /**
- * The contracts of the test company. `seatLimit` is deliberately small so the
- * limit is easy to reach by hand — the real limits are the Oliveira team's to
- * set (docs/adr/0018).
+ * The contracts of the bootstrap company. `seatLimit` is deliberately small so
+ * the limit is easy to reach by hand — the real limits are the Oliveira team's
+ * to set (docs/adr/0018).
  */
-const COMPANY_CONTRACTS: { product: ProductName; seatLimit: number }[] = [
+const COMPANY_CONTRACTS: { product: Product; seatLimit: number }[] = [
   { product: 'ERP', seatLimit: 20 },
   { product: 'FSM', seatLimit: 10 },
 ];
@@ -231,8 +136,8 @@ const COMPANY_NAME = process.env.SEED_COMPANY_NAME ?? 'Oliveira Demo Company';
 /**
  * The bootstrap company: reuses the oldest one rather than matching on a name
  * that may have changed between runs. Other companies (the demo's, a test's)
- * are provisioned by their own scripts. The contracts are created but never overwritten —
- * a limit changed later is not the seed's to undo.
+ * are provisioned by their own scripts. The contracts are created but never
+ * overwritten — a limit changed later is not the seed's to undo.
  */
 async function seedCompany(): Promise<string> {
   const existing = await prisma.company.findFirst({ orderBy: { createdAt: 'asc' } });
@@ -256,13 +161,45 @@ async function seedCompany(): Promise<string> {
   return company.id;
 }
 
-/** Makes the account an active member with exactly the seats given — seats it holds beyond them are left alone. */
+/**
+ * Every company gets the reference profiles of every product it has a contract
+ * for — copied once, then the company's to change. Returns the bootstrap
+ * company's profiles.
+ */
+async function seedReferenceProfiles(
+  catalogs: Record<Product, Map<string, number>>,
+  bootstrapCompanyId: string,
+): Promise<CompanyProfiles> {
+  await renameLegacyProfileNames();
+
+  const contracts = await prisma.companyProduct.findMany({
+    select: { companyId: true, product: true },
+  });
+  const bootstrap = { ERP: new Map(), FSM: new Map() } as CompanyProfiles;
+
+  for (const { companyId, product } of contracts) {
+    const profiles = await provisionProductProfiles(prisma, companyId, product, catalogs[product]);
+
+    if (product === 'FSM') {
+      await provisionFsmReferenceData(prisma, companyId);
+    }
+
+    if (companyId === bootstrapCompanyId) {
+      bootstrap[product] = profiles;
+    }
+  }
+
+  console.log(`  profiles: reference profiles ensured for ${contracts.length} contracts`);
+  return bootstrap;
+}
+
+/** Makes the account an active member with at least the seats given; returns the membership id. */
 async function ensureMember(
   companyId: string,
   accountId: number,
   role: MembershipRoleName,
-  seats: ProductName[],
-): Promise<void> {
+  seats: Product[],
+): Promise<string> {
   const membership = await prisma.membership.upsert({
     where: { accountId_companyId: { accountId, companyId } },
     update: { role, status: 'ACTIVE' },
@@ -276,21 +213,29 @@ async function ensureMember(
       create: { membershipId: membership.id, product },
     });
   }
+
+  return membership.id;
 }
 
-async function linkProfile(accountId: number, profileId: number | undefined): Promise<void> {
+/** Sets the member's one profile in `product` — replacing another, if they had one. */
+async function linkProfile(
+  companyId: string,
+  membershipId: string,
+  product: Product,
+  profileId: number | undefined,
+): Promise<void> {
   if (!profileId) {
     return;
   }
 
-  await prisma.accountProfile.upsert({
-    where: { accountId_profileId: { accountId, profileId } },
-    update: {},
-    create: { accountId, profileId },
+  await prisma.membershipProfile.upsert({
+    where: { membershipId_product: { membershipId, product } },
+    update: { profileId },
+    create: { companyId, membershipId, product, profileId },
   });
 }
 
-async function seedAdmin(companyId: string, profileIdByName: Map<string, number>): Promise<void> {
+async function seedAdmin(companyId: string, profiles: CompanyProfiles): Promise<void> {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -301,7 +246,6 @@ async function seedAdmin(companyId: string, profileIdByName: Map<string, number>
     return;
   }
 
-  const administratorProfileId = profileIdByName.get(SEED_PROFILE_NAMES.ADMINISTRATOR);
   const existing = await prisma.accessAccount.findUnique({ where: { email } });
 
   let accountId: number;
@@ -328,10 +272,18 @@ async function seedAdmin(companyId: string, profileIdByName: Map<string, number>
   }
 
   // The bootstrap account holds every layer explicitly — Platform role, company
-  // administrator, both seats and the ERP's Administrator profile — because none
-  // of them implies another (docs/adr/0018). A real deployment would split them.
-  await ensureMember(companyId, accountId, 'ADMIN', ['ERP', 'FSM']);
-  await linkProfile(accountId, administratorProfileId);
+  // administrator, both seats and each product's Administrator profile — because
+  // none of them implies another (docs/adr/0018). A real deployment would split them.
+  const membershipId = await ensureMember(companyId, accountId, 'ADMIN', ['ERP', 'FSM']);
+
+  for (const product of PRODUCTS) {
+    await linkProfile(
+      companyId,
+      membershipId,
+      product,
+      profiles[product].get(SEED_PROFILE_NAMES.ADMINISTRATOR),
+    );
+  }
 
   console.log(`  admin account: ${existing ? 'already exists, ensured' : 'created'} (${email})`);
 }
@@ -341,7 +293,11 @@ interface TestAccountSeed {
   name: string;
   role: 'SUPER_ADMIN' | 'USER';
   /** `null`: no membership at all. */
-  membership: { role: MembershipRoleName; seats: ProductName[]; profile?: string } | null;
+  membership: {
+    role: MembershipRoleName;
+    seats: Product[];
+    profiles?: { product: Product; name: string }[];
+  } | null;
 }
 
 /**
@@ -367,7 +323,11 @@ const TEST_ACCOUNTS: TestAccountSeed[] = [
     email: 'erp.member@oliveira.test',
     name: 'Test ERP Member',
     role: 'USER',
-    membership: { role: 'MEMBER', seats: ['ERP'], profile: SEED_PROFILE_NAMES.DEFAULT_USER },
+    membership: {
+      role: 'MEMBER',
+      seats: ['ERP'],
+      profiles: [{ product: 'ERP', name: SEED_PROFILE_NAMES.DEFAULT_USER }],
+    },
   },
   {
     email: 'no.seat@oliveira.test',
@@ -377,10 +337,7 @@ const TEST_ACCOUNTS: TestAccountSeed[] = [
   },
 ];
 
-async function seedTestAccounts(
-  companyId: string,
-  profileIdByName: Map<string, number>,
-): Promise<void> {
+async function seedTestAccounts(companyId: string, profiles: CompanyProfiles): Promise<void> {
   if (process.env.SEED_TEST_ACCOUNTS !== 'true') {
     return;
   }
@@ -402,20 +359,25 @@ async function seedTestAccounts(
     const account =
       existing ??
       (await prisma.accessAccount.create({
-        data: {
-          email: seed.email,
-          password: passwordHash,
-          role: seed.role,
-          name: seed.name,
-        },
+        data: { email: seed.email, password: passwordHash, role: seed.role, name: seed.name },
       }));
 
     if (seed.membership) {
-      await ensureMember(companyId, account.id, seed.membership.role, seed.membership.seats);
-      await linkProfile(
+      const membershipId = await ensureMember(
+        companyId,
         account.id,
-        seed.membership.profile ? profileIdByName.get(seed.membership.profile) : undefined,
+        seed.membership.role,
+        seed.membership.seats,
       );
+
+      for (const profile of seed.membership.profiles ?? []) {
+        await linkProfile(
+          companyId,
+          membershipId,
+          profile.product,
+          profiles[profile.product].get(profile.name),
+        );
+      }
     }
   }
 
@@ -425,12 +387,12 @@ async function seedTestAccounts(
 async function main() {
   console.log('Seeding…');
 
-  const permissionIdByKey = await seedPermissions();
-  const profileIdByName = await seedProfiles(permissionIdByKey);
+  const catalogs = await seedPermissions();
   await seedSystemAccount();
   const companyId = await seedCompany();
-  await seedAdmin(companyId, profileIdByName);
-  await seedTestAccounts(companyId, profileIdByName);
+  const profiles = await seedReferenceProfiles(catalogs, companyId);
+  await seedAdmin(companyId, profiles);
+  await seedTestAccounts(companyId, profiles);
 
   console.log('Done.');
 }

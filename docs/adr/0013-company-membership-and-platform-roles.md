@@ -69,3 +69,26 @@ before it has a company (registration, `SUPER_ADMIN`, `SYSTEM`), and a person re
   left in the enum for the rows that have it.
 - The ERP's "give this person a login" keeps working: the account takes the person's name and joins
   the company as a member linked to them.
+
+## Addendum (2026-11-10): `Branch`, and what the account administrator is
+
+Decided by the product owner for the FSM V1, reopening "`Branch` is only conceptual" in the smallest
+form that serves it:
+
+- `Branch` is **Foundation data of the company** (`companyId` NOT NULL, row-level security) — one
+  table, shared by every product, never duplicated per product. A company has any number of branches;
+  a branch is not a company and not a Platform account.
+- Branches are **managed inside the products**, with each product's own permissions (the FSM's
+  `branch:*`), through the same API plugin mounted per product, as the products' profiles are. The
+  Platform does not manage them. A branch referenced by any record is deactivated rather than deleted.
+- A work order may name a branch (optional), and work orders can be filtered by it.
+- `Membership.role` (`ADMIN`/`MEMBER`) is kept **only** for administering the company's account on
+  the Platform — its registration, members and product access. It never grants or restricts anything
+  inside a product, and no product route reads it. The company's registration (legal name, CNPJ, state
+  and municipal registration, contact, main address) is central Platform data: the account
+  administrator edits all of it but the legal name and the CNPJ, which only Oliveira changes; products
+  show it, never edit it.
+
+Still **not** built, and expected later: profiles restricted to a branch (a nullable `branchId` on
+`MembershipProfile`), members limited to some branches, an "active branch" in the session, transfers
+between branches, and per-branch reports.

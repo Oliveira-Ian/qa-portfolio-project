@@ -98,3 +98,10 @@ export function maskTime(value: string): string {
 
   return `${hours}:${minutes}`;
 }
+
+/** Progressive Brazilian CEP mask — typing "01310100" becomes "01310-100". */
+export function maskZipCode(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}

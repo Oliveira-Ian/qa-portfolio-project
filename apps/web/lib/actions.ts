@@ -5,10 +5,10 @@
  * `{ error? }` / `{ success, message }` / `{ success, message? }` variant.
  *
  * `message` covers both a failure's error text and, where the caller shows
- * one, a success confirmation (e.g. "3 people deleted"). An action that
- * redirects on success (every create/update form action) simply never
- * returns on that path at all — `redirect()` throws internally — so
- * `message` there is only ever read on failure.
+ * one, a success confirmation (e.g. "3 people deleted"). A create/update form
+ * action returns `{ success: true }` and the form confirms it in a toast and
+ * navigates (`useEntityForm`'s `onSuccess`) — an action that redirected
+ * itself would leave no moment to say the save worked.
  */
 export interface ActionResult {
   success: boolean;

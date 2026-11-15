@@ -13,6 +13,7 @@ type ProfileRow = AccessProfile & {
 export function toProfileDto(row: ProfileRow): ProfileDto {
   return {
     id: row.id,
+    product: row.product,
     name: row.name,
     description: row.description,
     isSystem: row.isSystem,

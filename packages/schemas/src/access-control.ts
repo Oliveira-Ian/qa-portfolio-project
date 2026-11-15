@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { accountRoleSchema, type AccountRole } from './auth.js';
 import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
+import type { Product } from './platform.js';
 
 /* -------------------------------------------------------------------------- */
 /* Permissions (read-only from the API's point of view)                        */
@@ -8,6 +9,7 @@ import { paginationQuerySchema, sortQuerySchema } from './pagination.js';
 
 export interface PermissionDto {
   id: number;
+  product: Product;
   resource: string;
   action: string;
   label: string | null;
@@ -19,9 +21,10 @@ export interface PermissionDto {
 
 /**
  * `isSystem`/`isDefault` are deliberately absent from the writable shape —
- * they're seed-managed concepts (which profiles are protected from deletion,
- * which one self-registration links to), not something the admin UI sets
- * per-edit. The API still reports them on every `ProfileDto` it returns.
+ * they're provisioning concepts (which profiles are protected from deletion,
+ * which one a first seat links), not something the admin UI sets per edit. The
+ * product is absent too: it is the route's (`/api/profiles` is the ERP's,
+ * `/api/fsm/profiles` the FSM's), never the client's to choose.
  */
 export const profileWriteSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
@@ -33,6 +36,7 @@ export type ProfileWriteInput = z.infer<typeof profileWriteSchema>;
 
 export interface ProfileDto {
   id: number;
+  product: Product;
   name: string;
   description: string | null;
   isSystem: boolean;
@@ -76,11 +80,27 @@ export const accountUpdateSchema = z
 
 export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
 
-export const accountProfileLinkSchema = z.object({
-  profileId: z.number().int().positive(),
+/**
+ * A member's profile in one product — one per product (decided 2026-11-10):
+ * setting it replaces the previous one, `null` removes it. The product is the
+ * route's (`/api/accounts` is the ERP's, `/api/fsm/accounts` the FSM's).
+ */
+export const accountProfileSetSchema = z.object({
+  profileId: z.number().int().positive().nullable(),
 });
 
-export type AccountProfileLinkInput = z.infer<typeof accountProfileLinkSchema>;
+export type AccountProfileSetInput = z.infer<typeof accountProfileSetSchema>;
+
+/** The profile picker's value: a profile id as text, or an empty string for "no profile". */
+export const accountProfileFormSchema = z.object({ profileId: z.string() });
+
+export type AccountProfileFormValues = z.infer<typeof accountProfileFormSchema>;
+
+export function accountProfileFormToPayload(
+  values: AccountProfileFormValues,
+): AccountProfileSetInput {
+  return { profileId: values.profileId === '' ? null : Number(values.profileId) };
+}
 
 export interface AccountDto {
   id: number;
@@ -95,7 +115,8 @@ export interface AccountDto {
   role: AccountRole;
   active: boolean;
   createdAt: string;
-  profiles: { id: number; name: string }[];
+  /** The member's profile in this product, or `null` when they have none. */
+  profile: { id: number; name: string } | null;
 }
 
 /**

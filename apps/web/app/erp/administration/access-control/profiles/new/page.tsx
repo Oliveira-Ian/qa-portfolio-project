@@ -1,22 +1,29 @@
 import type { Metadata } from 'next';
-import { NoPermission } from '@/components/platform/no-permission';
+import { redirect } from 'next/navigation';
+import { ProfileForm } from '@/components/profiles/profile-form';
 import { getTranslator } from '@/lib/i18n/server';
+import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
-import { CreateProfileForm } from './_components/create-profile-form';
-import { listPermissions } from '../_data-access/list-permissions';
+import { saveProfileAction } from '../_actions/profile-actions';
+import { profileAccess } from '../_data-access/profile-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
 
-  return { title: t('erp.profiles.form.newTitle') };
+  return { title: t('accessControl.profiles.form.newTitle') };
 }
 
 export default async function NewProfilePage() {
-  if (!(await can('profile:manage'))) {
-    return <NoPermission screen="erp.profiles.title" />;
+  if (!(await can('ERP', 'profile:manage'))) {
+    redirect(ROUTES.profiles.list);
   }
 
-  const permissions = await listPermissions();
-
-  return <CreateProfileForm permissions={permissions} />;
+  return (
+    <ProfileForm
+      product="ERP"
+      mode="create"
+      permissions={await profileAccess.permissions()}
+      saveAction={saveProfileAction}
+    />
+  );
 }

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
-import type { MeResponse, PermissionKey } from '@oliveira/schemas';
+import type { MeResponse, Product, ProductPermissionKey } from '@oliveira/schemas';
 import { requestMe } from './api/auth';
 import { unwrap } from './api/client';
 import { requireSession } from './session';
@@ -34,11 +34,14 @@ export async function isCompanyAdmin(): Promise<boolean> {
 
 /**
  * Exactly what `/me` reports: the permissions the caller's profiles grant in
- * the ERP (none without an ERP seat). No role widens it — the API has no
+ * that product (none without a seat in it). No role widens it — the API has no
  * administrator exemption either (docs/adr/0018), so this can't hide a button
  * the API would allow, or show one it would refuse.
  */
-export async function can(permission: PermissionKey): Promise<boolean> {
+export async function can<P extends Product>(
+  product: P,
+  permission: ProductPermissionKey<P>,
+): Promise<boolean> {
   const me = await getMe();
-  return me.permissions.includes(permission);
+  return (me.permissions[product] as readonly string[]).includes(permission);
 }

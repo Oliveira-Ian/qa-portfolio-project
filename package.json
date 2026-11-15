@@ -23,6 +23,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/demo-seed.ts",
+    "db:reset:demo": "tsx prisma/demo-seed.ts --reset",
     "db:roles": "tsx prisma/setup-roles.ts",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",

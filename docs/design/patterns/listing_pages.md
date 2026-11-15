@@ -49,11 +49,15 @@ now (the API has no `skip`/`take` yet; swapping to server-side pagination later 
 hook). `DataTable` renders the resulting `Table` instance over the existing `components/ui/table.tsx`
 primitives: a leading selection-checkbox column (header selects the current page, not every filtered
 row), the routine's own columns via `flexRender`, `EmptyState` in place of the body when there are no
-rows, and — when a `rowActions` prop is given — wraps each row in a right-click `ContextMenu` (see
-`RowActionsMenu` below).
+rows.
 
-**Row click only selects.** Per the spec ("clicking a row only selects the record"), `DataTable` has
-no click/double-click navigation. Viewing/editing/deleting a row is `RowActionsMenu`'s job.
+**A click selects; a double click opens** (decided 2026-11-10). A click (or Space on a focused row)
+toggles the row's selection; a double click (or Enter) calls `onRowOpen`, which goes to the record's
+read-only view. There is **no action on each row** — no "⋮" menu, no right-click menu: Add, Edit,
+Delete (and any other action, such as Duplicate) live in the page header and act on the selection.
+This replaces the earlier rule ("clicking a row only selects; per-row actions menu"). Records are
+never created, viewed or edited in a drawer: each has its own page (`new`, `[id]`, `[id]/edit`); a
+drawer is for filters and quick details only.
 
 ### Selection model
 A plain multi-select: any row's checkbox toggles independently (no more "selecting a new row clears
@@ -145,3 +149,22 @@ Unchanged: `/people/new` → `/records/people/people/new`, `.../[id]` (view),
 
 Unchanged: `personFormSchema` from `packages/schemas` via `zodResolver` — see
 `docs/design/components/forms.md`.
+
+## Filter panel (decided 2026-11-15)
+
+Every list's side panel (`FilterDrawer`) follows one pattern:
+
+- **Dates first**, then the other fields.
+- A field with several values is a **multi-select** (`MultiSelect`): a dropdown with checkboxes and
+  a search, the choices shown as removable chips inside the field. No checkbox list laid out in the
+  panel. A yes/no field (Status) stays a single select (Any / Yes / No).
+- Values that are the company's own data are filtered **by id**, their names carried by the option
+  (`FilterOption.label`): work order types, branches, technicians, profiles, customers. Fixed values
+  (statuses, priorities) keep a catalogue key. Values that are free text but repeat (a customer's or
+  a branch's city, an equipment category) are offered from what the company has
+  (`/cities`, `/categories`).
+- A long list (the company's customers) is **searched on the server** as the person types
+  (`loadOptions`); the page resolves the names of the ones already in the URL, so the chips keep
+  their names on reload.
+- The column header's quick filter uses the same options; with a fixed list it stays a checkbox
+  list — it is a popover and takes no room.

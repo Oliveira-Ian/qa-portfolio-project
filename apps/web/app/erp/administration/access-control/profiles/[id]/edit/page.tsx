@@ -1,31 +1,42 @@
 import type { Metadata } from 'next';
-import { NoPermission } from '@/components/platform/no-permission';
-import { getTranslator } from '@/lib/i18n/server';
+import { redirect } from 'next/navigation';
+import { ProfileForm } from '@/components/profiles/profile-form';
+import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
-import { EditProfileForm } from './_components/edit-profile-form';
-import { getProfile } from '../_data-access/get-profile';
-import { listPermissions } from '../../_data-access/list-permissions';
-
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslator();
-
-  return { title: t('erp.profiles.form.editTitle') };
-}
+import { saveProfileAction } from '../../_actions/profile-actions';
+import { profileAccess } from '../../_data-access/profile-access';
 
 interface EditProfilePageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function EditProfilePage({ params }: EditProfilePageProps) {
-  if (!(await can('profile:manage'))) {
-    return <NoPermission screen="erp.profiles.title" />;
+export async function generateMetadata({ params }: EditProfilePageProps): Promise<Metadata> {
+  if (!(await can('ERP', 'profile:manage'))) {
+    return {};
   }
 
-  const { id } = await params;
+  return { title: (await profileAccess.get(Number.parseInt((await params).id, 10))).name };
+}
+
+export default async function EditProfilePage({ params }: EditProfilePageProps) {
+  const id = Number.parseInt((await params).id, 10);
+
+  if (!(await can('ERP', 'profile:manage'))) {
+    redirect(ROUTES.profiles.list);
+  }
+
   const [profile, permissions] = await Promise.all([
-    getProfile(Number.parseInt(id, 10)),
-    listPermissions(),
+    profileAccess.get(id),
+    profileAccess.permissions(),
   ]);
 
-  return <EditProfileForm profile={profile} permissions={permissions} />;
+  return (
+    <ProfileForm
+      product="ERP"
+      mode="edit"
+      profile={profile}
+      permissions={permissions}
+      saveAction={saveProfileAction}
+    />
+  );
 }

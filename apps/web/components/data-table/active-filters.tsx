@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n/provider';
 import type { Translator } from '@/lib/i18n/translate';
 import type { FilterDrawerField } from './filter-drawer';
 import type { DateRangeFilterValue, NumberRangeFilterValue } from './filter-fns';
+import { filterOptionLabel } from './types';
 
 interface ActiveFiltersProps<TData> {
   table: Table<TData>;
@@ -46,7 +47,7 @@ function formatFilterValue<TData>(
       .map((entry) => {
         const option = options.find((candidate) => candidate.value === entry);
 
-        return option ? t(option.labelKey) : entry;
+        return option ? filterOptionLabel(option, t) : entry;
       })
       .join(', ');
   }
