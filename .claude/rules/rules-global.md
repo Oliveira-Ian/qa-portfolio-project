@@ -40,10 +40,13 @@ layer is responsible for, and the request-to-response flow through them — live
 `.claude/rules/nextjs-page-pattern.md`, which only loads while working under `apps/web/app/**` or
 `apps/web/components/**`.
 
-**Planned restructuring, not yet built:** the Foundation roadmap (item 23, "Camada de identidade")
-plans to replace the current 1:1 `Person`/`AccessAccount` link with a global account plus a
-per-company association. That decision is still pending — `Person` remains the current, real model
-described above and in `docs/templates/new-routine.md`. Don't build against the future shape yet.
+**Platform access model (ADR 0018/0019), in progress:** `Company`, `Membership`, `CompanyProduct` and
+`ProductAccess` are being introduced now (`docs/especificacoes/platform-access-model.md`) — the
+Oliveira ERP is an existing product served under `/erp`, and no role bypasses a permission check.
+The rest of the identity restructuring is **still pending**: the 1:1 `Person`/`AccessAccount` link,
+company-scoped business tables and RLS (#60) and the `User`/`Person` decoupling (ADR 0013). `Person`
+remains the current, real model described above and in `docs/templates/new-routine.md`. Don't build
+against those pending pieces yet.
 
 # Language Standard — English for Everything Technical
 

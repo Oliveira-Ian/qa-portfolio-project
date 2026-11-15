@@ -1,5 +1,8 @@
 # 0011 — Platform shape: the Platform, a shared Foundation and one product at a time
 
+> **Updated by [0019](0019-erp-existing-product-and-product-areas.md).** The ERP is an existing
+> product, not a future one. The rest of this record stands.
+
 ## Context
 
 The Oliveira Platform is meant to host several operational products over time, on one shared base.
