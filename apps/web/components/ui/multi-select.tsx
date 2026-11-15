@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,6 +51,13 @@ interface MultiSelectProps extends Omit<
    * second, separately-drawn `X` button next to it.
    */
   renderTag?: (option: MultiSelectOption, onRemove: () => void) => React.ReactNode;
+  /**
+   * Searches on the server instead of filtering `options` — for a list too long
+   * to load whole (the company's customers). `options` then only names the values
+   * already chosen, so their chips have a label. Keep the function stable (a
+   * Server Action, or one defined outside the component).
+   */
+  loadOptions?: (search: string) => Promise<MultiSelectOption[]>;
 }
 
 /**
@@ -72,6 +79,7 @@ export function MultiSelect({
   searchPlaceholder,
   emptyText,
   renderTag,
+  loadOptions,
   disabled,
   className,
   ...props
@@ -79,18 +87,49 @@ export function MultiSelect({
   const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [found, setFound] = useState<MultiSelectOption[]>([]);
+  // Options picked from a server search, so their chips keep a label afterwards.
+  const [picked, setPicked] = useState<MultiSelectOption[]>([]);
 
-  const selected = options.filter((option) => value.includes(option.value));
-  const results = query.trim()
-    ? options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : options;
+  useEffect(() => {
+    if (!loadOptions || !open) {
+      return;
+    }
 
-  function toggle(optionValue: string) {
-    onChange(
-      value.includes(optionValue)
-        ? value.filter((v) => v !== optionValue)
-        : [...value, optionValue],
-    );
+    let isCancelled = false;
+    // A short pause, so typing a name doesn't send a request per letter.
+    const timer = setTimeout(async () => {
+      const next = await loadOptions(query.trim());
+
+      if (!isCancelled) {
+        setFound(next);
+      }
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [loadOptions, open, query]);
+
+  const byValue = new Map(
+    [...picked, ...found, ...options].map((option) => [option.value, option] as const),
+  );
+  const selected = value.map((entry) => byValue.get(entry) ?? { value: entry, label: entry });
+  const results = loadOptions
+    ? found
+    : query.trim()
+      ? options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
+      : options;
+
+  function toggle(option: MultiSelectOption) {
+    if (value.includes(option.value)) {
+      onChange(value.filter((v) => v !== option.value));
+      return;
+    }
+
+    setPicked((previous) => [...previous.filter((p) => p.value !== option.value), option]);
+    onChange([...value, option.value]);
   }
 
   function remove(optionValue: string) {
@@ -144,7 +183,7 @@ export function MultiSelect({
                     <Badge
                       variant="outline"
                       className={cn('rounded-sm', TONE_CLASSES[option.tone ?? 'neutral'])}
-                      removeLabel={`Remove ${option.label}`}
+                      removeLabel={`${t('common.remove')} ${option.label}`}
                       {...(disabled ? {} : { onRemove: handleRemove })}
                     >
                       {option.label}
@@ -178,11 +217,7 @@ export function MultiSelect({
           <CommandList>
             <CommandEmpty>{emptyText ?? t('common.noResults')}</CommandEmpty>
             {results.map((option) => (
-              <CommandItem
-                key={option.value}
-                value={option.value}
-                onSelect={() => toggle(option.value)}
-              >
+              <CommandItem key={option.value} value={option.value} onSelect={() => toggle(option)}>
                 <Checkbox checked={value.includes(option.value)} className="pointer-events-none" />
                 <span className="flex-1 truncate">{option.label}</span>
               </CommandItem>

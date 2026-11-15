@@ -114,7 +114,7 @@ export function MemberList({ company }: MemberListProps) {
         actions={
           <>
             <Button
-              variant="outline"
+              variant="edit"
               disabled={selectedId === null}
               onClick={() => selectedId && router.push(ROUTES.company.memberEdit(selectedId))}
               data-testid="company-members-edit"
@@ -122,7 +122,7 @@ export function MemberList({ company }: MemberListProps) {
               <Pencil aria-hidden="true" />
               {t('company.members.edit')}
             </Button>
-            <Button asChild data-testid="company-members-add">
+            <Button asChild variant="create" data-testid="company-members-add">
               <Link href={ROUTES.company.memberNew}>
                 <Plus aria-hidden="true" />
                 {t('company.members.add')}

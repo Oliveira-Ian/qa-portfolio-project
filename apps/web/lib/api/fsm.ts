@@ -13,6 +13,7 @@ import type {
   FsmDashboardDto,
   PaginatedResult,
   TechnicianDto,
+  WorkOrderFilterOptionsDto,
   WorkOrderDto,
   WorkOrderItemWriteInput,
   WorkOrderListItemDto,
@@ -70,12 +71,32 @@ export const workOrderTypesApi = recordApi<WorkOrderTypeDto, WorkOrderTypeWriteI
 /** Active customers matching `search`, with their addresses — for another record's form. */
 export function requestCustomerOptions(
   token: string,
-  filter: { search?: string; id?: string } = {},
+  filter: { search?: string; id?: string; ids?: string[]; includeInactive?: boolean } = {},
 ): Promise<ApiResult<CustomerOptionDto[]>> {
   return apiRequest<CustomerOptionDto[]>('/api/fsm/customers/options', {
     token,
-    query: { search: filter.search, id: filter.id },
+    query: {
+      search: filter.search,
+      id: filter.id,
+      ids: filter.ids && filter.ids.length > 0 ? filter.ids.join(',') : undefined,
+      all: filter.includeInactive ? 'true' : undefined,
+    },
   });
+}
+
+/** The cities of the customers' primary addresses — the list's City filter. */
+export function requestCustomerCities(token: string): Promise<ApiResult<string[]>> {
+  return apiRequest<string[]>('/api/fsm/customers/cities', { token });
+}
+
+/** The categories the company's equipment uses — the list's Category filter. */
+export function requestEquipmentCategories(token: string): Promise<ApiResult<string[]>> {
+  return apiRequest<string[]>('/api/fsm/equipment/categories', { token });
+}
+
+/** The cities the branches are in — the list's City filter. */
+export function requestBranchCities(token: string): Promise<ApiResult<string[]>> {
+  return apiRequest<string[]>('/api/fsm/branches/cities', { token });
 }
 
 /** The company's branches, as the FSM manages them (docs/adr/0013, addendum). */
@@ -108,6 +129,13 @@ export function requestWorkOrder(token: string, id: string): Promise<ApiResult<W
 
 export function requestTechnicians(token: string): Promise<ApiResult<TechnicianDto[]>> {
   return apiRequest<TechnicianDto[]>(`${WORK_ORDERS}/technicians`, { token });
+}
+
+/** Types, branches and technicians to filter the work order list by — readable with the list. */
+export function requestWorkOrderFilterOptions(
+  token: string,
+): Promise<ApiResult<WorkOrderFilterOptionsDto>> {
+  return apiRequest<WorkOrderFilterOptionsDto>(`${WORK_ORDERS}/filter-options`, { token });
 }
 
 export function requestWorkOrderSave(

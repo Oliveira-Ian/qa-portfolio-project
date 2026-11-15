@@ -14,14 +14,7 @@ import { FormSection } from '@/components/forms/form-section';
 import { RecordForm, SectionBlock, type RecordFormMode } from '@/components/forms/record-form';
 import { useEntityForm } from '@/components/forms/use-entity-form';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { useT } from '@/lib/i18n/provider';
@@ -64,7 +57,9 @@ export function BranchForm({ mode, branch, canEdit = false }: BranchFormProps) {
         name={name}
         render={({ field }) => (
           <FormItem className={options.className} required={options.required ?? false}>
-            <FormLabel>{t(labelKey)}</FormLabel>
+            <FormLabel {...(options.help ? { help: t(options.help) } : {})}>
+              {t(labelKey)}
+            </FormLabel>
             <FormControl>
               <Input
                 {...field}
@@ -73,7 +68,6 @@ export function BranchForm({ mode, branch, canEdit = false }: BranchFormProps) {
                 data-testid={`branch-form-input-${name}`}
               />
             </FormControl>
-            {options.help ? <FormDescription>{t(options.help)}</FormDescription> : null}
             <FormMessage />
           </FormItem>
         )}
@@ -111,7 +105,9 @@ export function BranchForm({ mode, branch, canEdit = false }: BranchFormProps) {
                 name="document"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('fsm.branches.form.fields.document')}</FormLabel>
+                    <FormLabel help={t('fsm.branches.form.fields.documentHelp')}>
+                      {t('fsm.branches.form.fields.document')}
+                    </FormLabel>
                     <FormControl>
                       <MaskedInput
                         {...field}
@@ -123,7 +119,6 @@ export function BranchForm({ mode, branch, canEdit = false }: BranchFormProps) {
                         data-testid="branch-form-input-document"
                       />
                     </FormControl>
-                    <FormDescription>{t('fsm.branches.form.fields.documentHelp')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

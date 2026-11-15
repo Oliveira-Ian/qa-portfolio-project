@@ -4,8 +4,13 @@ import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
 import { EquipmentList } from './_components/equipment-list';
+import { chosenCustomerIds } from '../customers/_components/customer-filters';
 import { EQUIPMENT_FILTERABLE_COLUMNS } from './_components/equipment-filters';
-import { equipmentAccess, equipmentGrid } from './_data-access/equipment-access';
+import {
+  equipmentAccess,
+  equipmentGrid,
+  getEquipmentFilterChoices,
+} from './_data-access/equipment-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
@@ -24,9 +29,10 @@ export default async function EquipmentPage({ searchParams }: EquipmentPageProps
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), EQUIPMENT_FILTERABLE_COLUMNS);
-  const [result, gridPreference, canCreate, canEdit, canDelete] = await Promise.all([
+  const [result, gridPreference, filterChoices, canCreate, canEdit, canDelete] = await Promise.all([
     equipmentAccess.list(query),
     equipmentGrid.getPreference(),
+    getEquipmentFilterChoices(chosenCustomerIds(query, 'customer')),
     can('FSM', 'equipment:create'),
     can('FSM', 'equipment:edit'),
     can('FSM', 'equipment:delete'),
@@ -38,6 +44,7 @@ export default async function EquipmentPage({ searchParams }: EquipmentPageProps
       total={result.total}
       can={{ create: canCreate, edit: canEdit, delete: canDelete }}
       gridPreference={gridPreference}
+      filterChoices={filterChoices}
     />
   );
 }

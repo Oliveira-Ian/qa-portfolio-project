@@ -34,7 +34,7 @@ export async function UserRecord({ product, account, basePath }: UserRecordProps
             <Button variant="ghost" asChild data-testid="user-record-button-back">
               <Link href={basePath}>{t('accessControl.users.record.back')}</Link>
             </Button>
-            <Button asChild data-testid="user-record-button-edit">
+            <Button asChild variant="edit" data-testid="user-record-button-edit">
               <Link href={`${basePath}/${account.id}/edit`}>
                 <Pencil aria-hidden="true" />
                 {t('accessControl.users.record.edit')}

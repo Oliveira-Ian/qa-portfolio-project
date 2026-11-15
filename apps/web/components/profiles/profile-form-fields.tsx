@@ -66,6 +66,8 @@ const RESOURCE_GROUP: Record<string, MatrixGroup> = {
   equipment: 'records',
   'catalog-item': 'records',
   branch: 'settings',
+  // The FSM's Overview (`dashboard:view`) sits with the operations in its sidebar.
+  dashboard: 'operations',
 };
 
 const RESOURCE_LABEL: Record<string, MessageKey> = {
@@ -76,6 +78,7 @@ const RESOURCE_LABEL: Record<string, MessageKey> = {
   equipment: 'accessControl.profiles.form.resources.equipment',
   'catalog-item': 'accessControl.profiles.form.resources.catalogItem',
   branch: 'accessControl.profiles.form.resources.branch',
+  dashboard: 'accessControl.profiles.form.resources.dashboard',
 };
 
 /** `resource:action` → the catalogue key of a permission's name; one the app doesn't know keeps the API's label. */
@@ -153,8 +156,10 @@ function PermissionsField({ product, permissions, disabled }: ProfileFormFieldsP
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-border">
-              <Table data-testid="profile-form-permission-matrix">
+            {/* On a phone the four action columns don't fit: the matrix scrolls sideways
+                inside its frame instead of being cut. */}
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <Table className="min-w-[30rem]" data-testid="profile-form-permission-matrix">
                 <TableHeader>
                   <TableRow className="h-10 hover:bg-transparent">
                     <TableHead>{t('accessControl.profiles.form.screen')}</TableHead>

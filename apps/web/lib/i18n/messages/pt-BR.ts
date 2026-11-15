@@ -16,6 +16,8 @@ export const ptBR: Messages = {
     save: 'Salvar',
     back: 'Voltar',
     remove: 'Remover',
+    aboutField: 'Sobre {label}',
+    moreInfo: 'Mais informações',
     edit: 'Editar',
     delete: 'Excluir',
     saveChanges: 'Salvar alterações',
@@ -261,6 +263,7 @@ export const ptBR: Messages = {
           customer: 'Clientes',
           equipment: 'Equipamentos',
           catalogItem: 'Produtos e serviços',
+          dashboard: 'Visão geral',
           branch: 'Filiais',
         },
         special: 'Outras permissões',
@@ -665,7 +668,8 @@ export const ptBR: Messages = {
     },
     guard: {
       lastCompanyAdmin: 'A empresa precisa manter pelo menos um administrador',
-      demoLocked: 'A conta demo não pode ser alterada — ela fica como está para o próximo visitante.',
+      demoLocked:
+        'A conta demo não pode ser alterada — ela fica como está para o próximo visitante.',
       lastProfileManager: 'Pelo menos um membro precisa manter a permissão de gerenciar perfis',
       lastSuperAdmin: 'Não é possível remover o último super admin ativo',
       ownSuperAdmin: 'Um super admin não pode remover o próprio acesso',

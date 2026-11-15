@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil } from 'lucide-react';
 import {
@@ -22,8 +23,9 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import type { ActionResult } from '@/lib/actions';
 import { useT } from '@/lib/i18n/provider';
-import { USER_CUSTOMIZABLE_COLUMNS, USER_EXPORT_COLUMNS, userColumns } from './user-columns';
-import { USER_FILTER_FIELDS, USER_FILTERABLE_COLUMNS } from './user-filter-fields';
+import type { FilterOption } from '@/components/data-table/types';
+import { USER_CUSTOMIZABLE_COLUMNS, USER_EXPORT_COLUMNS, userColumnsWith } from './user-columns';
+import { USER_FILTERABLE_COLUMNS, userFilterFields } from './user-filter-fields';
 
 const TESTID_PREFIX = 'user-list';
 
@@ -36,6 +38,8 @@ interface UserListProps {
   saveGridPreferenceAction: (columns: GridColumnPreferenceItem[]) => Promise<ActionResult>;
   /** The screen's own URL — a record opens at `${basePath}/:id`, its edit at `${basePath}/:id/edit`. */
   basePath: string;
+  /** The product's profiles — the Profile filter's options. */
+  profileOptions: FilterOption[];
 }
 
 /**
@@ -53,7 +57,10 @@ export function UserList({
   gridPreference,
   saveGridPreferenceAction,
   basePath,
+  profileOptions,
 }: UserListProps) {
+  const columns = useMemo(() => userColumnsWith(profileOptions), [profileOptions]);
+  const filterFields = useMemo(() => userFilterFields(profileOptions), [profileOptions]);
   const t = useT();
   const router = useRouter();
   const { query, setQuery } = useListNavigation(USER_FILTERABLE_COLUMNS);
@@ -77,7 +84,7 @@ export function UserList({
 
   const table = useDataTable({
     data: accounts,
-    columns: userColumns,
+    columns,
     getRowId: (account) => String(account.id),
     rowCount: total,
     query,
@@ -99,7 +106,7 @@ export function UserList({
         description={t('accessControl.users.lead', { product: productName })}
         actions={
           <Button
-            variant="outline"
+            variant="edit"
             data-testid="user-button-edit"
             disabled={selectedId === undefined}
             onClick={() =>
@@ -120,7 +127,7 @@ export function UserList({
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
           activeFilterCount={table.getState().columnFilters.length}
-          filterFields={USER_FILTER_FIELDS}
+          filterFields={filterFields}
           searchPlaceholder={t('accessControl.users.search')}
         />
       </div>
@@ -144,7 +151,7 @@ export function UserList({
 
       <FilterDrawer
         table={table}
-        fields={USER_FILTER_FIELDS}
+        fields={filterFields}
         open={filtersOpen}
         onOpenChange={setFiltersOpen}
         testIdPrefix={TESTID_PREFIX}

@@ -213,7 +213,12 @@ export function MemberEditForm({ view }: { view: MemberView }) {
               >
                 {t('company.drawer.cancel')}
               </Button>
-              <Button type="submit" loading={isPending} data-testid="company-member-save">
+              <Button
+                type="submit"
+                variant="create"
+                loading={isPending}
+                data-testid="company-member-save"
+              >
                 {t('company.drawer.save')}
               </Button>
             </span>

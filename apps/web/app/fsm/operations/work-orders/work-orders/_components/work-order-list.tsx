@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   WORK_ORDER_STATUSES,
@@ -33,9 +34,10 @@ import {
 } from '@/components/fsm/work-order-badges';
 import {
   WORK_ORDER_FILTERABLE_COLUMNS,
-  WORK_ORDER_FILTER_FIELDS,
   WORK_ORDER_PRIORITY_OPTIONS,
   WORK_ORDER_STATUS_OPTIONS,
+  workOrderFilterFields,
+  type WorkOrderFilterChoices,
 } from './work-order-filters';
 
 const PREFIX = 'work-order-list';
@@ -57,116 +59,139 @@ function DateTimeCell({ value, isOverdue = false }: { value: string | null; isOv
   );
 }
 
-const columns: ColumnDef<WorkOrderListItemDto>[] = [
-  {
-    accessorKey: 'number',
-    header: header('fsm.workOrders.columns.number'),
-    cell: ({ getValue }) => <MonoCell value={formatWorkOrderNumber(getValue<number>())} />,
-    enableColumnFilter: false,
-  },
-  {
-    accessorKey: 'title',
-    header: header('fsm.workOrders.columns.title'),
-    cell: ({ row }) => (
-      <NameCell
-        value={row.original.title}
-        sub={[row.original.type.name, row.original.equipment?.name].filter(Boolean).join(' · ')}
-      />
-    ),
-    ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.title'),
-  },
-  {
-    id: 'customer',
-    accessorFn: (workOrder) => workOrder.customer.name,
-    header: header('fsm.workOrders.columns.customer'),
-    cell: ({ row }) => <NameCell value={row.original.customer.name} sub={row.original.city} />,
-    ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.customer'),
-  },
-  {
-    accessorKey: 'status',
-    header: header('fsm.workOrders.columns.status'),
-    cell: ({ row }) => (
-      <span className="flex flex-wrap gap-1">
-        <WorkOrderStatusBadge status={row.original.status} />
-        {row.original.isOverdue ? <OverdueBadge /> : null}
-      </span>
-    ),
-    ...filterableColumn<WorkOrderListItemDto>(
-      'enum',
-      WORK_ORDER_STATUS_OPTIONS,
-      'fsm.workOrders.columns.status',
-    ),
-  },
-  {
-    accessorKey: 'priority',
-    header: header('fsm.workOrders.columns.priority'),
-    cell: ({ getValue }) => <PriorityBadge priority={getValue<WorkOrderPriority>()} />,
-    ...filterableColumn<WorkOrderListItemDto>(
-      'enum',
-      WORK_ORDER_PRIORITY_OPTIONS,
-      'fsm.workOrders.columns.priority',
-    ),
-  },
-  {
-    id: 'assignee',
-    accessorFn: (workOrder) => workOrder.assignee?.name ?? null,
-    header: header('fsm.workOrders.columns.assignee'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.assignee'),
-  },
-  {
-    accessorKey: 'scheduledAt',
-    header: header('fsm.workOrders.columns.scheduledAt'),
-    cell: ({ getValue }) => <DateTimeCell value={getValue<string | null>()} />,
-    ...filterableColumn<WorkOrderListItemDto>(
-      'date',
-      undefined,
-      'fsm.workOrders.columns.scheduledAt',
-    ),
-  },
-  {
-    accessorKey: 'dueAt',
-    header: header('fsm.workOrders.columns.dueAt'),
-    cell: ({ row }) => (
-      <DateTimeCell value={row.original.dueAt} isOverdue={row.original.isOverdue} />
-    ),
-    ...filterableColumn<WorkOrderListItemDto>('date', undefined, 'fsm.workOrders.columns.dueAt'),
-  },
-  {
-    id: 'type',
-    accessorFn: (workOrder) => workOrder.type.name,
-    header: header('fsm.workOrders.columns.type'),
-    enableSorting: false,
-    ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.type'),
-  },
-  {
-    id: 'branch',
-    accessorFn: (workOrder) => (workOrder.branch ? workOrder.branch.code : null),
-    header: header('fsm.workOrders.columns.branch'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    enableSorting: false,
-    ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.branch'),
-  },
-  {
-    id: 'equipment',
-    accessorFn: (workOrder) => workOrder.equipment?.name ?? null,
-    header: header('fsm.workOrders.columns.equipment'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<WorkOrderListItemDto>(
-      'text',
-      undefined,
-      'fsm.workOrders.columns.equipment',
-    ),
-  },
-  {
-    accessorKey: 'createdAt',
-    header: header('fsm.workOrders.columns.created'),
-    cell: ({ getValue }) => <DateCell value={getValue<string>()} />,
-    ...filterableColumn<WorkOrderListItemDto>('date', undefined, 'fsm.workOrders.columns.created'),
-  },
-];
+/** The columns — type, branch and technician filter by the company's own lists. */
+function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListItemDto>[] {
+  return [
+    {
+      accessorKey: 'number',
+      header: header('fsm.workOrders.columns.number'),
+      cell: ({ getValue }) => <MonoCell value={formatWorkOrderNumber(getValue<number>())} />,
+      enableColumnFilter: false,
+    },
+    {
+      accessorKey: 'title',
+      header: header('fsm.workOrders.columns.title'),
+      cell: ({ row }) => (
+        <NameCell
+          value={row.original.title}
+          sub={[row.original.type.name, row.original.equipment?.name].filter(Boolean).join(' · ')}
+        />
+      ),
+      ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.title'),
+    },
+    {
+      id: 'customer',
+      accessorFn: (workOrder) => workOrder.customer.name,
+      header: header('fsm.workOrders.columns.customer'),
+      cell: ({ row }) => <NameCell value={row.original.customer.name} sub={row.original.city} />,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'text',
+        undefined,
+        'fsm.workOrders.columns.customer',
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: header('fsm.workOrders.columns.status'),
+      cell: ({ row }) => (
+        <span className="flex flex-wrap gap-1">
+          <WorkOrderStatusBadge status={row.original.status} />
+          {row.original.isOverdue ? <OverdueBadge /> : null}
+        </span>
+      ),
+      ...filterableColumn<WorkOrderListItemDto>(
+        'enum',
+        WORK_ORDER_STATUS_OPTIONS,
+        'fsm.workOrders.columns.status',
+      ),
+    },
+    {
+      accessorKey: 'priority',
+      header: header('fsm.workOrders.columns.priority'),
+      cell: ({ getValue }) => <PriorityBadge priority={getValue<WorkOrderPriority>()} />,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'enum',
+        WORK_ORDER_PRIORITY_OPTIONS,
+        'fsm.workOrders.columns.priority',
+      ),
+    },
+    {
+      id: 'assignee',
+      accessorFn: (workOrder) => workOrder.assignee?.name ?? null,
+      header: header('fsm.workOrders.columns.assignee'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'enum',
+        choices.technicians,
+        'fsm.workOrders.columns.assignee',
+      ),
+    },
+    {
+      accessorKey: 'scheduledAt',
+      header: header('fsm.workOrders.columns.scheduledAt'),
+      cell: ({ getValue }) => <DateTimeCell value={getValue<string | null>()} />,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'date',
+        undefined,
+        'fsm.workOrders.columns.scheduledAt',
+      ),
+    },
+    {
+      accessorKey: 'dueAt',
+      header: header('fsm.workOrders.columns.dueAt'),
+      cell: ({ row }) => (
+        <DateTimeCell value={row.original.dueAt} isOverdue={row.original.isOverdue} />
+      ),
+      ...filterableColumn<WorkOrderListItemDto>('date', undefined, 'fsm.workOrders.columns.dueAt'),
+    },
+    {
+      id: 'type',
+      accessorFn: (workOrder) => workOrder.type.name,
+      header: header('fsm.workOrders.columns.type'),
+      enableSorting: false,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'enum',
+        choices.types,
+        'fsm.workOrders.columns.type',
+      ),
+    },
+    {
+      id: 'branch',
+      accessorFn: (workOrder) => (workOrder.branch ? workOrder.branch.code : null),
+      header: header('fsm.workOrders.columns.branch'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      enableSorting: false,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'enum',
+        choices.branches,
+        'fsm.workOrders.columns.branch',
+      ),
+    },
+    {
+      id: 'equipment',
+      accessorFn: (workOrder) => workOrder.equipment?.name ?? null,
+      header: header('fsm.workOrders.columns.equipment'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'text',
+        undefined,
+        'fsm.workOrders.columns.equipment',
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: header('fsm.workOrders.columns.created'),
+      cell: ({ getValue }) => <DateCell value={getValue<string>()} />,
+      ...filterableColumn<WorkOrderListItemDto>(
+        'date',
+        undefined,
+        'fsm.workOrders.columns.created',
+      ),
+    },
+  ];
+}
 
 const exportColumns: ExportColumn<WorkOrderListItemDto>[] = [
   {
@@ -293,6 +318,7 @@ interface WorkOrderListProps {
   canCreate: boolean;
   canEdit: boolean;
   gridPreference: GridColumnPreferenceDto | null;
+  filterChoices: WorkOrderFilterChoices;
 }
 
 export function WorkOrderList({
@@ -302,14 +328,21 @@ export function WorkOrderList({
   canCreate,
   canEdit,
   gridPreference,
+  filterChoices,
 }: WorkOrderListProps) {
+  const columns = useMemo(() => buildColumns(filterChoices), [filterChoices]);
+  const filterFields = useMemo(
+    () => workOrderFilterFields(filterChoices, mode),
+    [filterChoices, mode],
+  );
+
   return (
     <EntityList
       rows={rows}
       total={total}
       columns={columns}
       filterableColumns={WORK_ORDER_FILTERABLE_COLUMNS}
-      filterFields={WORK_ORDER_FILTER_FIELDS}
+      filterFields={filterFields}
       customizableColumns={CUSTOMIZABLE}
       exportColumns={exportColumns}
       gridPreference={gridPreference}

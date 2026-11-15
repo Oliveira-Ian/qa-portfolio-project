@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Building2 } from 'lucide-react';
 import type { BranchDto, GridColumnPreferenceDto } from '@oliveira/schemas';
@@ -16,60 +17,64 @@ import type { ExportColumn } from '@/components/data-table/export-modal';
 import { useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
 import { deleteBranchesAction, saveBranchGridAction } from '../_actions/branch-actions';
-import { BRANCH_FILTERABLE_COLUMNS, BRANCH_FILTER_FIELDS } from './branch-filters';
+import type { FilterOption } from '@/components/data-table/types';
+import { BRANCH_FILTERABLE_COLUMNS, branchFilterFields } from './branch-filters';
 
 const PREFIX = 'branch-list';
 const header = (key: Parameters<typeof columnHeader>[0]) => columnHeader<BranchDto>(key, PREFIX);
 
-const columns: ColumnDef<BranchDto>[] = [
-  {
-    accessorKey: 'code',
-    header: header('fsm.columns.code'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string>()} />,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.code'),
-  },
-  {
-    accessorKey: 'name',
-    header: header('fsm.columns.name'),
-    cell: ({ getValue }) => <NameCell value={getValue<string>()} />,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.name'),
-  },
-  {
-    accessorKey: 'document',
-    header: header('fsm.columns.document'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.document'),
-  },
-  {
-    id: 'city',
-    accessorFn: (branch) => branch.address?.city ?? null,
-    header: header('fsm.columns.city'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.city'),
-  },
-  {
-    id: 'state',
-    accessorFn: (branch) => branch.address?.state ?? null,
-    header: header('fsm.columns.state'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.state'),
-  },
-  {
-    accessorKey: 'phone',
-    header: header('fsm.columns.phone'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    enableSorting: false,
-    ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.phone'),
-  },
-  {
-    accessorKey: 'active',
-    header: header('fsm.columns.status'),
-    cell: ({ getValue }) => <ActiveBadge active={getValue<boolean>()} />,
-    ...filterableColumn<BranchDto>('boolean', undefined, 'fsm.columns.status'),
-  },
-];
+/** City filters from the cities the branches are in. */
+function buildColumns(cities: FilterOption[]): ColumnDef<BranchDto>[] {
+  return [
+    {
+      accessorKey: 'code',
+      header: header('fsm.columns.code'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string>()} />,
+      ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.code'),
+    },
+    {
+      accessorKey: 'name',
+      header: header('fsm.columns.name'),
+      cell: ({ getValue }) => <NameCell value={getValue<string>()} />,
+      ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.name'),
+    },
+    {
+      accessorKey: 'document',
+      header: header('fsm.columns.document'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.document'),
+    },
+    {
+      id: 'city',
+      accessorFn: (branch) => branch.address?.city ?? null,
+      header: header('fsm.columns.city'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<BranchDto>('enum', cities, 'fsm.columns.city'),
+    },
+    {
+      id: 'state',
+      accessorFn: (branch) => branch.address?.state ?? null,
+      header: header('fsm.columns.state'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.state'),
+    },
+    {
+      accessorKey: 'phone',
+      header: header('fsm.columns.phone'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      enableSorting: false,
+      ...filterableColumn<BranchDto>('text', undefined, 'fsm.columns.phone'),
+    },
+    {
+      accessorKey: 'active',
+      header: header('fsm.columns.status'),
+      cell: ({ getValue }) => <ActiveBadge active={getValue<boolean>()} />,
+      ...filterableColumn<BranchDto>('boolean', undefined, 'fsm.columns.status'),
+    },
+  ];
+}
 
 const exportColumns: ExportColumn<BranchDto>[] = [
   { key: 'code', labelKey: 'fsm.columns.code', getValue: (row) => row.code },
@@ -119,16 +124,27 @@ interface BranchListProps {
   companyName: string;
   can: { create: boolean; edit: boolean; delete: boolean };
   gridPreference: GridColumnPreferenceDto | null;
+  cities: FilterOption[];
 }
 
-export function BranchList({ rows, total, companyName, can, gridPreference }: BranchListProps) {
+export function BranchList({
+  rows,
+  total,
+  companyName,
+  can,
+  gridPreference,
+  cities,
+}: BranchListProps) {
+  const columns = useMemo(() => buildColumns(cities), [cities]);
+  const filterFields = useMemo(() => branchFilterFields(cities), [cities]);
+
   return (
     <EntityList
       rows={rows}
       total={total}
       columns={columns}
       filterableColumns={BRANCH_FILTERABLE_COLUMNS}
-      filterFields={BRANCH_FILTER_FIELDS}
+      filterFields={filterFields}
       customizableColumns={CUSTOMIZABLE}
       exportColumns={exportColumns}
       gridPreference={gridPreference}

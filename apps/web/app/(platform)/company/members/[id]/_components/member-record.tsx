@@ -34,7 +34,7 @@ export async function MemberRecord({ view }: { view: MemberView }) {
             <Button variant="ghost" asChild data-testid="company-member-record-back">
               <Link href={ROUTES.company.members}>{t('company.member.back')}</Link>
             </Button>
-            <Button asChild data-testid="company-member-record-edit">
+            <Button asChild variant="edit" data-testid="company-member-record-edit">
               <Link href={ROUTES.company.memberEdit(member.id)}>
                 <Pencil aria-hidden="true" />
                 {t('company.member.edit')}

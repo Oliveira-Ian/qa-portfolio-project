@@ -22,6 +22,8 @@ export interface FilterDrawerField {
   labelKey: MessageKey;
   filterType: FilterType;
   options?: FilterOption[];
+  /** Searched on the server as the person types — a long list; `options` names the chosen values. */
+  loadOptions?: (search: string) => Promise<FilterOption[]>;
 }
 
 interface FilterDrawerProps<TData> {
@@ -77,6 +79,10 @@ export function FilterDrawer<TData>({
                 filterType={field.filterType}
                 label={t(field.labelKey)}
                 options={field.options}
+                // The panel's pattern: a field with several values is a multi-select whose
+                // choices are removable chips — never a list of checkboxes taking room.
+                enumControl="multi-select"
+                loadOptions={field.loadOptions}
                 value={column.getFilterValue()}
                 onChange={(value) => column.setFilterValue(value)}
                 testId={`${testIdPrefix}-filter-drawer-${field.key}`}

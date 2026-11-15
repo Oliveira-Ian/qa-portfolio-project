@@ -5,6 +5,7 @@ import type { AccountDto } from '@oliveira/schemas';
 import { ColumnFilter } from '@/components/data-table/column-filter';
 import { ColumnHeader } from '@/components/data-table/column-header';
 import { filterableColumn } from '@/components/data-table/column-helpers';
+import type { FilterOption } from '@/components/data-table/types';
 import type { ExportColumn } from '@/components/data-table/export-modal';
 import type { CustomizableColumn } from '@/components/data-table/grid-customization-modal';
 import { StatusBadge } from '@/components/ui/badge';
@@ -80,7 +81,8 @@ export const userColumns: ColumnDef<AccountDto>[] = [
     header: renderHeader('accessControl.users.columns.profile'),
     enableSorting: false,
     cell: ({ row }) => <ProfileCell account={row.original} />,
-    ...filterableColumn<AccountDto>('text', undefined, 'accessControl.users.columns.profile'),
+    // The options (the product's profiles) come from the list: see `userColumnsWith`.
+    ...filterableColumn<AccountDto>('enum', [], 'accessControl.users.columns.profile'),
   },
   {
     accessorKey: 'active',
@@ -128,3 +130,12 @@ export const USER_EXPORT_COLUMNS: ExportColumn<AccountDto>[] = [
 export const USER_CUSTOMIZABLE_COLUMNS: CustomizableColumn[] = USER_EXPORT_COLUMNS.map(
   ({ key, labelKey }) => ({ key, labelKey }),
 );
+
+/** `userColumns` with the Profile filter offering the product's profiles. */
+export function userColumnsWith(profiles: FilterOption[]): ColumnDef<AccountDto>[] {
+  return userColumns.map((column) =>
+    column.id === 'profile'
+      ? { ...column, meta: { ...column.meta, filterOptions: profiles } }
+      : column,
+  );
+}

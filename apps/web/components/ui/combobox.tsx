@@ -77,7 +77,14 @@ export function Combobox({
           )}
           {...props}
         >
-          <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>
+          {/* `min-w-0`: a long label (a full address) is cut with an ellipsis instead of
+              widening the trigger past its column. */}
+          <span
+            className={cn(
+              'min-w-0 flex-1 truncate text-left',
+              !selected && 'text-muted-foreground',
+            )}
+          >
             {selected ? selected.label : (placeholder ?? t('common.select'))}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -116,7 +123,8 @@ export function Combobox({
                   )}
                   aria-hidden="true"
                 />
-                <span className="flex-1 truncate">{option.label}</span>
+                {/* Wraps rather than cuts: a long option (a full address) is read whole here. */}
+                <span className="min-w-0 flex-1 break-words">{option.label}</span>
               </CommandItem>
             ))}
           </CommandList>

@@ -15,14 +15,7 @@ import { FormCard, FormCardActions, FormCardHeader } from '@/components/forms/fo
 import { FormSection } from '@/components/forms/form-section';
 import { useEntityForm } from '@/components/forms/use-entity-form';
 import { Combobox } from '@/components/ui/combobox';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { ActionResult } from '@/lib/actions';
 import { useT } from '@/lib/i18n/provider';
 
@@ -107,7 +100,9 @@ export function UserProfileForm({
             name="profileId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('accessControl.users.columns.profile')}</FormLabel>
+                <FormLabel help={t('accessControl.users.form.help')}>
+                  {t('accessControl.users.columns.profile')}
+                </FormLabel>
                 <FormControl>
                   <Combobox
                     options={options}
@@ -119,7 +114,6 @@ export function UserProfileForm({
                     data-testid="user-profile-form-profile"
                   />
                 </FormControl>
-                <FormDescription>{t('accessControl.users.form.help')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

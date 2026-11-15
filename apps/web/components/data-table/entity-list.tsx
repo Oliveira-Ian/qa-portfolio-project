@@ -173,7 +173,7 @@ export function EntityList<TRow extends { id: string }>({
             ) : null}
             {can.edit ? (
               <Button
-                variant="outline"
+                variant="edit"
                 data-testid={`${testIdPrefix}-button-edit`}
                 disabled={!selectedId}
                 onClick={() => selectedId && router.push(routes.edit(selectedId))}
@@ -183,7 +183,7 @@ export function EntityList<TRow extends { id: string }>({
               </Button>
             ) : null}
             {can.create ? (
-              <Button asChild data-testid={`${testIdPrefix}-button-add`}>
+              <Button asChild variant="create" data-testid={`${testIdPrefix}-button-add`}>
                 <Link href={routes.new}>
                   <Plus aria-hidden="true" />
                   {m('add')}
@@ -222,7 +222,7 @@ export function EntityList<TRow extends { id: string }>({
             title: m('empty.title'),
             description: m('empty.body'),
             action: can.create ? (
-              <Button asChild data-testid={`${testIdPrefix}-empty-button-add`}>
+              <Button asChild variant="create" data-testid={`${testIdPrefix}-empty-button-add`}>
                 <Link href={routes.new}>
                   <Plus aria-hidden="true" />
                   {m('addFirst')}

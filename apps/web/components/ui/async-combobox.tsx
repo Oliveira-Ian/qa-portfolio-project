@@ -117,7 +117,12 @@ export function AsyncCombobox({
           )}
           {...props}
         >
-          <span className={cn('truncate text-left', !selectedLabel && 'text-muted-foreground')}>
+          <span
+            className={cn(
+              'min-w-0 flex-1 truncate text-left',
+              !selectedLabel && 'text-muted-foreground',
+            )}
+          >
             {value && selectedLabel ? selectedLabel : (placeholder ?? t('common.select'))}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

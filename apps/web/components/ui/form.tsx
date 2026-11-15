@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
+import { InfoTip } from '@/components/ui/info-tip';
 import { Label } from '@/components/ui/label';
 
 const Form = FormProvider;
@@ -90,17 +91,35 @@ function FormItem({
   const id = React.useId();
   const value = React.useMemo(() => ({ id, required }), [id, required]);
 
+  // `grid-cols-1` (a `minmax(0, 1fr)` track) and `min-w-0`: a long value — a full
+  // address in a combobox — is cut with an ellipsis instead of widening the field
+  // past its column.
   return (
     <FormItemContext.Provider value={value}>
-      <div data-slot="form-item" className={cn('grid gap-2', className)} {...props} />
+      <div
+        data-slot="form-item"
+        className={cn('grid min-w-0 grid-cols-1 gap-2', className)}
+        {...props}
+      />
     </FormItemContext.Provider>
   );
 }
 
-function FormLabel({ className, children, ...props }: React.ComponentProps<typeof Label>) {
+/**
+ * The field's label. `help` explains the field on demand — an "i" beside the label
+ * with a tooltip (hover, focus, click or tap) — instead of a line of text under the
+ * field that takes room and pushes the fields beside it out of line.
+ */
+function FormLabel({
+  className,
+  children,
+  help,
+  helpTestId,
+  ...props
+}: React.ComponentProps<typeof Label> & { help?: React.ReactNode; helpTestId?: string }) {
+  const t = useT();
   const { error, formItemId, required } = useFormField();
-
-  return (
+  const label = (
     <Label
       data-slot="form-label"
       data-error={!!error}
@@ -115,6 +134,26 @@ function FormLabel({ className, children, ...props }: React.ComponentProps<typeo
         </span>
       ) : null}
     </Label>
+  );
+
+  if (!help) {
+    return label;
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {label}
+      <InfoTip
+        label={
+          typeof children === 'string'
+            ? t('common.aboutField', { label: children })
+            : t('common.moreInfo')
+        }
+        {...(helpTestId ? { 'data-testid': helpTestId } : {})}
+      >
+        {help}
+      </InfoTip>
+    </div>
   );
 }
 

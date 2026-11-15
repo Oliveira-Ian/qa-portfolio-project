@@ -14,14 +14,7 @@ import { RecordForm, SectionBlock, type RecordFormMode } from '@/components/form
 import { useEntityForm } from '@/components/forms/use-entity-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CurrencyInput } from '@/components/ui/currency-input';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -125,7 +118,9 @@ export function CatalogItemForm({ mode, item, canEdit = false }: CatalogItemForm
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('fsm.catalogItems.form.fields.code')}</FormLabel>
+                    <FormLabel help={t('fsm.catalogItems.form.fields.codeHelp')}>
+                      {t('fsm.catalogItems.form.fields.code')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -135,7 +130,6 @@ export function CatalogItemForm({ mode, item, canEdit = false }: CatalogItemForm
                         data-testid="catalog-item-form-input-code"
                       />
                     </FormControl>
-                    <FormDescription>{t('fsm.catalogItems.form.fields.codeHelp')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -190,7 +184,9 @@ export function CatalogItemForm({ mode, item, canEdit = false }: CatalogItemForm
                 name="unit"
                 render={({ field }) => (
                   <FormItem required>
-                    <FormLabel>{t('fsm.catalogItems.form.fields.unit')}</FormLabel>
+                    <FormLabel help={t('fsm.catalogItems.form.fields.unitHelp')}>
+                      {t('fsm.catalogItems.form.fields.unit')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -201,7 +197,6 @@ export function CatalogItemForm({ mode, item, canEdit = false }: CatalogItemForm
                         data-testid="catalog-item-form-input-unit"
                       />
                     </FormControl>
-                    <FormDescription>{t('fsm.catalogItems.form.fields.unitHelp')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

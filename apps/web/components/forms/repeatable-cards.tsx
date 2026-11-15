@@ -157,7 +157,7 @@ export function RepeatableCards<TValues extends FieldValues, TName extends Array
         <div>
           <Button
             type="button"
-            variant="outline"
+            variant="create"
             size="sm"
             onClick={handleAdd}
             data-testid={`${testIdPrefix}-add`}

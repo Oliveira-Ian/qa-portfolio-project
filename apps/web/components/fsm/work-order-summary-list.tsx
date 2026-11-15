@@ -75,7 +75,7 @@ export function WorkOrderSummaryList({
       )}
       {newHref ? (
         <div>
-          <Button asChild variant="outline" size="sm" data-testid={`${testId}-new`}>
+          <Button asChild variant="create" size="sm" data-testid={`${testId}-new`}>
             <Link href={newHref}>
               <Plus aria-hidden="true" />
               {t('fsm.workOrders.list.add')}

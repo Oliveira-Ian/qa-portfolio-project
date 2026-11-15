@@ -20,14 +20,7 @@ import { useEntityForm } from '@/components/forms/use-entity-form';
 import { AsyncCombobox } from '@/components/ui/async-combobox';
 import { Combobox } from '@/components/ui/combobox';
 import { DateTimeField } from '@/components/ui/date-time-field';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -160,6 +153,15 @@ export function WorkOrderForm({
     typeOptions.push({ value: workOrder.type.id, label: workOrder.type.name });
   }
 
+  /** A field's label with its "i": the explanation lives in a tooltip, not under the field. */
+  function labelWithHelp(label: string, help: string, testId: string) {
+    return (
+      <FormLabel help={help} helpTestId={testId}>
+        {label}
+      </FormLabel>
+    );
+  }
+
   return (
     <RecordForm
       mode={mode}
@@ -178,16 +180,13 @@ export function WorkOrderForm({
     >
       <div className="divide-y divide-border">
         <SectionBlock>
-          <FormSection
-            title={t('fsm.workOrders.form.sections.customer.title')}
-            description={t('fsm.workOrders.form.sections.customer.body')}
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
+          <FormSection title={t('fsm.workOrders.form.sections.customer.title')}>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="customerId"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2" required>
+                  <FormItem required>
                     <FormLabel>{t('fsm.workOrders.form.fields.customer')}</FormLabel>
                     <FormControl>
                       <AsyncCombobox
@@ -226,7 +225,11 @@ export function WorkOrderForm({
                 name="equipmentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('fsm.workOrders.form.fields.equipment')}</FormLabel>
+                    {labelWithHelp(
+                      t('fsm.workOrders.form.fields.equipment'),
+                      t('fsm.workOrders.form.help.equipment'),
+                      'work-order-form-help-equipment',
+                    )}
                     <FormControl>
                       <Combobox
                         options={equipmentOptions}
@@ -245,7 +248,7 @@ export function WorkOrderForm({
                 control={form.control}
                 name="serviceAddressId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="md:col-span-2">
                     <FormLabel>{t('fsm.workOrders.form.fields.address')}</FormLabel>
                     <FormControl>
                       <Combobox
@@ -266,11 +269,8 @@ export function WorkOrderForm({
         </SectionBlock>
 
         <SectionBlock>
-          <FormSection
-            title={t('fsm.workOrders.form.sections.job.title')}
-            description={t('fsm.workOrders.form.sections.job.body')}
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
+          <FormSection title={t('fsm.workOrders.form.sections.job.title')}>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="typeId"
@@ -297,21 +297,25 @@ export function WorkOrderForm({
                   <FormItem required>
                     <FormLabel>{t('fsm.workOrders.form.fields.priority')}</FormLabel>
                     <FormControl>
+                      {/* Four equal segments filling the column — never wider than it. */}
                       <ToggleGroup
                         type="single"
                         variant="outline"
                         value={field.value}
                         onValueChange={(value) => value && field.onChange(value)}
+                        className="grid w-full grid-cols-4"
                         data-testid="work-order-form-priority"
                       >
                         {WORK_ORDER_PRIORITIES.map((priority) => (
                           <ToggleGroupItem
                             key={priority}
                             value={priority}
-                            className="px-3"
+                            className="min-w-0 px-2"
                             data-testid={`work-order-form-priority-${priority.toLowerCase()}`}
                           >
-                            {t(`fsm.workOrders.priority.${priority}`)}
+                            <span className="truncate">
+                              {t(`fsm.workOrders.priority.${priority}`)}
+                            </span>
                           </ToggleGroupItem>
                         ))}
                       </ToggleGroup>
@@ -324,7 +328,7 @@ export function WorkOrderForm({
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2" required>
+                  <FormItem className="md:col-span-2" required>
                     <FormLabel>{t('fsm.workOrders.form.fields.title')}</FormLabel>
                     <FormControl>
                       <Input
@@ -342,12 +346,14 @@ export function WorkOrderForm({
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
+                  <FormItem className="md:col-span-2">
                     <FormLabel>{t('fsm.workOrders.form.fields.description')}</FormLabel>
                     <FormControl>
+                      {/* No resize handle: it grows with the text up to a limit, then scrolls. */}
                       <Textarea
                         {...field}
                         rows={4}
+                        className="min-h-28"
                         placeholder={t('fsm.workOrders.form.fields.descriptionPlaceholder')}
                         data-testid="work-order-form-input-description"
                       />
@@ -361,17 +367,18 @@ export function WorkOrderForm({
         </SectionBlock>
 
         <SectionBlock>
-          <FormSection
-            title={t('fsm.workOrders.form.sections.planning.title')}
-            description={t('fsm.workOrders.form.sections.planning.body')}
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
+          <FormSection title={t('fsm.workOrders.form.sections.planning.title')}>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
               <FormField
                 control={form.control}
                 name="assigneeMembershipId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('fsm.workOrders.form.fields.assignee')}</FormLabel>
+                    {labelWithHelp(
+                      t('fsm.workOrders.form.fields.assignee'),
+                      t('fsm.workOrders.form.help.assignee'),
+                      'work-order-form-help-assignee',
+                    )}
                     <FormControl>
                       <Combobox
                         options={technicianOptions}
@@ -381,9 +388,6 @@ export function WorkOrderForm({
                         data-testid="work-order-form-assignee"
                       />
                     </FormControl>
-                    <FormDescription>
-                      {t('fsm.workOrders.form.fields.assigneeHelp')}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -413,7 +417,11 @@ export function WorkOrderForm({
                   name={name}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t(`fsm.workOrders.form.fields.${name}`)}</FormLabel>
+                      {labelWithHelp(
+                        t(`fsm.workOrders.form.fields.${name}`),
+                        t(`fsm.workOrders.form.help.${name}`),
+                        `work-order-form-help-${name}`,
+                      )}
                       <FormControl>
                         <DateTimeField
                           value={field.value}

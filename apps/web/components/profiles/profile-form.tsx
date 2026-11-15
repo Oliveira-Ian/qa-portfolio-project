@@ -87,7 +87,7 @@ export function ProfileForm({ product, mode, profile, permissions, saveAction }:
                       <Button variant="ghost" asChild data-testid="profile-record-button-back">
                         <Link href={routes.list}>{t('accessControl.profiles.record.back')}</Link>
                       </Button>
-                      <Button asChild data-testid="profile-record-button-edit">
+                      <Button asChild variant="edit" data-testid="profile-record-button-edit">
                         <Link href={routes.edit(profile.id)}>
                           <Pencil aria-hidden="true" />
                           {t('accessControl.profiles.record.edit')}

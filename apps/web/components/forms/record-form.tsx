@@ -79,7 +79,7 @@ export function RecordForm<TValues extends FieldValues>({
                       <Link href={cancelHref}>{t('common.back')}</Link>
                     </Button>
                     {editHref ? (
-                      <Button asChild data-testid={`${testIdPrefix}-button-edit`}>
+                      <Button asChild variant="edit" data-testid={`${testIdPrefix}-button-edit`}>
                         <Link href={editHref}>
                           <Pencil aria-hidden="true" />
                           {t('common.edit')}

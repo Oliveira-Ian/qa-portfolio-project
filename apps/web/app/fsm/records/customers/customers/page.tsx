@@ -4,8 +4,12 @@ import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
 import { CustomerList } from './_components/customer-list';
-import { CUSTOMER_FILTERABLE_COLUMNS } from './_components/customer-filters';
-import { customerAccess, customerGrid } from './_data-access/customer-access';
+import { CUSTOMER_FILTERABLE_COLUMNS, chosenCustomerIds } from './_components/customer-filters';
+import {
+  customerAccess,
+  customerGrid,
+  getCustomerFilterChoices,
+} from './_data-access/customer-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
@@ -24,9 +28,10 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), CUSTOMER_FILTERABLE_COLUMNS);
-  const [result, gridPreference, canCreate, canEdit, canDelete] = await Promise.all([
+  const [result, gridPreference, filterChoices, canCreate, canEdit, canDelete] = await Promise.all([
     customerAccess.list(query),
     customerGrid.getPreference(),
+    getCustomerFilterChoices(chosenCustomerIds(query)),
     can('FSM', 'customer:create'),
     can('FSM', 'customer:edit'),
     can('FSM', 'customer:delete'),
@@ -38,6 +43,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       total={result.total}
       can={{ create: canCreate, edit: canEdit, delete: canDelete }}
       gridPreference={gridPreference}
+      filterChoices={filterChoices}
     />
   );
 }

@@ -1,8 +1,10 @@
 'use client';
 
+import { useCallback } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -12,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { useT } from '@/lib/i18n/provider';
 import type { DateRangeFilterValue, NumberRangeFilterValue } from './filter-fns';
-import type { FilterOption, FilterType } from './types';
+import { filterOptionLabel, type FilterOption, type FilterType } from './types';
 
 interface FilterFieldProps {
   filterType: FilterType;
@@ -20,6 +22,15 @@ interface FilterFieldProps {
   value: unknown;
   onChange: (value: unknown) => void;
   options?: FilterOption[] | undefined;
+  /**
+   * How an `enum` field shows its options: every checkbox laid out (the column's
+   * own popover), or a multi-select dropdown whose choices become removable
+   * chips — the filter panel's, where a long list of checkboxes would push
+   * everything else down.
+   */
+  enumControl?: 'checkboxes' | 'multi-select' | undefined;
+  /** Options searched on the server — always a multi-select; `options` then names the chosen ones. */
+  loadOptions?: ((search: string) => Promise<FilterOption[]>) | undefined;
   testId: string;
 }
 
@@ -35,9 +46,20 @@ export function FilterField({
   value,
   onChange,
   options,
+  enumControl = 'checkboxes',
+  loadOptions,
   testId,
 }: FilterFieldProps) {
   const t = useT();
+  // Stable while `loadOptions` is, so the multi-select doesn't search again on every render.
+  const searchOptions = useCallback(
+    async (search: string) =>
+      (loadOptions ? await loadOptions(search) : []).map((option) => ({
+        value: option.value,
+        label: filterOptionLabel(option, t),
+      })),
+    [loadOptions, t],
+  );
 
   if (filterType === 'text') {
     return (
@@ -78,6 +100,26 @@ export function FilterField({
   if (filterType === 'enum') {
     const selected = (value as string[] | undefined) ?? [];
 
+    if (enumControl === 'multi-select' || loadOptions) {
+      const toMultiSelectOptions = (list: FilterOption[]) =>
+        list.map((option) => ({ value: option.value, label: filterOptionLabel(option, t) }));
+
+      return (
+        <div className="space-y-1.5">
+          <Label>{label}</Label>
+          <MultiSelect
+            aria-label={label}
+            options={toMultiSelectOptions(options ?? [])}
+            {...(loadOptions ? { loadOptions: searchOptions } : {})}
+            value={selected}
+            onChange={(next) => onChange(next.length > 0 ? next : undefined)}
+            placeholder={t('table.filters.any')}
+            data-testid={testId}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-1.5">
         <Label>{label}</Label>
@@ -94,7 +136,7 @@ export function FilterField({
                   onChange(next.length > 0 ? next : undefined);
                 }}
               />
-              {t(option.labelKey)}
+              {filterOptionLabel(option, t)}
             </label>
           ))}
         </div>

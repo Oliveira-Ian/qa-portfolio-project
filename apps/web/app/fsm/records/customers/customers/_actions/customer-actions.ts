@@ -1,8 +1,13 @@
 'use server';
 
 import type { GridColumnPreferenceItem, PersonFormValues } from '@oliveira/schemas';
+import type { FilterOption } from '@/components/data-table/types';
 import type { ActionResult } from '@/lib/actions';
-import { customerAccess, customerGrid } from '../_data-access/customer-access';
+import {
+  customerAccess,
+  customerGrid,
+  findCustomerFilterOptions,
+} from '../_data-access/customer-access';
 
 /** Creates the customer — its person, addresses and contacts — or updates it when `id` is given. */
 export async function saveCustomerAction(
@@ -21,4 +26,9 @@ export async function saveCustomerGridAction(
   columns: GridColumnPreferenceItem[],
 ): Promise<ActionResult> {
   return customerGrid.savePreference(columns);
+}
+
+/** The customers a list filter offers as the person types — active or not. */
+export async function searchCustomerFilterAction(search: string): Promise<FilterOption[]> {
+  return findCustomerFilterOptions({ search });
 }

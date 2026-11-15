@@ -22,14 +22,7 @@ import { useEntityForm } from '@/components/forms/use-entity-form';
 import { AsyncCombobox } from '@/components/ui/async-combobox';
 import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useT } from '@/lib/i18n/provider';
@@ -116,7 +109,9 @@ export function EquipmentForm({
         name={name}
         render={({ field }) => (
           <FormItem className={options.className} required={options.required ?? false}>
-            <FormLabel>{t(labelKey)}</FormLabel>
+            <FormLabel {...(options.help ? { help: t(options.help) } : {})}>
+              {t(labelKey)}
+            </FormLabel>
             <FormControl>
               <Input
                 {...field}
@@ -127,7 +122,6 @@ export function EquipmentForm({
                 data-testid={`equipment-form-input-${name}`}
               />
             </FormControl>
-            {options.help ? <FormDescription>{t(options.help)}</FormDescription> : null}
             <FormMessage />
           </FormItem>
         )}
@@ -238,7 +232,9 @@ export function EquipmentForm({
                 name="addressId"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>{t('fsm.equipment.form.fields.address')}</FormLabel>
+                    <FormLabel help={t('fsm.equipment.form.fields.addressHelp')}>
+                      {t('fsm.equipment.form.fields.address')}
+                    </FormLabel>
                     <FormControl>
                       <Combobox
                         options={addressOptions}
@@ -250,7 +246,6 @@ export function EquipmentForm({
                         data-testid="equipment-form-address"
                       />
                     </FormControl>
-                    <FormDescription>{t('fsm.equipment.form.fields.addressHelp')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

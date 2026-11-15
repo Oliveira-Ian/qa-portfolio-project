@@ -17,14 +17,7 @@ import { PERSON_TYPE_ICON } from '@/components/people/person-badges';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Textarea } from '@/components/ui/textarea';
@@ -162,7 +155,10 @@ function TypesField({ disabled }: { disabled: boolean }) {
       name="types"
       render={({ field }) => (
         <FormItem className="sm:col-span-2" required>
-          <FormLabel data-testid="person-form-label-types">
+          <FormLabel
+            help={t('erp.people.form.fields.typeHelp')}
+            data-testid="person-form-label-types"
+          >
             {t('erp.people.form.fields.type')}
           </FormLabel>
           <FormControl>
@@ -173,7 +169,6 @@ function TypesField({ disabled }: { disabled: boolean }) {
               data-testid="person-form-types"
             />
           </FormControl>
-          <FormDescription>{t('erp.people.form.fields.typeHelp')}</FormDescription>
           <FormMessage data-testid="person-form-error-types" />
         </FormItem>
       )}
@@ -468,7 +463,10 @@ export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFo
               name="name"
               render={({ field }) => (
                 <FormItem className="sm:col-span-2" required>
-                  <FormLabel data-testid="person-form-label-name">
+                  <FormLabel
+                    help={t('erp.people.form.fields.nameHelp')}
+                    data-testid="person-form-label-name"
+                  >
                     {t('erp.people.form.fields.name')}
                   </FormLabel>
                   <FormControl>
@@ -480,7 +478,6 @@ export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFo
                       data-testid="person-form-input-name"
                     />
                   </FormControl>
-                  <FormDescription>{t('erp.people.form.fields.nameHelp')}</FormDescription>
                   <FormMessage data-testid="person-form-error-name" />
                 </FormItem>
               )}
@@ -491,7 +488,9 @@ export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFo
               name="tradeName"
               render={({ field }) => (
                 <FormItem className="sm:col-span-2">
-                  <FormLabel>{t('erp.people.form.fields.tradeName')}</FormLabel>
+                  <FormLabel help={t('erp.people.form.fields.tradeNameHelp')}>
+                    {t('erp.people.form.fields.tradeName')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -500,7 +499,6 @@ export function PersonFormFields({ disabled = false, variant = 'erp' }: PersonFo
                       data-testid="person-form-input-trade-name"
                     />
                   </FormControl>
-                  <FormDescription>{t('erp.people.form.fields.tradeNameHelp')}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

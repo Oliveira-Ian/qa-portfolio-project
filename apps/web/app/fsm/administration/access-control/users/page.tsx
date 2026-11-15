@@ -6,6 +6,7 @@ import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
+import { getProfileFilterOptions } from '@/lib/profile-filter-options';
 import { saveFsmAccountGridAction } from './_actions/user-actions';
 import { fsmAccountGrid, listFsmAccounts } from './_data-access/user-access';
 
@@ -26,9 +27,10 @@ export default async function FsmUsersPage({ searchParams }: UsersPageProps) {
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), USER_FILTERABLE_COLUMNS);
-  const [accounts, gridPreference] = await Promise.all([
+  const [accounts, gridPreference, profileOptions] = await Promise.all([
     listFsmAccounts(query),
     fsmAccountGrid.getPreference(),
+    getProfileFilterOptions('FSM'),
   ]);
 
   return (
@@ -38,6 +40,7 @@ export default async function FsmUsersPage({ searchParams }: UsersPageProps) {
       total={accounts.total}
       gridPreference={gridPreference}
       saveGridPreferenceAction={saveFsmAccountGridAction}
+      profileOptions={profileOptions}
       basePath={ROUTES.fsm.users.list}
     />
   );

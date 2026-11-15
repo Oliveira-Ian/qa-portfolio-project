@@ -55,6 +55,7 @@ export function ColumnFilter<TData, TValue>({
           value={column.getFilterValue()}
           onChange={(value) => column.setFilterValue(value)}
           options={column.columnDef.meta?.filterOptions}
+          loadOptions={column.columnDef.meta?.filterLoadOptions}
           testId={`${testIdPrefix}-column-filter-${column.id}-input`}
         />
       </PopoverContent>

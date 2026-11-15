@@ -20,11 +20,13 @@ export function filterableColumn<TData>(
   filterOptions?: FilterOption[] | undefined,
   /** The column's name, so an active-filter tag can say it even when the column is hidden. */
   labelKey?: MessageKey | undefined,
+  /** An `enum` filter searched on the server (a long list); `filterOptions` names the chosen values. */
+  filterLoadOptions?: ((search: string) => Promise<FilterOption[]>) | undefined,
 ): Partial<ColumnDef<TData, unknown>> {
   const filterFn = FILTER_FN_BY_TYPE[filterType] as FilterFn<TData> | undefined;
 
   return {
     ...(filterFn ? { filterFn } : {}),
-    meta: { filterType, filterOptions, labelKey },
+    meta: { filterType, filterOptions, labelKey, filterLoadOptions },
   };
 }

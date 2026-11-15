@@ -5,7 +5,11 @@ import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
 import { WorkOrderList } from './_components/work-order-list';
 import { WORK_ORDER_FILTERABLE_COLUMNS } from './_components/work-order-filters';
-import { listWorkOrders, workOrderGrid } from './_data-access/work-order-access';
+import {
+  getWorkOrderFilterChoices,
+  listWorkOrders,
+  workOrderGrid,
+} from './_data-access/work-order-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
@@ -27,9 +31,10 @@ export default async function WorkOrdersPage({ searchParams }: WorkOrdersPagePro
     toURLSearchParams(await searchParams),
     WORK_ORDER_FILTERABLE_COLUMNS,
   );
-  const [result, gridPreference, canCreate, canEdit] = await Promise.all([
+  const [result, gridPreference, filterChoices, canCreate, canEdit] = await Promise.all([
     listWorkOrders(query),
     workOrderGrid.getPreference(),
+    getWorkOrderFilterChoices(),
     can('FSM', 'work-order:create'),
     can('FSM', 'work-order:edit'),
   ]);
@@ -42,6 +47,7 @@ export default async function WorkOrdersPage({ searchParams }: WorkOrdersPagePro
       canCreate={canCreate}
       canEdit={canEdit}
       gridPreference={gridPreference}
+      filterChoices={filterChoices}
     />
   );
 }

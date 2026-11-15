@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   formatAddress,
@@ -19,91 +20,101 @@ import { EntityList } from '@/components/data-table/entity-list';
 import type { ExportColumn } from '@/components/data-table/export-modal';
 import { formatDateMedium } from '@/lib/format';
 import { ROUTES } from '@/lib/navigation/routes';
+import { searchCustomerFilterAction } from '../../customers/_actions/customer-actions';
 import { deleteEquipmentAction, saveEquipmentGridAction } from '../_actions/equipment-actions';
 import {
   EQUIPMENT_FILTERABLE_COLUMNS,
-  EQUIPMENT_FILTER_FIELDS,
   EQUIPMENT_STATUS_OPTIONS,
+  equipmentFilterFields,
+  type EquipmentFilterChoices,
 } from './equipment-filters';
 import { EquipmentStatusBadge } from './equipment-status-badge';
 
 const PREFIX = 'equipment-list';
 const header = (key: Parameters<typeof columnHeader>[0]) => columnHeader<EquipmentDto>(key, PREFIX);
 
-const columns: ColumnDef<EquipmentDto>[] = [
-  {
-    accessorKey: 'tag',
-    header: header('fsm.columns.tag'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.tag'),
-  },
-  {
-    accessorKey: 'name',
-    header: header('fsm.columns.name'),
-    cell: ({ row }) => (
-      <NameCell
-        value={row.original.name}
-        sub={[row.original.manufacturer, row.original.model].filter(Boolean).join(' ')}
-      />
-    ),
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.name'),
-  },
-  {
-    id: 'customer',
-    accessorFn: (equipment) => equipment.customer.name,
-    header: header('fsm.columns.customer'),
-    cell: ({ getValue }) => (
-      <span className="block max-w-[16rem] truncate">{getValue<string>()}</span>
-    ),
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.customer'),
-  },
-  {
-    id: 'location',
-    accessorFn: (equipment) =>
-      [equipment.address?.label ?? equipment.address?.city, equipment.location]
-        .filter(Boolean)
-        .join(' · ') || null,
-    header: header('fsm.columns.location'),
-    cell: ({ getValue }) => (
-      <span className="block max-w-[16rem] truncate text-text-2">
-        {getValue<string | null>() ?? '—'}
-      </span>
-    ),
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-  {
-    accessorKey: 'category',
-    header: header('fsm.columns.category'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.category'),
-  },
-  {
-    accessorKey: 'manufacturer',
-    header: header('fsm.columns.manufacturer'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.manufacturer'),
-  },
-  {
-    accessorKey: 'serialNumber',
-    header: header('fsm.columns.serialNumber'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    enableSorting: false,
-    ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.serialNumber'),
-  },
-  {
-    accessorKey: 'warrantyUntil',
-    header: header('fsm.columns.warrantyUntil'),
-    cell: ({ getValue }) => <DateCell value={getValue<string | null>()} />,
-    ...filterableColumn<EquipmentDto>('date', undefined, 'fsm.columns.warrantyUntil'),
-  },
-  {
-    accessorKey: 'status',
-    header: header('fsm.columns.status'),
-    cell: ({ getValue }) => <EquipmentStatusBadge status={getValue<EquipmentStatus>()} />,
-    ...filterableColumn<EquipmentDto>('enum', EQUIPMENT_STATUS_OPTIONS, 'fsm.columns.status'),
-  },
-];
+/** Customer and Category filter from lists: the customers (searched) and the categories in use. */
+function buildColumns(choices: EquipmentFilterChoices): ColumnDef<EquipmentDto>[] {
+  return [
+    {
+      accessorKey: 'tag',
+      header: header('fsm.columns.tag'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.tag'),
+    },
+    {
+      accessorKey: 'name',
+      header: header('fsm.columns.name'),
+      cell: ({ row }) => (
+        <NameCell
+          value={row.original.name}
+          sub={[row.original.manufacturer, row.original.model].filter(Boolean).join(' ')}
+        />
+      ),
+      ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.name'),
+    },
+    {
+      id: 'customer',
+      accessorFn: (equipment) => equipment.customer.name,
+      header: header('fsm.columns.customer'),
+      cell: ({ getValue }) => (
+        <span className="block max-w-[16rem] truncate">{getValue<string>()}</span>
+      ),
+      ...filterableColumn<EquipmentDto>(
+        'enum',
+        choices.customers,
+        'fsm.columns.customer',
+        searchCustomerFilterAction,
+      ),
+    },
+    {
+      id: 'location',
+      accessorFn: (equipment) =>
+        [equipment.address?.label ?? equipment.address?.city, equipment.location]
+          .filter(Boolean)
+          .join(' · ') || null,
+      header: header('fsm.columns.location'),
+      cell: ({ getValue }) => (
+        <span className="block max-w-[16rem] truncate text-text-2">
+          {getValue<string | null>() ?? '—'}
+        </span>
+      ),
+      enableSorting: false,
+      enableColumnFilter: false,
+    },
+    {
+      accessorKey: 'category',
+      header: header('fsm.columns.category'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      ...filterableColumn<EquipmentDto>('enum', choices.categories, 'fsm.columns.category'),
+    },
+    {
+      accessorKey: 'manufacturer',
+      header: header('fsm.columns.manufacturer'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.manufacturer'),
+    },
+    {
+      accessorKey: 'serialNumber',
+      header: header('fsm.columns.serialNumber'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      enableSorting: false,
+      ...filterableColumn<EquipmentDto>('text', undefined, 'fsm.columns.serialNumber'),
+    },
+    {
+      accessorKey: 'warrantyUntil',
+      header: header('fsm.columns.warrantyUntil'),
+      cell: ({ getValue }) => <DateCell value={getValue<string | null>()} />,
+      ...filterableColumn<EquipmentDto>('date', undefined, 'fsm.columns.warrantyUntil'),
+    },
+    {
+      accessorKey: 'status',
+      header: header('fsm.columns.status'),
+      cell: ({ getValue }) => <EquipmentStatusBadge status={getValue<EquipmentStatus>()} />,
+      ...filterableColumn<EquipmentDto>('enum', EQUIPMENT_STATUS_OPTIONS, 'fsm.columns.status'),
+    },
+  ];
+}
 
 const exportColumns: ExportColumn<EquipmentDto>[] = [
   { key: 'tag', labelKey: 'fsm.columns.tag', getValue: (row) => row.tag ?? '' },
@@ -156,16 +167,29 @@ interface EquipmentListProps {
   total: number;
   can: { create: boolean; edit: boolean; delete: boolean };
   gridPreference: GridColumnPreferenceDto | null;
+  filterChoices: EquipmentFilterChoices;
 }
 
-export function EquipmentList({ rows, total, can, gridPreference }: EquipmentListProps) {
+export function EquipmentList({
+  rows,
+  total,
+  can,
+  gridPreference,
+  filterChoices,
+}: EquipmentListProps) {
+  const columns = useMemo(() => buildColumns(filterChoices), [filterChoices]);
+  const filterFields = useMemo(
+    () => equipmentFilterFields(filterChoices, searchCustomerFilterAction),
+    [filterChoices],
+  );
+
   return (
     <EntityList
       rows={rows}
       total={total}
       columns={columns}
       filterableColumns={EQUIPMENT_FILTERABLE_COLUMNS}
-      filterFields={EQUIPMENT_FILTER_FIELDS}
+      filterFields={filterFields}
       customizableColumns={CUSTOMIZABLE}
       exportColumns={exportColumns}
       gridPreference={gridPreference}

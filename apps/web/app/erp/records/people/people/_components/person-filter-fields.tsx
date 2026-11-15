@@ -9,6 +9,8 @@ import { PERSON_DOCUMENT_TYPE_OPTIONS, PERSON_TYPE_OPTIONS } from './person-colu
  * `filterType` on purpose, so the drawer exercises every widget.
  */
 export const PERSON_FILTER_FIELDS: FilterDrawerField[] = [
+  // Dates first, then the rest; Type and Document type are multi-selects (the panel's pattern).
+  { key: 'createdAt', labelKey: 'erp.columns.created', filterType: 'date' },
   { key: 'name', labelKey: 'erp.columns.name', filterType: 'text' },
   { key: 'types', labelKey: 'erp.columns.type', filterType: 'enum', options: PERSON_TYPE_OPTIONS },
   {
@@ -18,7 +20,6 @@ export const PERSON_FILTER_FIELDS: FilterDrawerField[] = [
     options: PERSON_DOCUMENT_TYPE_OPTIONS,
   },
   { key: 'active', labelKey: 'erp.columns.status', filterType: 'boolean' },
-  { key: 'createdAt', labelKey: 'erp.columns.created', filterType: 'date' },
 ];
 
 /**

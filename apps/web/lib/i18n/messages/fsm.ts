@@ -314,12 +314,17 @@ export const fsmEn = {
       created: 'Work order opened',
       updated: 'Work order updated',
       sections: {
-        customer: { title: 'Customer and site', body: 'Who it is for and where the work is done.' },
-        job: { title: 'The job', body: 'What has to be done.' },
-        planning: {
-          title: 'Planning',
-          body: 'With a technician and a date, the work order is scheduled.',
-        },
+        customer: { title: 'Customer and site' },
+        job: { title: 'Work details' },
+        planning: { title: 'Assignment and scheduling' },
+      },
+      /** Behind each field's "i": said once, in a tooltip, rather than under the field. */
+      help: {
+        equipment: 'Choosing equipment fills in the address where it is installed.',
+        assignee: 'Members with the FSM who can execute work orders.',
+        scheduledAt:
+          'With a technician and a date, the work order is scheduled; without either, it stays open.',
+        dueAt: 'Once this has passed and the work order is not finished, it is overdue.',
       },
       fields: {
         customer: 'Customer',
@@ -342,7 +347,6 @@ export const fsmEn = {
         priority: 'Priority',
         assignee: 'Technician',
         noAssignee: 'Not assigned',
-        assigneeHelp: 'Members with the FSM who can execute work orders.',
         scheduledAt: 'Scheduled for',
         dueAt: 'Due',
         date: 'Date',
@@ -787,12 +791,16 @@ export const fsmPtBR: DeepString<typeof fsmEn> = {
       created: 'Ordem de serviço aberta',
       updated: 'Ordem de serviço atualizada',
       sections: {
-        customer: { title: 'Cliente e local', body: 'Para quem é e onde o serviço é feito.' },
-        job: { title: 'O serviço', body: 'O que precisa ser feito.' },
-        planning: {
-          title: 'Planejamento',
-          body: 'Com técnico e data, a OS fica agendada.',
-        },
+        customer: { title: 'Cliente e local' },
+        job: { title: 'Detalhes do serviço' },
+        planning: { title: 'Responsável e agendamento' },
+      },
+      help: {
+        equipment: 'Ao escolher o equipamento, o endereço onde ele está instalado é preenchido.',
+        assignee: 'Membros com o FSM que podem executar ordens de serviço.',
+        scheduledAt:
+          'Com técnico e data, a OS fica agendada; sem um dos dois, ela continua aberta.',
+        dueAt: 'Passado o prazo sem a OS estar concluída, ela fica atrasada.',
       },
       fields: {
         customer: 'Cliente',
@@ -815,7 +823,6 @@ export const fsmPtBR: DeepString<typeof fsmEn> = {
         priority: 'Prioridade',
         assignee: 'Técnico',
         noAssignee: 'Sem técnico',
-        assigneeHelp: 'Membros com o FSM que podem executar ordens de serviço.',
         scheduledAt: 'Agendada para',
         dueAt: 'Prazo',
         date: 'Data',

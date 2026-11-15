@@ -189,7 +189,7 @@ function CustomerEquipment({
       )}
       {canAdd ? (
         <div>
-          <Button asChild variant="outline" size="sm" data-testid="customer-equipment-add">
+          <Button asChild variant="create" size="sm" data-testid="customer-equipment-add">
             <Link href={`${ROUTES.fsm.equipment.new}?customerId=${encodeURIComponent(customerId)}`}>
               <Plus aria-hidden="true" />
               {t('fsm.customers.record.addEquipment')}

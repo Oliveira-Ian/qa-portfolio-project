@@ -8,14 +8,7 @@ import { memberAddSchema, type MemberAddInput } from '@oliveira/schemas';
 import { FormCard, FormCardActions, FormCardHeader } from '@/components/forms/form-card';
 import { FormSection } from '@/components/forms/form-section';
 import { useEntityForm } from '@/components/forms/use-entity-form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { translateApiMessage } from '@/lib/i18n/api-messages';
 import { useT } from '@/lib/i18n/provider';
@@ -79,7 +72,7 @@ export function NewMemberForm({ companyName }: { companyName: string }) {
             name="email"
             render={({ field }) => (
               <FormItem required>
-                <FormLabel>{t('company.add.email')}</FormLabel>
+                <FormLabel help={t('company.add.privacy')}>{t('company.add.email')}</FormLabel>
                 <div className="relative flex items-center">
                   <Mail
                     className="pointer-events-none absolute left-3 size-4 text-text-3"
@@ -99,7 +92,6 @@ export function NewMemberForm({ companyName }: { companyName: string }) {
                     />
                   </FormControl>
                 </div>
-                <FormDescription>{t('company.add.privacy')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

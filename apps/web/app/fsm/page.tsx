@@ -56,7 +56,7 @@ export default async function FsmHomePage() {
         {...(canCreate
           ? {
               actions: (
-                <Button asChild data-testid="fsm-home-new-work-order">
+                <Button asChild variant="create" data-testid="fsm-home-new-work-order">
                   <Link href={ROUTES.fsm.workOrders.new}>
                     <Plus aria-hidden="true" />
                     {t('fsm.workOrders.list.add')}

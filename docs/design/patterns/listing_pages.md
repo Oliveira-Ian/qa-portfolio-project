@@ -149,3 +149,22 @@ Unchanged: `/people/new` → `/records/people/people/new`, `.../[id]` (view),
 
 Unchanged: `personFormSchema` from `packages/schemas` via `zodResolver` — see
 `docs/design/components/forms.md`.
+
+## Filter panel (decided 2026-11-15)
+
+Every list's side panel (`FilterDrawer`) follows one pattern:
+
+- **Dates first**, then the other fields.
+- A field with several values is a **multi-select** (`MultiSelect`): a dropdown with checkboxes and
+  a search, the choices shown as removable chips inside the field. No checkbox list laid out in the
+  panel. A yes/no field (Status) stays a single select (Any / Yes / No).
+- Values that are the company's own data are filtered **by id**, their names carried by the option
+  (`FilterOption.label`): work order types, branches, technicians, profiles, customers. Fixed values
+  (statuses, priorities) keep a catalogue key. Values that are free text but repeat (a customer's or
+  a branch's city, an equipment category) are offered from what the company has
+  (`/cities`, `/categories`).
+- A long list (the company's customers) is **searched on the server** as the person types
+  (`loadOptions`); the page resolves the names of the ones already in the URL, so the chips keep
+  their names on reload.
+- The column header's quick filter uses the same options; with a fixed list it stays a checkbox
+  list — it is a popover and takes no room.

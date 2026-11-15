@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { CustomerDto, GridColumnPreferenceDto } from '@oliveira/schemas';
 import {
@@ -15,80 +16,96 @@ import { EntityList } from '@/components/data-table/entity-list';
 import type { ExportColumn } from '@/components/data-table/export-modal';
 import { formatDateMedium } from '@/lib/format';
 import { ROUTES } from '@/lib/navigation/routes';
-import { deleteCustomersAction, saveCustomerGridAction } from '../_actions/customer-actions';
-import { CUSTOMER_FILTERABLE_COLUMNS, CUSTOMER_FILTER_FIELDS } from './customer-filters';
+import {
+  deleteCustomersAction,
+  saveCustomerGridAction,
+  searchCustomerFilterAction,
+} from '../_actions/customer-actions';
+import {
+  CUSTOMER_FILTERABLE_COLUMNS,
+  customerFilterFields,
+  type CustomerFilterChoices,
+} from './customer-filters';
 
 const PREFIX = 'customer-list';
 const header = (key: Parameters<typeof columnHeader>[0]) => columnHeader<CustomerDto>(key, PREFIX);
 
-const columns: ColumnDef<CustomerDto>[] = [
-  {
-    id: 'name',
-    accessorFn: (customer) => customer.person.name,
-    header: header('fsm.columns.name'),
-    cell: ({ row }) => (
-      <NameCell value={row.original.person.name} sub={row.original.person.tradeName} />
-    ),
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.name'),
-  },
-  {
-    id: 'document',
-    accessorFn: (customer) => customer.person.document,
-    header: header('fsm.columns.document'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.document'),
-  },
-  {
-    id: 'phone',
-    accessorFn: (customer) => customer.person.mobile ?? customer.person.phone,
-    header: header('fsm.columns.phone'),
-    cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.phone'),
-  },
-  {
-    id: 'email',
-    accessorFn: (customer) => customer.person.email,
-    header: header('fsm.columns.email'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.email'),
-  },
-  {
-    id: 'city',
-    accessorFn: (customer) => customer.person.city,
-    header: header('fsm.columns.city'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.city'),
-  },
-  {
-    id: 'state',
-    accessorFn: (customer) => customer.person.state,
-    header: header('fsm.columns.state'),
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-    enableSorting: false,
-    ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.state'),
-  },
-  {
-    accessorKey: 'equipmentCount',
-    header: header('fsm.columns.equipmentCount'),
-    cell: ({ getValue }) => <MonoCell value={String(getValue<number>())} />,
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-  {
-    id: 'active',
-    accessorFn: (customer) => customer.person.active,
-    header: header('fsm.columns.status'),
-    cell: ({ getValue }) => <ActiveBadge active={getValue<boolean>()} />,
-    ...filterableColumn<CustomerDto>('boolean', undefined, 'fsm.columns.status'),
-  },
-  {
-    accessorKey: 'createdAt',
-    header: header('fsm.columns.created'),
-    cell: ({ getValue }) => <DateCell value={getValue<string>()} />,
-    ...filterableColumn<CustomerDto>('date', undefined, 'fsm.columns.created'),
-  },
-];
+/** Name and City filter from lists: the customers (searched) and the cities they are in. */
+function buildColumns(choices: CustomerFilterChoices): ColumnDef<CustomerDto>[] {
+  return [
+    {
+      id: 'name',
+      accessorFn: (customer) => customer.person.name,
+      header: header('fsm.columns.name'),
+      cell: ({ row }) => (
+        <NameCell value={row.original.person.name} sub={row.original.person.tradeName} />
+      ),
+      ...filterableColumn<CustomerDto>(
+        'enum',
+        choices.chosen,
+        'fsm.columns.name',
+        searchCustomerFilterAction,
+      ),
+    },
+    {
+      id: 'document',
+      accessorFn: (customer) => customer.person.document,
+      header: header('fsm.columns.document'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.document'),
+    },
+    {
+      id: 'phone',
+      accessorFn: (customer) => customer.person.mobile ?? customer.person.phone,
+      header: header('fsm.columns.phone'),
+      cell: ({ getValue }) => <MonoCell value={getValue<string | null>()} />,
+      ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.phone'),
+    },
+    {
+      id: 'email',
+      accessorFn: (customer) => customer.person.email,
+      header: header('fsm.columns.email'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.email'),
+    },
+    {
+      id: 'city',
+      accessorFn: (customer) => customer.person.city,
+      header: header('fsm.columns.city'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<CustomerDto>('enum', choices.cities, 'fsm.columns.city'),
+    },
+    {
+      id: 'state',
+      accessorFn: (customer) => customer.person.state,
+      header: header('fsm.columns.state'),
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      enableSorting: false,
+      ...filterableColumn<CustomerDto>('text', undefined, 'fsm.columns.state'),
+    },
+    {
+      accessorKey: 'equipmentCount',
+      header: header('fsm.columns.equipmentCount'),
+      cell: ({ getValue }) => <MonoCell value={String(getValue<number>())} />,
+      enableSorting: false,
+      enableColumnFilter: false,
+    },
+    {
+      id: 'active',
+      accessorFn: (customer) => customer.person.active,
+      header: header('fsm.columns.status'),
+      cell: ({ getValue }) => <ActiveBadge active={getValue<boolean>()} />,
+      ...filterableColumn<CustomerDto>('boolean', undefined, 'fsm.columns.status'),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: header('fsm.columns.created'),
+      cell: ({ getValue }) => <DateCell value={getValue<string>()} />,
+      ...filterableColumn<CustomerDto>('date', undefined, 'fsm.columns.created'),
+    },
+  ];
+}
 
 const exportColumns: ExportColumn<CustomerDto>[] = [
   { key: 'name', labelKey: 'fsm.columns.name', getValue: (row) => row.person.name },
@@ -137,16 +154,29 @@ interface CustomerListProps {
   total: number;
   can: { create: boolean; edit: boolean; delete: boolean };
   gridPreference: GridColumnPreferenceDto | null;
+  filterChoices: CustomerFilterChoices;
 }
 
-export function CustomerList({ rows, total, can, gridPreference }: CustomerListProps) {
+export function CustomerList({
+  rows,
+  total,
+  can,
+  gridPreference,
+  filterChoices,
+}: CustomerListProps) {
+  const columns = useMemo(() => buildColumns(filterChoices), [filterChoices]);
+  const filterFields = useMemo(
+    () => customerFilterFields(filterChoices, searchCustomerFilterAction),
+    [filterChoices],
+  );
+
   return (
     <EntityList
       rows={rows}
       total={total}
       columns={columns}
       filterableColumns={CUSTOMER_FILTERABLE_COLUMNS}
-      filterFields={CUSTOMER_FILTER_FIELDS}
+      filterFields={filterFields}
       customizableColumns={CUSTOMIZABLE}
       exportColumns={exportColumns}
       gridPreference={gridPreference}

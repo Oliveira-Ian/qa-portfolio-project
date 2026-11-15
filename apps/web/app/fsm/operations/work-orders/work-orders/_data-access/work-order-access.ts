@@ -17,12 +17,17 @@ import {
   requestCustomerOptions,
   requestTechnicians,
   requestWorkOrder,
+  requestWorkOrderFilterOptions,
   requestWorkOrderList,
   workOrderTypesApi,
 } from '@/lib/api/fsm';
 import { createGridPreferenceAccess } from '@/lib/grid-preferences';
 import { EMPTY_LIST_QUERY, type ListQueryState } from '@/lib/list-query';
 import { requireSession } from '@/lib/session';
+import {
+  toWorkOrderFilterChoices,
+  type WorkOrderFilterChoices,
+} from '../_components/work-order-filters';
 
 /** One page of work orders; `extra` carries `mine`, `overdue`, `customerId`… */
 export const listWorkOrders = cache(
@@ -79,6 +84,13 @@ export async function getCustomerOption(id: string): Promise<CustomerOptionDto |
   const { token } = await requireSession();
 
   return unwrap(await requestCustomerOptions(token, { id }))[0] ?? null;
+}
+
+/** The company's types, branches and technicians, to filter the list by. */
+export async function getWorkOrderFilterChoices(): Promise<WorkOrderFilterChoices> {
+  const { token } = await requireSession();
+
+  return toWorkOrderFilterChoices(unwrap(await requestWorkOrderFilterOptions(token)));
 }
 
 export const workOrderGrid = createGridPreferenceAccess('fsm-work-order-list');

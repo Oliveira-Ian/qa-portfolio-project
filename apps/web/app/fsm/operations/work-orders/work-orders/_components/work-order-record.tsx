@@ -227,7 +227,7 @@ export function WorkOrderRecord({ workOrder, abilities, backHref }: WorkOrderRec
               <Link href={backHref}>{t('common.back')}</Link>
             </Button>
             {abilities.canEdit && !isFinal ? (
-              <Button variant="outline" asChild data-testid="work-order-record-button-edit">
+              <Button variant="edit" asChild data-testid="work-order-record-button-edit">
                 <Link href={ROUTES.fsm.workOrders.edit(workOrder.id)}>
                   <Pencil aria-hidden="true" />
                   {t('common.edit')}
@@ -526,7 +526,7 @@ export function WorkOrderRecord({ workOrder, abilities, backHref }: WorkOrderRec
                     </div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="create"
                       disabled={isPending || !itemChoice}
                       onClick={() =>
                         itemChoice &&
@@ -568,7 +568,7 @@ export function WorkOrderRecord({ workOrder, abilities, backHref }: WorkOrderRec
                   <div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="create"
                       size="sm"
                       disabled={isPending || note.trim() === ''}
                       onClick={() =>

@@ -47,7 +47,8 @@ export function FormCard<TFieldValues extends FieldValues>({
   // No error summary above the card: a failed save turns the fields red and says
   // what is wrong in a toast, so the layout never moves (docs/design/components/forms.md).
   return (
-    <div className="max-w-[60rem]" data-testid={containerTestId}>
+    // 80rem: the sections lay their fields out in columns across the card's width.
+    <div className="max-w-[80rem]" data-testid={containerTestId}>
       {header}
 
       {/* `overflow-clip`, not `-hidden`: it rounds the corners the same way but does not
@@ -109,7 +110,11 @@ interface FormCardActionsProps {
   cancelLabel: string;
 }
 
-/** Cancel (ghost) and Save (primary, rightmost — with the loading state) for a form footer. */
+/**
+ * Cancel (ghost) and Save (rightmost, with the loading state) for a form footer.
+ * Save is the `create` tone — green on white — the colour of every action that
+ * adds or commits a record (docs/design/components/buttons.md).
+ */
 export function FormCardActions({
   isPending,
   saveLabel,
@@ -123,7 +128,7 @@ export function FormCardActions({
       <Button type="button" variant="ghost" asChild data-testid={cancelTestId}>
         <Link href={cancelHref}>{cancelLabel}</Link>
       </Button>
-      <Button type="submit" data-testid={saveTestId} loading={isPending}>
+      <Button type="submit" variant="create" data-testid={saveTestId} loading={isPending}>
         {saveLabel}
       </Button>
     </>

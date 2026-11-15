@@ -202,7 +202,7 @@ export function PersonList({
             ) : null}
             {canEdit ? (
               <Button
-                variant="outline"
+                variant="edit"
                 data-testid={`${TESTID_PREFIX}-button-edit`}
                 disabled={!selectedId}
                 onClick={handleEdit}
@@ -212,7 +212,7 @@ export function PersonList({
               </Button>
             ) : null}
             {canCreate ? (
-              <Button asChild data-testid={`${TESTID_PREFIX}-button-add`}>
+              <Button asChild variant="create" data-testid={`${TESTID_PREFIX}-button-add`}>
                 <Link href={ROUTES.people.new}>
                   <Plus aria-hidden="true" />
                   {t('erp.people.add')}
@@ -278,7 +278,7 @@ export function PersonList({
             title: t('erp.people.empty.title'),
             description: t('erp.people.empty.body'),
             action: canCreate ? (
-              <Button asChild data-testid={`${TESTID_PREFIX}-empty-button-add`}>
+              <Button asChild variant="create" data-testid={`${TESTID_PREFIX}-empty-button-add`}>
                 <Link href={ROUTES.people.new}>
                   <Plus aria-hidden="true" />
                   {t('erp.people.addFirst')}

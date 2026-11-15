@@ -5,7 +5,7 @@ import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can, getMe } from '@/lib/permissions';
 import { BranchList } from './_components/branch-list';
 import { BRANCH_FILTERABLE_COLUMNS } from './_components/branch-filters';
-import { branchAccess, branchGrid } from './_data-access/branch-access';
+import { branchAccess, branchGrid, getBranchCityOptions } from './_data-access/branch-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
@@ -27,9 +27,10 @@ export default async function BranchesPage({ searchParams }: BranchesPageProps) 
   }
 
   const query = parseListQuery(toURLSearchParams(await searchParams), BRANCH_FILTERABLE_COLUMNS);
-  const [result, gridPreference, me, canCreate, canEdit, canDelete] = await Promise.all([
+  const [result, gridPreference, cities, me, canCreate, canEdit, canDelete] = await Promise.all([
     branchAccess.list(query),
     branchGrid.getPreference(),
+    getBranchCityOptions(),
     getMe(),
     can('FSM', 'branch:create'),
     can('FSM', 'branch:edit'),
@@ -43,6 +44,7 @@ export default async function BranchesPage({ searchParams }: BranchesPageProps) 
       companyName={me.membership?.companyName ?? ''}
       can={{ create: canCreate, edit: canEdit, delete: canDelete }}
       gridPreference={gridPreference}
+      cities={cities}
     />
   );
 }

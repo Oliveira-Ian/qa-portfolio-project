@@ -53,7 +53,7 @@ export function PersonRecord({ person, account, isCompanyAdmin, canEdit }: Perso
                 <Link href={ROUTES.people.list}>{t('erp.people.record.back')}</Link>
               </Button>
               {canEdit ? (
-                <Button asChild data-testid="person-record-button-edit">
+                <Button asChild variant="edit" data-testid="person-record-button-edit">
                   <Link href={ROUTES.people.edit(person.id)}>
                     <Pencil aria-hidden="true" />
                     {t('erp.people.record.editRecord')}

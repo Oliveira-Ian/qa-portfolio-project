@@ -17,7 +17,9 @@ export const CATALOG_ITEM_FILTERABLE_COLUMNS: FilterableColumn[] = [
   { id: 'createdAt', filterType: 'date' },
 ];
 
+/** Dates first, then the rest (the filter panel's pattern). */
 export const CATALOG_ITEM_FILTER_FIELDS: FilterDrawerField[] = [
+  { key: 'createdAt', labelKey: 'fsm.columns.created', filterType: 'date' },
   { key: 'name', labelKey: 'fsm.columns.name', filterType: 'text' },
   {
     key: 'kind',
@@ -26,5 +28,4 @@ export const CATALOG_ITEM_FILTER_FIELDS: FilterDrawerField[] = [
     options: CATALOG_ITEM_KIND_OPTIONS,
   },
   { key: 'active', labelKey: 'fsm.columns.status', filterType: 'boolean' },
-  { key: 'createdAt', labelKey: 'fsm.columns.created', filterType: 'date' },
 ];

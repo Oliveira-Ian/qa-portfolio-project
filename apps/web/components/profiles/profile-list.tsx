@@ -211,7 +211,7 @@ export function ProfileList({
               {t('accessControl.profiles.duplicate')}
             </Button>
             <Button
-              variant="outline"
+              variant="edit"
               data-testid="profile-button-edit"
               disabled={!selectedId}
               onClick={handleEdit}
@@ -219,7 +219,7 @@ export function ProfileList({
               <Pencil aria-hidden="true" />
               {t('accessControl.profiles.edit')}
             </Button>
-            <Button asChild data-testid="profile-button-add">
+            <Button asChild variant="create" data-testid="profile-button-add">
               <Link href={routes.new}>
                 <Plus aria-hidden="true" />
                 {t('accessControl.profiles.add')}
@@ -254,7 +254,7 @@ export function ProfileList({
             title: t('accessControl.profiles.empty.title'),
             description: t('accessControl.profiles.empty.body'),
             action: (
-              <Button asChild data-testid="profile-empty-button-add">
+              <Button asChild variant="create" data-testid="profile-empty-button-add">
                 <Link href={routes.new}>
                   <Plus aria-hidden="true" />
                   {t('accessControl.profiles.addFirst')}

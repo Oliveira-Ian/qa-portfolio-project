@@ -170,6 +170,7 @@ function CreateAccountForm({
 
         <Button
           type="submit"
+          variant="create"
           size="sm"
           className="w-fit"
           loading={isPending}

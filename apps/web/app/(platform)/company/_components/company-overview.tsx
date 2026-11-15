@@ -52,7 +52,7 @@ export async function CompanyOverview() {
         meta={t('company.overview.meta', { count: activeMembers })}
         actions={
           <>
-            <Button asChild variant="outline" data-testid="company-overview-edit">
+            <Button asChild variant="edit" data-testid="company-overview-edit">
               <Link href={ROUTES.company.edit}>
                 <Pencil aria-hidden="true" />
                 {t('company.overview.editCompany')}
