@@ -19,6 +19,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
   - Base components: `docs/design/components/`
   - Listing/table pattern: `docs/design/patterns/listing_pages.md`
   - Accessibility: `docs/design/accessibility.md`
+  - **Oliveira FSM — Design System V2** (its own identity on top of the Foundation; approved, being
+    implemented): `docs/design/fsm/README.md`
 - **A new listing screen** (a routine like People, Profiles, Users): the exact file tree to
   create — `docs/templates/new-routine.md`
 - **API responses / auth / error handling**:
@@ -66,7 +68,7 @@ Every `/api/*` route except `/api/auth/login`, `/api/auth/register` and `/health
   - People CRUD: `/erp/records/people/people`, `.../new`, `.../[id]`, `.../[id]/edit` (the edit/view pages also carry the conditional Access Account section for `USER`-typed people).
   - Profiles CRUD: `/erp/administration/access-control/profiles`, `.../new`, `.../[id]/edit`.
   - Access Control (accounts): `/erp/administration/access-control/users` — list accounts, toggle active, change role, manage profile links.
-- **Oliveira FSM** (`/fsm`): a "coming soon" placeholder.
+- **Oliveira FSM** (`/fsm`): field service — dashboard, work orders (and My work orders), customers, equipment, products and services, work order types, branches, access profiles and users (`docs/especificacoes/fsm-v1.md`); its redesign is `docs/design/fsm/`.
 
 Every one of these hrefs is a typed reference into `apps/web/lib/navigation/routes.ts#ROUTES`
 (derived from the catalog's Module/Group/Routine slugs — Category stays part of the catalog and the

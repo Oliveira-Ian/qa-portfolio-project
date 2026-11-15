@@ -4,6 +4,10 @@ See [`/styleguide`](/styleguide)`#foundations-typography` for a live, rendered s
 below. The scale is the Oliveira design system's (handoff § 3); this page records how it is built in
 `apps/web`.
 
+> **FSM:** same two faces, but the Oliveira FSM uses its own type scale (page title 24/32, record title
+> 22/28, card title 15/22, KPI 30/36, overline in Archivo instead of mono) — `docs/design/fsm/HANDOFF-FSM.md` § 4.
+> The scale below is Foundation V1 (Platform, ERP).
+
 Two faces, each with one job — this is back-office software people read for hours, so the type system
 is built for density and long sessions rather than a single hero moment.
 
