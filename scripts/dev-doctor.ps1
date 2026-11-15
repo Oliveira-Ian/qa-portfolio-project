@@ -6,10 +6,21 @@
 # stopped - the exact shape of the slowdown this script exists to catch).
 #
 # A process is considered "fine" if it IS a listener, or one of its
-# descendants is - that's what makes an "npx next dev" wrapper process not a
-# false positive: it never binds the port itself, its child does.
+# descendants is - that's what makes an "npm run dev" wrapper process not a
+# false positive: it never binds the port itself, its grandchild does. The
+# tree is walked through every process, not only node.exe: on Windows npm
+# starts the server through cmd.exe, so npm -> cmd -> node.
 #
-# Read-only - reports, never kills anything itself. See
+# The patterns match the command lines as Windows really records them - npm
+# is "node npm-cli.js run dev -w apps/api", tsx is "node tsx\dist\cli.mjs
+# watch ...", Next is "node next\dist\bin\next dev" - not the words typed in
+# the terminal. Orphans of exactly that shape (an "npm run dev -w apps/api"
+# and its "tsx watch" whose server had died, eight of them) once left Windows
+# unable to start new processes: Turbopack's PostCSS worker failed with
+# 0xc0000142 and every page answered 500.
+#
+# Read-only by default. With -StopOrphans it stops what it flagged as
+# orphaned (never a listener or anything in a listening tree). See
 # .claude/rules/rules-global.md ("Local Development Servers") for when this
 # should run and what to do with what it finds.
 #
@@ -17,20 +28,30 @@
 # without a BOM, and non-ASCII characters (em dashes, smart quotes) inside a
 # string literal can corrupt the parse in ways that are hard to diagnose.
 
+param([switch]$StopOrphans)
+
 $targetPorts = 3000, 3001
 $memWarningBytes = 300MB
 
-function Test-HasListeningDescendant {
-  param($ProcessId, $AllProcs, $ListeningPids, $Visited = @())
+# npm wrapper, tsx watcher, the API server itself, the Next CLI and Next's server.
+$pattern = @(
+  'run dev -w apps[\\/](web|api)',
+  'tsx([\\/]dist[\\/]cli\.mjs"?)?\s+watch',
+  'tsx[\\/]dist[\\/]preflight\.cjs.*src[\\/]server\.ts',
+  'next([\\/]dist[\\/]bin[\\/]next"?)?\s+dev',
+  'next[\\/]dist[\\/]server[\\/]lib[\\/]start-server'
+) -join '|'
 
-  if ($Visited -contains $ProcessId) { return $false }
-  $Visited = $Visited + $ProcessId
+function Test-HasListeningDescendant {
+  param($ProcessId, $ChildrenOf, $ListeningPids, $Visited)
+
+  if ($Visited.Contains($ProcessId)) { return $false }
+  [void]$Visited.Add($ProcessId)
 
   if ($ListeningPids -contains $ProcessId) { return $true }
 
-  $children = $AllProcs | Where-Object { $_.ParentProcessId -eq $ProcessId }
-  foreach ($child in $children) {
-    if (Test-HasListeningDescendant -ProcessId $child.ProcessId -AllProcs $AllProcs -ListeningPids $ListeningPids -Visited $Visited) {
+  foreach ($child in $ChildrenOf[$ProcessId]) {
+    if (Test-HasListeningDescendant -ProcessId $child -ChildrenOf $ChildrenOf -ListeningPids $ListeningPids -Visited $Visited) {
       return $true
     }
   }
@@ -40,7 +61,8 @@ function Test-HasListeningDescendant {
 
 Write-Host "=== Listening on ports $($targetPorts -join ', ') ===" -ForegroundColor Cyan
 $listeners = Get-NetTCPConnection -LocalPort $targetPorts -State Listen -ErrorAction SilentlyContinue
-$allNode = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue
+$allProcs = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue
+$allNode = $allProcs | Where-Object { $_.Name -eq 'node.exe' }
 
 if (-not $listeners) {
   Write-Host "  (nothing listening - apps/web and/or apps/api are not running)"
@@ -62,28 +84,52 @@ if (-not $listeners) {
 Write-Host ""
 Write-Host "=== All node.exe processes matching this project's dev-server patterns ===" -ForegroundColor Cyan
 
-$pattern = 'next dev|tsx watch src[\\/]server\.ts|npm run dev -w apps[\\/](web|api)'
 $candidates = $allNode | Where-Object { $_.CommandLine -match $pattern }
+$orphans = @()
 
 if (-not $candidates) {
   Write-Host "  (none found)"
 } else {
   $listeningPids = @($listeners | ForEach-Object { $_.OwningProcess })
+  $childrenOf = @{}
+  foreach ($proc in $allProcs) {
+    if (-not $childrenOf.ContainsKey($proc.ParentProcessId)) { $childrenOf[$proc.ParentProcessId] = @() }
+    $childrenOf[$proc.ParentProcessId] += $proc.ProcessId
+  }
 
   foreach ($candidate in $candidates) {
     $mem = Get-Process -Id $candidate.ProcessId -ErrorAction SilentlyContinue
     $memMb = if ($mem) { [math]::Round($mem.WorkingSet64 / 1MB, 1) } else { "?" }
 
-    $isFine = Test-HasListeningDescendant -ProcessId $candidate.ProcessId -AllProcs $allNode -ListeningPids $listeningPids
+    $visited = New-Object 'System.Collections.Generic.HashSet[int]'
+    $isFine = Test-HasListeningDescendant -ProcessId $candidate.ProcessId -ChildrenOf $childrenOf -ListeningPids $listeningPids -Visited $visited
     $orphanFlag = ""
     if (-not $isFine) {
-      $orphanFlag = "  [not part of any listening tree - likely orphaned/duplicate]"
+      $orphanFlag = "  [ORPHAN - not part of any listening tree]"
+      $orphans += $candidate
     }
 
+    $commandLine = $candidate.CommandLine
+    if ($commandLine.Length -gt 160) { $commandLine = $commandLine.Substring(0, 160) + '...' }
     Write-Host ("  PID {0}  {1}MB{2}" -f $candidate.ProcessId, $memMb, $orphanFlag)
-    Write-Host "    $($candidate.CommandLine)"
+    Write-Host "    $commandLine"
   }
 }
 
 Write-Host ""
-Write-Host "To stop a stray process: taskkill /F /PID <pid>"
+if ($orphans.Count -eq 0) {
+  Write-Host "No orphaned dev-server processes." -ForegroundColor Green
+} elseif ($StopOrphans) {
+  foreach ($orphan in $orphans) {
+    try {
+      Stop-Process -Id $orphan.ProcessId -Force -ErrorAction Stop
+      Write-Host "  stopped PID $($orphan.ProcessId)"
+    } catch {
+      Write-Host "  PID $($orphan.ProcessId) already gone"
+    }
+  }
+  Write-Host "$($orphans.Count) orphaned process(es) stopped." -ForegroundColor Green
+} else {
+  Write-Host "$($orphans.Count) orphaned process(es) found." -ForegroundColor Yellow
+  Write-Host "Stop them all: npm run dev:doctor -- -StopOrphans   (or one: taskkill /F /PID <pid>)"
+}
