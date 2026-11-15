@@ -1,6 +1,7 @@
 import type { Messages } from './en';
 import { erpPtBR } from './erp';
 import { fsmPtBR } from './fsm';
+import { fsmUiPtBR } from './fsm-ui';
 import { tablePtBR } from './table';
 
 /** Brazilian Portuguese. Typed against `en.ts`: the two always have the same keys. */
@@ -567,6 +568,7 @@ export const ptBR: Messages = {
   },
 
   fsm: fsmPtBR,
+  fsmUi: fsmUiPtBR,
 
   errors: {
     boundary: {

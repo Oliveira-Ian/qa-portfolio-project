@@ -8,6 +8,7 @@ import {
   workOrderStatusChangeSchema,
   workOrderWriteSchema,
   type CustomerOptionDto,
+  type EquipmentCriticality,
   type GridColumnPreferenceItem,
   type WorkOrderFormValues,
   type WorkOrderItemWriteInput,
@@ -21,6 +22,7 @@ import {
   requestCustomerOptions,
   requestWorkOrderItemAdd,
   requestWorkOrderItemRemove,
+  requestWorkOrderList,
   requestWorkOrderNote,
   requestWorkOrderSave,
   requestWorkOrderStatus,
@@ -125,6 +127,9 @@ export interface EquipmentChoice {
   name: string;
   tag: string | null;
   addressId: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  criticality: EquipmentCriticality | null;
 }
 
 /** The chosen customer's equipment in service, for the equipment picker. */
@@ -142,7 +147,43 @@ export async function customerEquipmentAction(customerId: string): Promise<Equip
         name: item.name,
         tag: item.tag,
         addressId: item.address?.id ?? null,
+        manufacturer: item.manufacturer,
+        model: item.model,
+        criticality: item.criticality,
       }))
+    : [];
+}
+
+export interface TechnicianDayJob {
+  membershipId: string;
+  scheduledAt: string;
+}
+
+/**
+ * What is already scheduled on a day (`yyyy-mm-dd`), by technician — what the
+ * schedule step shows beside each one. `exceptId`: the work order being edited.
+ */
+export async function technicianDayAction(
+  day: string,
+  exceptId?: string,
+): Promise<TechnicianDayJob[]> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return [];
+  }
+
+  const { token } = await requireSession();
+  const result = await requestWorkOrderList(
+    token,
+    { ...EMPTY_LIST_QUERY, pageSize: 100 },
+    { f_scheduledAt_from: day, f_scheduledAt_to: day },
+  );
+
+  return result.success
+    ? result.data.items.flatMap((item) =>
+        item.assignee && item.scheduledAt && item.status !== 'CANCELLED' && item.id !== exceptId
+          ? [{ membershipId: item.assignee.membershipId, scheduledAt: item.scheduledAt }]
+          : [],
+      )
     : [];
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import type { EquipmentStatus, WorkOrderStatus } from '@oliveira/schemas';
+import type { EquipmentCriticality, EquipmentStatus, WorkOrderStatus } from '@oliveira/schemas';
 import { useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
@@ -119,6 +119,29 @@ export function ActivePill({ isActive }: { isActive: boolean }) {
   return (
     <Pill tone={isActive ? 'completed' : 'open'}>
       {t(isActive ? 'fsm.status.active' : 'fsm.status.inactive')}
+    </Pill>
+  );
+}
+
+const CRITICALITY_TONE: Record<EquipmentCriticality, PillTone> = {
+  LOW: 'open',
+  MEDIUM: 'scheduled',
+  HIGH: 'critical',
+};
+
+/** How much a failure hurts: High in the critical red, Medium blue, Low neutral. */
+export function CriticalityPill({
+  criticality,
+  short = false,
+}: {
+  criticality: EquipmentCriticality;
+  short?: boolean;
+}) {
+  const t = useT();
+
+  return (
+    <Pill tone={CRITICALITY_TONE[criticality]} data-testid="equipment-criticality">
+      {t(short ? `fsmUi.criticality.short.${criticality}` : `fsmUi.criticality.${criticality}`)}
     </Pill>
   );
 }

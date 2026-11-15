@@ -9,6 +9,7 @@
  */
 import { erpEn } from './erp';
 import { fsmEn } from './fsm';
+import { fsmUiEn } from './fsm-ui';
 import { tableEn } from './table';
 
 export const en = {
@@ -573,6 +574,7 @@ export const en = {
   },
 
   fsm: fsmEn,
+  fsmUi: fsmUiEn,
 
   errors: {
     boundary: {

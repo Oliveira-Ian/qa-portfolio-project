@@ -207,6 +207,29 @@ function mondayOf(day: string): string {
   return addDays(day, -((weekday + 6) % 7));
 }
 
+/**
+ * The list's views (`f_view`), each a shortcut the screen shows with its count:
+ * unfinished without a technician, past due, scheduled today, the caller's own.
+ */
+function viewWhere(view: unknown, caller: WorkOrderCaller, now: Date): Prisma.WorkOrderWhereInput {
+  const unfinished = { status: { notIn: ['COMPLETED' as const, 'CANCELLED' as const] } };
+
+  switch (view) {
+    case 'unassigned':
+      return { ...unfinished, assigneeMembershipId: null };
+    case 'overdue':
+      return { ...unfinished, dueAt: { lt: now } };
+    case 'today': {
+      const today = startOfBusinessDay(now);
+      return { scheduledAt: { gte: today, lt: new Date(today.getTime() + DAY_MS) } };
+    }
+    case 'mine':
+      return { assigneeMembershipId: caller.membershipId ?? '—' };
+    default:
+      return {};
+  }
+}
+
 /** `yyyy-mm-ddThh:mm` in the caller's time + their offset (minutes, UTC − local) → the instant. */
 function toInstant(local: string, timezoneOffset: number): Date | null {
   if (local === '') {
@@ -624,6 +647,7 @@ export const workOrderService = {
         raw.overdue === 'true'
           ? { dueAt: { lt: now }, status: { notIn: ['COMPLETED', 'CANCELLED'] } }
           : {},
+        viewWhere(raw.f_view, caller, now),
         typeof raw.customerId === 'string' ? { customerId: raw.customerId } : {},
         typeof raw.equipmentId === 'string' ? { equipmentId: raw.equipmentId } : {},
         search

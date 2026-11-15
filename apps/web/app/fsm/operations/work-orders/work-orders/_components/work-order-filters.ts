@@ -30,6 +30,8 @@ export const WORK_ORDER_FILTERABLE_COLUMNS: FilterableColumn[] = [
   { id: 'scheduledAt', filterType: 'date' },
   { id: 'dueAt', filterType: 'date' },
   { id: 'createdAt', filterType: 'date' },
+  // The list's views (unassigned, overdue, today, mine) — the segmented control above the table.
+  { id: 'view', filterType: 'enum' },
 ];
 
 /** The company's types, branches and technicians, as filter options. */
