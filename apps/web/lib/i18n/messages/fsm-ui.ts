@@ -47,6 +47,7 @@ export const fsmUiEn = {
   workOrderForm: {
     newTitle: 'New work order',
     stepOf: 'Step {step} of {total}',
+    stepShort: 'Step {step}',
     editing: 'Editing · {status}',
     discard: 'Discard',
     cancel: 'Cancel',
@@ -297,6 +298,7 @@ export const fsmUiPtBR: DeepString<typeof fsmUiEn> = {
   workOrderForm: {
     newTitle: 'Nova ordem de serviço',
     stepOf: 'Etapa {step} de {total}',
+    stepShort: 'Etapa {step}',
     editing: 'Editando · {status}',
     discard: 'Descartar',
     cancel: 'Cancelar',

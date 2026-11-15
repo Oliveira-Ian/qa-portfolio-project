@@ -432,7 +432,7 @@ export function WorkOrderForm({
                 </span>
                 <span className="flex min-w-0 flex-col">
                   <span className="text-[11px] font-semibold tracking-[0.06em] text-text-3 uppercase">
-                    {t('fsmUi.workOrderForm.stepOf', { step: index + 1, total: 4 })}
+                    {t('fsmUi.workOrderForm.stepShort', { step: index + 1 })}
                   </span>
                   <span className="truncate text-sm font-semibold">
                     {t(`fsmUi.workOrderForm.steps.${key}.title`)}
