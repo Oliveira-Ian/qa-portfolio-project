@@ -1,5 +1,9 @@
 # Design — Tokens
 
+> **Scope:** this page is **Foundation Design System V1** — the Oliveira Platform, the Oliveira ERP and
+> everything shared. The Oliveira FSM has its own approved design system on top of it (V2, 2026-11-15):
+> its tokens are `docs/design/fsm/oliveira-fsm-tokens.css`, scoped to `[data-product="fsm"]` (`docs/design/fsm/README.md`). Inside `/fsm`, V2 wins; nothing here changed for the Platform or the ERP.
+
 Single source of truth for the design tokens (CSS variables) used in `apps/web`. For every swatch,
 type style and radius rendered live against the real components, see
 [`/styleguide`](/styleguide)`#foundations-colors`.
@@ -16,6 +20,10 @@ file, unchanged except that the two font variables point at the families `next/f
 |---|---|---|---|
 | Accent (600, on light) | navy `#1E2C47` | olive `#4F6B3A` | terracotta `#A4502B` |
 | Accent on the dark shell (300) | gold `#C8AE72` | `#A3BE85` | `#E39A70` |
+
+In V1 the accent is the **only** per-product difference. The FSM is the documented exception: FSM V2
+also redefines the neutrals, ink, borders and accent tints inside `[data-product="fsm"]` and adds
+`--fsm-*` tokens — see `docs/design/fsm/`.
 
 "Oliveira" and the crest never change; only the product name and its accent do. The accent is set on a
 product's root with `data-product="platform|erp|fsm"` (`AppShell` does it from the area being rendered)
@@ -77,7 +85,7 @@ ids, documents, dates, counts and overlines. Both are self-hosted through `next/
 - **Spacing**: a 4px base, `--olv-space-1 … --olv-space-12`. In components, Tailwind's own scale
   (`gap-6`, `px-8`) is what is used; the variables document the steps.
 - **Sizing**: `--olv-control-{sm,md,lg}` 32/36/44, `--olv-input-h` 40 (44 on auth and below 768px),
-  table rows 48 (58 with an avatar), header 40; global bar 52 (56 on mobile), sidebar 232, rail 64,
+  table rows 48 (58 with an avatar), header 40; global bar 52 (56 on mobile), sidebar 248 (board F01), rail 64,
   drawer 480, modal 520.
 - **Radius**: xs 4 (status badges), sm 6 (buttons, inputs, tabs), md 10 (cards, tables, menus), lg 12
   (product cards, modals), full (tags, switches, avatars).

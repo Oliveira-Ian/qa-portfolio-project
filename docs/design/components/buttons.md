@@ -39,6 +39,13 @@ actions live — `EntityList` (Add, Edit, Delete), `FormCardActions` (Save), `Re
 (`default`) stays for actions that are none of these: sign in, start a work order, confirm. A
 filled `destructive` stays inside a confirmation only.
 
+**Oliveira FSM (V2, 2026-11-15):** the meanings are the same, but confirming actions (Complete,
+Save, Continue, Create work order) use a filled **confirm** variant — mint `#44C38A` with dark text
+`#053D27` (5.3:1; white on that green fails AA) — and the terracotta accent is no longer a button
+colour in the FSM (selection and focus only). Create/edit/destructive keep the outline look with the
+FSM tints. The `confirm` variant is opt-in; existing variants keep their current look for the Platform
+and the ERP. Spec: `docs/design/fsm/HANDOFF-FSM.md` § 5.1.
+
 This departs from the handoff (primary = product accent) by decision; the success and warning
 tones are shared with the status palette, which is why the button carries a word and an icon,
 never the colour alone.

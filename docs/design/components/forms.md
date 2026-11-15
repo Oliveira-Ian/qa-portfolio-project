@@ -46,4 +46,9 @@ A record that owns several sub-records — a person's addresses and contact peop
   so neighbours stay aligned. A section's `description` is an "i" beside its title, the same way.
 - A `Textarea` grows with its text up to a limit, then scrolls — no resize handle.
 - Single form, never steps: a record's fields are all on one page (editing needs them together;
-  steps hide errors behind clicks).
+  steps hide errors behind clicks). **Platform and ERP.** The Oliveira FSM (Design System V2,
+  2026-11-15) differs on purpose: records split their fields and related data into equal-width
+  **tabs**, and the **work order** is created **and edited** in four steps (Customer and site ·
+  Service · Schedule · Review — Continue validates only the current step; editing opens every step
+  and saves once). View mode in the FSM shows read-only values, not disabled inputs.
+  `docs/design/fsm/HANDOFF-FSM.md` § 5.2–5.5.

@@ -61,7 +61,7 @@ the API (`409`, shown translated). A product with no active contract cannot be n
 | "Remove member" | **Deactivate / Reactivate** (`PATCH` status) | There is no removal endpoint; an inactive member opens no product and uses no seat |
 | Company switcher | The company's name, static | One company per account until a switch exists |
 | Admins listed on the "no access" screen | Omitted | The API exposes members only to admins; listing them needs a new endpoint — a backend decision, not made |
-| FSM switch enabled | FSM always "Coming soon", its switch disabled (`PRODUCT_AVAILABILITY`, `lib/products.ts`) | The FSM has no features |
+| FSM switch enabled | Enabled since the FSM V1 shipped (`PRODUCT_AVAILABILITY`, `lib/products.ts`: both products available) | — |
 
 ## Guard screens
 
