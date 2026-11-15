@@ -1,6 +1,6 @@
 'use server';
 
-import type { GridColumnPreferenceItem, PersonFormValues } from '@oliveira/schemas';
+import type { CustomerFormValues, GridColumnPreferenceItem } from '@oliveira/schemas';
 import type { FilterOption } from '@/components/data-table/types';
 import type { ActionResult } from '@/lib/actions';
 import {
@@ -11,7 +11,7 @@ import {
 
 /** Creates the customer — its person, addresses and contacts — or updates it when `id` is given. */
 export async function saveCustomerAction(
-  values: PersonFormValues,
+  values: CustomerFormValues,
   id?: string,
 ): Promise<ActionResult & { id?: string }> {
   return customerAccess.save(values, id);

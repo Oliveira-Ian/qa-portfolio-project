@@ -38,11 +38,23 @@ const FILTERS: FilterFieldMap = {
 
 const SORTS: Record<string, string> = { name: 'name', active: 'active', createdAt: 'createdAt' };
 
-function toDto(row: WorkOrderType): WorkOrderTypeDto {
+type Row = WorkOrderType & { _count?: { workOrders: number } };
+
+const WITH_COUNT = {
+  _count: { select: { workOrders: true } },
+} satisfies Prisma.WorkOrderTypeInclude;
+
+function toDto(row: Row): WorkOrderTypeDto {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
+    defaultPriority: row.defaultPriority,
+    estimatedMinutes: row.estimatedMinutes,
+    slaHours: row.slaHours,
+    requiresEquipment: row.requiresEquipment,
+    countsAsPreventive: row.countsAsPreventive,
+    workOrderCount: row._count?.workOrders ?? 0,
     active: row.active,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -50,7 +62,16 @@ function toDto(row: WorkOrderType): WorkOrderTypeDto {
 }
 
 function toData(input: WorkOrderTypeWriteInput) {
-  return { name: input.name, description: orNull(input.description), active: input.active };
+  return {
+    name: input.name,
+    description: orNull(input.description),
+    defaultPriority: input.defaultPriority === '' ? null : input.defaultPriority,
+    estimatedMinutes: input.estimatedMinutes === '' ? null : Number(input.estimatedMinutes),
+    slaHours: input.slaHours === '' ? null : Number(input.slaHours),
+    requiresEquipment: input.requiresEquipment,
+    countsAsPreventive: input.countsAsPreventive,
+    active: input.active,
+  };
 }
 
 function translate(error: unknown): unknown {
@@ -83,7 +104,7 @@ export const workOrderTypeService: CrudService<WorkOrderTypeWriteInput, WorkOrde
       { id: 'asc' },
     ) as Prisma.WorkOrderTypeOrderByWithRelationInput[];
     const [rows, total] = await Promise.all([
-      prisma.workOrderType.findMany({ where, orderBy, ...toSkipTake(query) }),
+      prisma.workOrderType.findMany({ where, orderBy, include: WITH_COUNT, ...toSkipTake(query) }),
       prisma.workOrderType.count({ where }),
     ]);
 
@@ -91,7 +112,7 @@ export const workOrderTypeService: CrudService<WorkOrderTypeWriteInput, WorkOrde
   },
 
   async getById(id) {
-    const row = await prisma.workOrderType.findUnique({ where: { id } });
+    const row = await prisma.workOrderType.findUnique({ where: { id }, include: WITH_COUNT });
 
     if (!row) {
       throw new NotFoundError('Work order type not found');
@@ -105,6 +126,7 @@ export const workOrderTypeService: CrudService<WorkOrderTypeWriteInput, WorkOrde
       return toDto(
         await prisma.workOrderType.create({
           data: { ...toData(input), companyId: requireCompanyId() },
+          include: WITH_COUNT,
         }),
       );
     } catch (error) {
@@ -114,7 +136,13 @@ export const workOrderTypeService: CrudService<WorkOrderTypeWriteInput, WorkOrde
 
   async update(id, input) {
     try {
-      return toDto(await prisma.workOrderType.update({ where: { id }, data: toData(input) }));
+      return toDto(
+        await prisma.workOrderType.update({
+          where: { id },
+          data: toData(input),
+          include: WITH_COUNT,
+        }),
+      );
     } catch (error) {
       throw translate(error);
     }

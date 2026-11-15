@@ -4,6 +4,7 @@ import {
   type EquipmentDto,
   type EquipmentWriteInput,
   type PaginatedResult,
+  type WorkOrderRefDto,
 } from '@oliveira/schemas';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { prisma, withTransaction, type TransactionClient } from '../../../config/prisma.js';
@@ -50,6 +51,7 @@ const FILTERS: FilterFieldMap = {
   model: { field: 'model', kind: 'text' },
   serialNumber: { field: 'serialNumber', kind: 'text' },
   status: { field: 'status', kind: 'enumScalar' },
+  criticality: { field: 'criticality', kind: 'enumScalar' },
   warrantyUntil: { field: 'warrantyUntil', kind: 'date' },
   createdAt: { field: 'createdAt', kind: 'date' },
 };
@@ -61,6 +63,7 @@ const SORTS: Record<string, string> = {
   category: 'category',
   manufacturer: 'manufacturer',
   status: 'status',
+  criticality: 'criticality',
   warrantyUntil: 'warrantyUntil',
   createdAt: 'createdAt',
 };
@@ -72,7 +75,94 @@ const INCLUDE = {
 
 type Row = Prisma.EquipmentGetPayload<{ include: typeof INCLUDE }>;
 
-function toDto(row: Row): EquipmentDto {
+type Reader = Pick<TransactionClient, 'workOrder'>;
+
+interface ServiceSummary {
+  lastPreventive: WorkOrderRefDto | null;
+  lastService: WorkOrderRefDto | null;
+  open: number;
+  total: number;
+}
+
+const EMPTY_SUMMARY: ServiceSummary = {
+  lastPreventive: null,
+  lastService: null,
+  open: 0,
+  total: 0,
+};
+
+function toRef(row: { id: string; number: number; completedAt: Date | null } | undefined) {
+  return row?.completedAt
+    ? { workOrderId: row.id, number: row.number, completedAt: row.completedAt.toISOString() }
+    : null;
+}
+
+/**
+ * What the equipment's work orders say about it: the last completed one, the
+ * last of a type that counts as preventive, and how many are open — for a
+ * page of equipment at once (four queries, whatever the page size).
+ */
+async function loadSummaries(client: Reader, ids: string[]): Promise<Map<string, ServiceSummary>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const completed = { equipmentId: { in: ids }, status: 'COMPLETED' as const };
+  const select = { id: true, number: true, completedAt: true, equipmentId: true };
+  const [lastService, lastPreventive, open, total] = await Promise.all([
+    client.workOrder.findMany({
+      where: completed,
+      orderBy: [{ equipmentId: 'asc' }, { completedAt: 'desc' }],
+      distinct: ['equipmentId'],
+      select,
+    }),
+    client.workOrder.findMany({
+      where: { ...completed, type: { countsAsPreventive: true } },
+      orderBy: [{ equipmentId: 'asc' }, { completedAt: 'desc' }],
+      distinct: ['equipmentId'],
+      select,
+    }),
+    client.workOrder.groupBy({
+      by: ['equipmentId'],
+      where: { equipmentId: { in: ids }, status: { notIn: ['COMPLETED', 'CANCELLED'] } },
+      _count: { _all: true },
+    }),
+    client.workOrder.groupBy({
+      by: ['equipmentId'],
+      where: { equipmentId: { in: ids } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  return new Map(
+    ids.map((id) => [
+      id,
+      {
+        lastService: toRef(lastService.find((row) => row.equipmentId === id)),
+        lastPreventive: toRef(lastPreventive.find((row) => row.equipmentId === id)),
+        open: open.find((row) => row.equipmentId === id)?._count._all ?? 0,
+        total: total.find((row) => row.equipmentId === id)?._count._all ?? 0,
+      },
+    ]),
+  );
+}
+
+/** The last preventive (or the installation) plus the interval, as a calendar day; null without a plan. */
+function nextPreventiveDate(row: Row, summary: ServiceSummary): string | null {
+  const base = summary.lastPreventive
+    ? new Date(summary.lastPreventive.completedAt)
+    : row.installedAt;
+
+  if (!row.maintenanceIntervalDays || !base) {
+    return null;
+  }
+
+  return new Date(base.getTime() + row.maintenanceIntervalDays * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+function toDto(row: Row, summary: ServiceSummary = EMPTY_SUMMARY): EquipmentDto {
   return {
     id: row.id,
     customer: { id: row.customer.id, name: row.customer.person.name },
@@ -87,6 +177,13 @@ function toDto(row: Row): EquipmentDto {
     installedAt: fromDateColumn(row.installedAt),
     warrantyUntil: fromDateColumn(row.warrantyUntil),
     status: row.status,
+    criticality: row.criticality,
+    maintenanceIntervalDays: row.maintenanceIntervalDays,
+    lastPreventive: summary.lastPreventive,
+    nextPreventiveDate: nextPreventiveDate(row, summary),
+    lastService: summary.lastService,
+    openWorkOrderCount: summary.open,
+    workOrderCount: summary.total,
     notes: row.notes,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -107,6 +204,9 @@ function toData(input: EquipmentWriteInput) {
     installedAt: toDateColumn(input.installedAt),
     warrantyUntil: toDateColumn(input.warrantyUntil),
     status: input.status,
+    criticality: input.criticality === '' ? null : input.criticality,
+    maintenanceIntervalDays:
+      input.maintenanceIntervalDays === '' ? null : Number(input.maintenanceIntervalDays),
     notes: orNull(input.notes),
   };
 }
@@ -194,7 +294,17 @@ export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> & 
       prisma.equipment.count({ where }),
     ]);
 
-    return { items: rows.map(toDto), total, page: query.page, pageSize: query.pageSize };
+    const summaries = await loadSummaries(
+      prisma,
+      rows.map((row) => row.id),
+    );
+
+    return {
+      items: rows.map((row) => toDto(row, summaries.get(row.id))),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   },
 
   async getById(id) {
@@ -204,7 +314,7 @@ export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> & 
       throw new NotFoundError('Equipment not found');
     }
 
-    return toDto(row);
+    return toDto(row, (await loadSummaries(prisma, [id])).get(id));
   },
 
   async create(input) {
@@ -229,9 +339,13 @@ export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> & 
       return await withTransaction(async (tx) => {
         await checkCustomerAndAddress(tx, input);
 
-        return toDto(
-          await tx.equipment.update({ where: { id }, data: toData(input), include: INCLUDE }),
-        );
+        const row = await tx.equipment.update({
+          where: { id },
+          data: toData(input),
+          include: INCLUDE,
+        });
+
+        return toDto(row, (await loadSummaries(tx, [id])).get(id));
       });
     } catch (error) {
       throw translate(error);

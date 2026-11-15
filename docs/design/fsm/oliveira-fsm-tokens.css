@@ -54,6 +54,10 @@
 
   --olv-focus: var(--olv-accent-600); /* ring: 0 0 0 2px surface, 0 0 0 4px focus */
 
+  /* Radius — controls 8, cards and tables 12 (V1: 6 and 10) */
+  --olv-radius-sm: 8px;
+  --olv-radius-md: 12px;
+
   /* ---------------------------------------------------------------------------
      B. FSM-only tokens
      ------------------------------------------------------------------------ */

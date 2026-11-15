@@ -431,6 +431,75 @@ const CUSTOMERS: DemoCustomer[] = [
   },
 ];
 
+/**
+ * What the FSM keeps on a customer (by index): what every technician must know
+ * before arriving, the branch that usually serves it, and when each of its
+ * sites receives technicians (by site index).
+ */
+const CUSTOMER_SERVICE: Record<
+  number,
+  { instructions?: string; branch: number; hours?: string[] }
+> = {
+  0: {
+    instructions:
+      'Report to the maintenance desk on the ground floor before going up; badge required in the plant room. Quiet hours 22:00–06:00.',
+    branch: 0,
+    hours: ['24 h · plant room 07:00–19:00', 'Mon–Fri 07:00–19:00'],
+  },
+  1: {
+    instructions:
+      'Use the loading dock at the back; no work on the sales floor while the store is open.',
+    branch: 0,
+    hours: ['Mon–Sat 06:00–09:00 and 21:00–23:00', 'Mon–Sat 06:00–09:00'],
+  },
+  2: {
+    instructions:
+      'Sign in at the building management office (mezzanine). Elevator work only after 19:00 on weekdays.',
+    branch: 0,
+    hours: ['Mon–Fri 07:00–22:00'],
+  },
+  3: {
+    instructions: 'Classes run 07:00–17:30: the roof is reached only with the janitor.',
+    branch: 1,
+    hours: ['Mon–Fri 06:30–18:00'],
+  },
+  4: { branch: 0, hours: ['Mon–Sat 05:00–12:00'] },
+  5: { branch: 0, hours: ['Mon–Fri 08:00–18:00'] },
+  6: {
+    instructions:
+      "Report to the hotel's maintenance desk first; the VRF condensers on the roof are only reached with the hotel's technician.",
+    branch: 1,
+    hours: ['Mon–Sat 07:00–19:00'],
+  },
+  7: {
+    instructions:
+      'Safety shoes, helmet and glasses on the shop floor. Lockout/tagout before any work on the crane.',
+    branch: 0,
+    hours: ['Mon–Fri 07:00–17:00', 'Mon–Fri 07:00–17:00'],
+  },
+};
+
+/** How critical a category is, and how often it gets a preventive (days) — by customer for a few. */
+function maintenancePlan(
+  customer: number,
+  category: string,
+  name: string,
+): { criticality: 'LOW' | 'MEDIUM' | 'HIGH'; maintenanceIntervalDays: number | null } {
+  if (name.startsWith('Split AC')) {
+    return { criticality: 'LOW', maintenanceIntervalDays: null };
+  }
+  if (customer === 0 || category === 'Elevator' || category === 'Refrigeration') {
+    return { criticality: category === 'Power' ? 'MEDIUM' : 'HIGH', maintenanceIntervalDays: 30 };
+  }
+  if (category === 'HVAC') {
+    return { criticality: 'MEDIUM', maintenanceIntervalDays: 90 };
+  }
+  return { criticality: 'MEDIUM', maintenanceIntervalDays: 180 };
+}
+
+/** Minutes on site by work-order type index (0 Installation, 1 Preventive, 2 Corrective, 3 Visit). */
+const TYPE_MINUTES = [240, 120, 180, 60];
+
 /** Equipment by customer index: [name, tag, category, manufacturer, model, site index]. */
 const EQUIPMENT: [number, string, string, string, string, string, number][] = [
   [0, 'Chiller 01', 'HSC-CH01', 'HVAC', 'Carrier', '30XA-252', 0],
@@ -1103,6 +1172,7 @@ async function seedDemo(): Promise<void> {
           state: 'SP',
           zipCode: data.zipCode,
           reference: data.reference ?? null,
+          serviceHours: CUSTOMER_SERVICE[index]?.hours?.[site] ?? null,
         },
       });
     }
@@ -1121,7 +1191,15 @@ async function seedDemo(): Promise<void> {
       });
     }
 
-    await prisma.customer.create({ data: { id: customerId, companyId: COMPANY_ID, personId } });
+    await prisma.customer.create({
+      data: {
+        id: customerId,
+        companyId: COMPANY_ID,
+        personId,
+        serviceInstructions: CUSTOMER_SERVICE[index]?.instructions ?? null,
+        defaultBranchId: branchIds[CUSTOMER_SERVICE[index]?.branch ?? 0]!,
+      },
+    });
     customerIds.push(customerId);
     siteIds.push(sites);
   }
@@ -1151,6 +1229,7 @@ async function seedDemo(): Promise<void> {
         installedAt: new Date(Date.UTC(2021 + (index % 4), index % 12, 1 + (index % 27))),
         warrantyUntil: new Date(Date.UTC(2025 + (index % 4), index % 12, 1 + (index % 27))),
         status: 'ACTIVE',
+        ...maintenancePlan(customer, category, name),
       },
     });
     equipmentRows.push({ id: equipmentId, customer, site: addressId });
@@ -1163,7 +1242,14 @@ async function seedDemo(): Promise<void> {
     const itemId = id(9, index + 1);
     catalogIds.push(itemId);
     await prisma.catalogItem.create({
-      data: { id: itemId, companyId: COMPANY_ID, ...item, active: true },
+      data: {
+        id: itemId,
+        companyId: COMPANY_ID,
+        ...item,
+        // Labour is sold by the hour; a fixed-price service has its own duration.
+        estimatedMinutes: item.kind === 'SERVICE' ? (item.unit === 'H' ? 60 : 90) : null,
+        active: true,
+      },
     });
   }
 
@@ -1208,6 +1294,13 @@ async function seedDemo(): Promise<void> {
         typeId: typeIds[order.type]!,
         branchId: order.branch === undefined ? null : branchIds[order.branch]!,
         title: order.title,
+        // The customer's contact receives the technician; hospitals and offices quote a ticket.
+        contactId: CUSTOMERS[equipment.customer]!.contact ? id(7, equipment.customer + 1) : null,
+        externalReference:
+          equipment.customer === 0 || equipment.customer === 2
+            ? `${equipment.customer === 0 ? 'HSC' : 'FL'}-CH-${(4100 + index).toString()}`
+            : null,
+        estimatedMinutes: TYPE_MINUTES[order.type] ?? null,
         priority: order.priority,
         status: order.status,
         assigneeMembershipId: technician?.id ?? null,

@@ -1,10 +1,12 @@
 import {
+  WORK_ORDER_PRIORITIES,
   WORK_ORDER_STATUSES,
   allowedTransitions,
   isFinalStatus,
   isPlanningStatus,
   planningStatus,
   startOfBusinessDay,
+  toLocalDateTimeInput,
   type FsmDashboardDto,
   type FsmListQuery,
   type PaginatedResult,
@@ -79,7 +81,7 @@ const SORTS: Record<string, string> = {
 
 const LIST_INCLUDE = {
   customer: { include: { person: { select: { name: true } } } },
-  equipment: { select: { id: true, name: true } },
+  equipment: { select: { id: true, name: true, tag: true } },
   type: { select: { id: true, name: true } },
   branch: { select: { id: true, code: true, name: true } },
   assignee: { select: { id: true, account: { select: { name: true } } } },
@@ -88,6 +90,20 @@ const LIST_INCLUDE = {
 
 const RECORD_INCLUDE = {
   ...LIST_INCLUDE,
+  customer: { include: { person: { select: { name: true, phone: true, mobile: true } } } },
+  equipment: {
+    select: {
+      id: true,
+      name: true,
+      tag: true,
+      manufacturer: true,
+      model: true,
+      category: true,
+      criticality: true,
+    },
+  },
+  type: { select: { id: true, name: true, requiresEquipment: true, countsAsPreventive: true } },
+  contact: { select: { id: true, name: true, role: true, phone: true, mobile: true } },
   items: { orderBy: { createdAt: 'asc' } },
   events: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] },
 } satisfies Prisma.WorkOrderInclude;
@@ -105,13 +121,17 @@ function toListDto(row: ListRow, now = new Date()): WorkOrderListItemDto {
     status: row.status,
     priority: row.priority,
     customer: { id: row.customer.id, name: row.customer.person.name },
-    equipment: row.equipment,
-    type: row.type,
+    equipment: row.equipment
+      ? { id: row.equipment.id, name: row.equipment.name, tag: row.equipment.tag }
+      : null,
+    type: { id: row.type.id, name: row.type.name },
     branch: row.branch,
     assignee: row.assignee
       ? { membershipId: row.assignee.id, name: row.assignee.account.name }
       : null,
     scheduledAt: iso(row.scheduledAt),
+    estimatedMinutes: row.estimatedMinutes,
+    startedAt: iso(row.startedAt),
     dueAt: iso(row.dueAt),
     isOverdue: row.dueAt !== null && row.dueAt < now && !isFinalStatus(row.status),
     city: row.serviceAddress?.city ?? null,
@@ -120,12 +140,28 @@ function toListDto(row: ListRow, now = new Date()): WorkOrderListItemDto {
   };
 }
 
-function toDto(row: RecordRow, createdBy: string): WorkOrderDto {
+function toDto(row: RecordRow, createdBy: string, lastServiceAt: Date | null): WorkOrderDto {
   return {
     ...toListDto(row),
     description: row.description,
+    externalReference: row.externalReference,
+    contact: row.contact,
+    serviceInstructions: row.customer.serviceInstructions,
+    customerPhone: row.customer.person.phone ?? row.customer.person.mobile,
+    equipmentDetails: row.equipment
+      ? {
+          manufacturer: row.equipment.manufacturer,
+          model: row.equipment.model,
+          category: row.equipment.category,
+          criticality: row.equipment.criticality,
+          lastServiceAt: iso(lastServiceAt),
+        }
+      : null,
     serviceAddress: row.serviceAddress ? toAddressDto(row.serviceAddress) : null,
-    startedAt: iso(row.startedAt),
+    typeRules: {
+      requiresEquipment: row.type.requiresEquipment,
+      countsAsPreventive: row.type.countsAsPreventive,
+    },
     cancelledAt: iso(row.cancelledAt),
     holdReason: row.holdReason,
     cancellationReason: row.cancellationReason,
@@ -151,6 +187,24 @@ function toDto(row: RecordRow, createdBy: string): WorkOrderDto {
       createdAt: event.createdAt.toISOString(),
     })),
   };
+}
+
+/** `yyyy-mm-dd` of an instant in the business time zone. */
+function localDay(at: Date): string {
+  return toLocalDateTimeInput(at.toISOString()).slice(0, 10);
+}
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/** A calendar day plus `days`, as `yyyy-mm-dd` (calendar arithmetic, no time zone). */
+function addDays(day: string, days: number): string {
+  return new Date(Date.parse(`${day}T00:00:00.000Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** The Monday of the week a calendar day falls in. */
+function mondayOf(day: string): string {
+  const weekday = new Date(`${day}T00:00:00.000Z`).getUTCDay();
+  return addDays(day, -((weekday + 6) % 7));
 }
 
 /** `yyyy-mm-ddThh:mm` in the caller's time + their offset (minutes, UTC − local) → the instant. */
@@ -239,6 +293,18 @@ async function checkReferences(tx: TransactionClient, input: WorkOrderWriteInput
     throw new BadRequestError('Work order type not found');
   }
 
+  if (type.requiresEquipment && !input.equipmentId) {
+    throw new BadRequestError('This type of work order needs the equipment');
+  }
+
+  if (input.contactId) {
+    const contact = await tx.contact.findUnique({ where: { id: input.contactId } });
+
+    if (!contact || contact.personId !== customer.personId) {
+      throw new BadRequestError("The contact must be one of the customer's contacts");
+    }
+  }
+
   if (input.branchId && !(await tx.branch.findUnique({ where: { id: input.branchId } }))) {
     throw new BadRequestError('Branch not found');
   }
@@ -301,12 +367,18 @@ async function loadRecord(
     throw new NotFoundError('Work order not found');
   }
 
-  const creator = await client.accessAccount.findUnique({
-    where: { id: row.createdById },
-    select: { name: true },
-  });
+  const [creator, lastService] = await Promise.all([
+    client.accessAccount.findUnique({ where: { id: row.createdById }, select: { name: true } }),
+    row.equipmentId
+      ? client.workOrder.findFirst({
+          where: { equipmentId: row.equipmentId, status: 'COMPLETED', id: { not: row.id } },
+          orderBy: { completedAt: 'desc' },
+          select: { completedAt: true },
+        })
+      : null,
+  ]);
 
-  return toDto(row, creator?.name ?? '—');
+  return toDto(row, creator?.name ?? '—', lastService?.completedAt ?? null);
 }
 
 /** The work order as the caller may see it, locked for the change about to be made. */
@@ -373,6 +445,150 @@ export const workOrderService = {
       ]),
     ) as FsmDashboardDto['byStatus'];
 
+    const weekStart = mondayOf(localDay(now));
+    const firstWeek = addDays(weekStart, -21);
+    const inSevenDays = new Date(today.getTime() + 7 * DAY_MS);
+    const [
+      unassigned,
+      overdueUrgent,
+      completed,
+      scheduledAhead,
+      perType,
+      types,
+      perPriority,
+      perTechnician,
+      perTechnicianToday,
+      technicians,
+      dispatch,
+      overdueRows,
+      onHoldRows,
+    ] = await Promise.all([
+      prisma.workOrder.count({ where: { ...scope, ...unfinished, assigneeMembershipId: null } }),
+      prisma.workOrder.count({
+        where: { ...scope, ...unfinished, dueAt: { lt: now }, priority: 'URGENT' },
+      }),
+      prisma.workOrder.findMany({
+        where: {
+          ...scope,
+          status: 'COMPLETED',
+          completedAt: { gte: new Date(`${firstWeek}T00:00:00.000Z`) },
+        },
+        select: { completedAt: true },
+      }),
+      prisma.workOrder.findMany({
+        where: { ...scope, ...unfinished, scheduledAt: { gte: today, lt: inSevenDays } },
+        select: { scheduledAt: true },
+      }),
+      prisma.workOrder.groupBy({
+        by: ['typeId'],
+        where: { ...scope, status: { not: 'CANCELLED' } },
+        _count: { _all: true },
+      }),
+      prisma.workOrderType.findMany({ select: { id: true, name: true, countsAsPreventive: true } }),
+      prisma.workOrder.groupBy({
+        by: ['priority'],
+        where: { ...scope, ...unfinished },
+        _count: { _all: true },
+      }),
+      prisma.workOrder.groupBy({
+        by: ['assigneeMembershipId'],
+        where: { ...scope, ...unfinished, assigneeMembershipId: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.workOrder.groupBy({
+        by: ['assigneeMembershipId'],
+        where: {
+          ...scope,
+          ...unfinished,
+          assigneeMembershipId: { not: null },
+          scheduledAt: { gte: today, lt: tomorrow },
+        },
+        _count: { _all: true },
+      }),
+      caller.can.view ? workOrderService.technicians() : Promise.resolve([] as TechnicianDto[]),
+      prisma.workOrder.findMany({
+        where: {
+          ...scope,
+          status: { not: 'CANCELLED' },
+          OR: [{ scheduledAt: { gte: today, lt: tomorrow } }, { status: 'IN_PROGRESS' }],
+        },
+        orderBy: [{ scheduledAt: 'asc' }, { number: 'asc' }],
+        take: 40,
+        include: LIST_INCLUDE,
+      }),
+      prisma.workOrder.findMany({
+        where: { ...scope, ...unfinished, dueAt: { lt: now } },
+        orderBy: [{ dueAt: 'asc' }, { number: 'asc' }],
+        take: 8,
+        include: LIST_INCLUDE,
+      }),
+      prisma.workOrder.findMany({
+        where: {
+          ...scope,
+          status: 'ON_HOLD',
+          OR: [{ dueAt: null }, { dueAt: { gte: now } }],
+        },
+        orderBy: [{ updatedAt: 'asc' }, { number: 'asc' }],
+        take: 8,
+        include: LIST_INCLUDE,
+      }),
+    ]);
+
+    const completedPerWeek = [0, 1, 2, 3].map((index) => {
+      const start = addDays(firstWeek, index * 7);
+      const endDay = addDays(start, 7);
+      return {
+        weekStart: start,
+        count: completed.filter((row) => {
+          const day = row.completedAt ? localDay(row.completedAt) : '';
+          return day >= start && day < endDay;
+        }).length,
+      };
+    });
+    const firstDay = localDay(now);
+    const scheduledNext7Days = [0, 1, 2, 3, 4, 5, 6].map((index) => {
+      const date = addDays(firstDay, index);
+      return {
+        date,
+        count: scheduledAhead.filter((row) => row.scheduledAt && localDay(row.scheduledAt) === date)
+          .length,
+      };
+    });
+    const byType = perType
+      .map((group) => {
+        const type = types.find((item) => item.id === group.typeId);
+        return {
+          typeId: group.typeId,
+          name: type?.name ?? '—',
+          count: group._count._all,
+          countsAsPreventive: type?.countsAsPreventive ?? false,
+        };
+      })
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const openByPriority = Object.fromEntries(
+      WORK_ORDER_PRIORITIES.map((priority) => [
+        priority,
+        perPriority.find((group) => group.priority === priority)?._count._all ?? 0,
+      ]),
+    ) as FsmDashboardDto['openByPriority'];
+    const teamMembers = caller.can.view
+      ? technicians
+      : caller.membershipId
+        ? [{ membershipId: caller.membershipId, name: caller.name }]
+        : [];
+    const teamLoad = teamMembers
+      .map((member) => ({
+        membershipId: member.membershipId,
+        name: member.name,
+        open:
+          perTechnician.find((group) => group.assigneeMembershipId === member.membershipId)?._count
+            ._all ?? 0,
+        today:
+          perTechnicianToday.find((group) => group.assigneeMembershipId === member.membershipId)
+            ?._count._all ?? 0,
+      }))
+      .sort((a, b) => b.open - a.open || a.name.localeCompare(b.name));
+
     return {
       scope: caller.can.view ? 'all' : 'mine',
       byStatus,
@@ -381,6 +597,15 @@ export const workOrderService = {
       completedLast30Days,
       upcoming: upcoming.map((row) => toListDto(row, now)),
       recent: recent.map((row) => toListDto(row, now)),
+      unassigned,
+      overdueUrgent,
+      completedPerWeek,
+      scheduledNext7Days,
+      byType,
+      openByPriority,
+      teamLoad,
+      dispatch: dispatch.map((row) => toListDto(row, now)),
+      needsAttention: [...overdueRows, ...onHoldRows].slice(0, 8).map((row) => toListDto(row, now)),
     };
   },
 
@@ -486,6 +711,9 @@ export const workOrderService = {
           branchId: input.branchId || null,
           title: input.title,
           description: input.description || null,
+          externalReference: input.externalReference || null,
+          contactId: input.contactId || null,
+          estimatedMinutes: input.estimatedMinutes ? Number(input.estimatedMinutes) : null,
           priority: input.priority,
           status,
           assigneeMembershipId: assignee,
@@ -545,6 +773,9 @@ export const workOrderService = {
           branchId: input.branchId || null,
           title: input.title,
           description: input.description || null,
+          externalReference: input.externalReference || null,
+          contactId: input.contactId || null,
+          estimatedMinutes: input.estimatedMinutes ? Number(input.estimatedMinutes) : null,
           priority: input.priority,
           status,
           assigneeMembershipId: assignee,

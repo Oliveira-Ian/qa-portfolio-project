@@ -58,6 +58,7 @@ function toDto(row: CatalogItem): CatalogItemDto {
     description: row.description,
     unit: row.unit,
     price: row.price === null ? null : row.price.toFixed(2),
+    estimatedMinutes: row.estimatedMinutes,
     active: row.active,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -72,6 +73,11 @@ function toData(input: CatalogItemWriteInput) {
     description: orNull(input.description),
     unit: input.unit.toUpperCase(),
     price: input.price === '' ? null : input.price,
+    // Only a service has a duration.
+    estimatedMinutes:
+      input.kind === 'SERVICE' && input.estimatedMinutes !== ''
+        ? Number(input.estimatedMinutes)
+        : null,
     active: input.active,
   };
 }

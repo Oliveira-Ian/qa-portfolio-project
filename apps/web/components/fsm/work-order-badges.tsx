@@ -1,53 +1,72 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { AlarmClock, AlertTriangle, ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import type { WorkOrderPriority, WorkOrderStatus } from '@oliveira/schemas';
-import { StatusBadge } from '@/components/ui/badge';
 import { useT } from '@/lib/i18n/provider';
+import { cn } from '@/lib/utils';
+import { WorkOrderStatusPill } from './status-pill';
 
-const STATUS_TONE = {
-  OPEN: 'info',
-  SCHEDULED: 'info',
-  IN_PROGRESS: 'warning',
-  ON_HOLD: 'neutral',
-  COMPLETED: 'success',
-  CANCELLED: 'neutral',
-} as const;
-
+/*
+ * The work order's marks (Oliveira FSM Design System V2, HANDOFF-FSM § 5.6):
+ * the status is a pill, the priority an arrow and a word (never a pill), and
+ * "overdue" a red alarm in the Due cell — never a second badge under the status.
+ */
 export function WorkOrderStatusBadge({ status }: { status: WorkOrderStatus }) {
-  const t = useT();
-
-  return (
-    <StatusBadge tone={STATUS_TONE[status]} data-testid="work-order-status">
-      {t(`fsm.workOrders.status.${status}`)}
-    </StatusBadge>
-  );
+  return <WorkOrderStatusPill status={status} />;
 }
 
-const PRIORITY_TONE = {
-  LOW: 'neutral',
-  NORMAL: 'neutral',
-  HIGH: 'warning',
-  URGENT: 'danger',
+const PRIORITY_ICON = {
+  LOW: ArrowDown,
+  NORMAL: ArrowRight,
+  HIGH: ArrowUp,
+  URGENT: AlertTriangle,
 } as const;
 
-export function PriorityBadge({ priority }: { priority: WorkOrderPriority }) {
+export function PriorityBadge({
+  priority,
+  className,
+}: {
+  priority: WorkOrderPriority;
+  className?: string;
+}) {
   const t = useT();
+  const Icon = PRIORITY_ICON[priority];
 
   return (
-    <StatusBadge tone={PRIORITY_TONE[priority]} data-testid="work-order-priority">
+    <span
+      data-testid="work-order-priority"
+      className={cn(
+        'inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap text-text-2',
+        priority === 'HIGH' && 'font-medium text-fsm-warning-fg',
+        priority === 'URGENT' && 'font-semibold text-fsm-critical-fg',
+        className,
+      )}
+    >
+      <Icon
+        aria-hidden="true"
+        className={cn(
+          'size-3.5',
+          priority === 'LOW' && 'text-text-3',
+          priority === 'NORMAL' && 'text-text-3',
+          priority === 'URGENT' && 'text-fsm-critical',
+        )}
+      />
       {t(`fsm.workOrders.priority.${priority}`)}
-    </StatusBadge>
+    </span>
   );
 }
 
-export function OverdueBadge() {
+/** "Overdue" as a signal: alarm icon + word, red. */
+export function OverdueBadge({ label }: { label?: string }) {
   const t = useT();
 
   return (
-    <StatusBadge tone="danger" data-testid="work-order-overdue">
-      <AlertTriangle aria-hidden="true" className="size-3" />
-      {t('fsm.workOrders.overdue')}
-    </StatusBadge>
+    <span
+      data-testid="work-order-overdue"
+      className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold whitespace-nowrap text-fsm-overdue"
+    >
+      <AlarmClock aria-hidden="true" className="size-3.5" />
+      {label ?? t('fsm.workOrders.overdue')}
+    </span>
   );
 }

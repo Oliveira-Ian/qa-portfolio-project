@@ -42,6 +42,11 @@ export const addressWriteSchema = z.object({
   state: text(2),
   /** "Next to the bakery", "gate 3" — for whoever drives there. */
   reference: text(160),
+  /**
+   * When the site receives technicians (Oliveira FSM). Optional: a product that
+   * doesn't send it (the ERP) leaves the stored value as it is.
+   */
+  serviceHours: text(120).optional(),
 });
 
 export type AddressWriteInput = z.infer<typeof addressWriteSchema>;
@@ -60,6 +65,7 @@ export interface AddressDto {
   city: string | null;
   state: string | null;
   reference: string | null;
+  serviceHours: string | null;
 }
 
 export function emptyAddressFormValues(isPrimary = false): AddressFormValues {
@@ -75,6 +81,7 @@ export function emptyAddressFormValues(isPrimary = false): AddressFormValues {
     city: '',
     state: '',
     reference: '',
+    serviceHours: '',
   };
 }
 
@@ -92,6 +99,7 @@ export function addressToFormValues(address: AddressDto): AddressFormValues {
     city: address.city ?? '',
     state: address.state ?? '',
     reference: address.reference ?? '',
+    serviceHours: address.serviceHours ?? '',
   };
 }
 

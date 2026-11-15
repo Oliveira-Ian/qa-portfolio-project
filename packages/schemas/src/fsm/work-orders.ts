@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AddressDto } from '../address.js';
 import { maxLengthMessage } from '../messages.js';
-import type { CatalogItemKind } from './records.js';
+import type { CatalogItemKind, EquipmentCriticality } from './records.js';
 
 /**
  * Oliveira FSM's work orders (plan § 2.5): the statuses, the transitions
@@ -100,6 +100,16 @@ const localDateTime = z
   .trim()
   .refine((value) => value === '' || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value), 'Invalid date');
 
+/** `''` or a whole number of minutes, up to a week. */
+const minutes = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === '' || (/^\d{1,5}$/.test(value) && Number(value) >= 1 && Number(value) <= 10080),
+    'Invalid duration',
+  );
+
 /**
  * A work order's details — create and edit. Optional ids are `''`. Dates are
  * in the business time zone (`BUSINESS_TIME_ZONE`), sent with its UTC offset
@@ -114,9 +124,15 @@ export const workOrderWriteSchema = z
     branchId: z.string().trim(),
     title: z.string().trim().min(1, 'Title is required').max(160, maxLengthMessage(160)),
     description: text(4000),
+    /** The customer's ticket or purchase-order number. */
+    externalReference: text(60),
+    /** One of the customer's contacts — who receives the technician; `''` for none. */
+    contactId: z.string().trim(),
     priority: workOrderPrioritySchema,
     assigneeMembershipId: z.string().trim(),
     scheduledAt: localDateTime,
+    /** How long the job should take on site, in minutes; `''` when unknown. */
+    estimatedMinutes: minutes,
     dueAt: localDateTime,
   })
   .superRefine((data, ctx) => {
@@ -148,9 +164,12 @@ export const emptyWorkOrderFormValues: WorkOrderFormValues = {
   branchId: '',
   title: '',
   description: '',
+  externalReference: '',
+  contactId: '',
   priority: 'NORMAL',
   assigneeMembershipId: '',
   scheduledAt: '',
+  estimatedMinutes: '',
   dueAt: '',
 };
 
@@ -213,11 +232,14 @@ export interface WorkOrderListItemDto {
   status: WorkOrderStatus;
   priority: WorkOrderPriority;
   customer: { id: string; name: string };
-  equipment: { id: string; name: string } | null;
+  equipment: { id: string; name: string; tag: string | null } | null;
   type: { id: string; name: string };
   branch: { id: string; code: string; name: string } | null;
   assignee: WorkOrderPersonRef | null;
   scheduledAt: string | null;
+  /** Minutes on site; with `scheduledAt` it gives the planned end. */
+  estimatedMinutes: number | null;
+  startedAt: string | null;
   dueAt: string | null;
   /** Past its due date and not finished. */
   isOverdue: boolean;
@@ -259,10 +281,32 @@ export interface WorkOrderEventDto {
   createdAt: string;
 }
 
+export interface WorkOrderContactDto {
+  id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  mobile: string | null;
+}
+
 export interface WorkOrderDto extends WorkOrderListItemDto {
   description: string | null;
-  serviceAddress: AddressDto | null;
-  startedAt: string | null;
+  externalReference: string | null;
+  /** Who receives the technician on site. */
+  contact: WorkOrderContactDto | null;
+  /** What every technician must know before arriving — the customer's instructions. */
+  serviceInstructions: string | null;
+  customerPhone: string | null;
+  equipmentDetails: {
+    manufacturer: string | null;
+    model: string | null;
+    category: string | null;
+    criticality: EquipmentCriticality | null;
+    lastServiceAt: string | null;
+  } | null;
+  serviceAddress: (AddressDto & { serviceHours: string | null }) | null;
+  /** The rules of its type: whether equipment is required, whether it counts as preventive. */
+  typeRules: { requiresEquipment: boolean; countsAsPreventive: boolean };
   cancelledAt: string | null;
   holdReason: string | null;
   cancellationReason: string | null;
@@ -356,9 +400,12 @@ export function workOrderToFormValues(workOrder: WorkOrderDto): WorkOrderFormVal
     branchId: workOrder.branch?.id ?? '',
     title: workOrder.title,
     description: workOrder.description ?? '',
+    externalReference: workOrder.externalReference ?? '',
+    contactId: workOrder.contact?.id ?? '',
     priority: workOrder.priority,
     assigneeMembershipId: workOrder.assignee?.membershipId ?? '',
     scheduledAt: toLocalDateTimeInput(workOrder.scheduledAt),
+    estimatedMinutes: workOrder.estimatedMinutes?.toString() ?? '',
     dueAt: toLocalDateTimeInput(workOrder.dueAt),
   };
 }
@@ -387,6 +434,24 @@ export interface FsmDashboardDto {
   upcoming: WorkOrderListItemDto[];
   /** The latest work orders opened. */
   recent: WorkOrderListItemDto[];
+  /** Open work orders without a technician. */
+  unassigned: number;
+  /** Overdue ones that are urgent. */
+  overdueUrgent: number;
+  /** Completed per week, the last four weeks, oldest first (`weekStart` is a `yyyy-mm-dd` Monday). */
+  completedPerWeek: { weekStart: string; count: number }[];
+  /** Scheduled per day, today and the next six (`date` is `yyyy-mm-dd`). */
+  scheduledNext7Days: { date: string; count: number }[];
+  /** Every work order (cancelled ones excluded) per type, most first. */
+  byType: { typeId: string; name: string; count: number; countsAsPreventive: boolean }[];
+  /** Unfinished work orders per priority. */
+  openByPriority: Record<WorkOrderPriority, number>;
+  /** Unfinished work orders per technician, and how many are scheduled today. */
+  teamLoad: { membershipId: string; name: string; open: number; today: number }[];
+  /** Today's plan: scheduled for today, plus whatever is in progress. */
+  dispatch: WorkOrderListItemDto[];
+  /** Overdue first, then on hold. */
+  needsAttention: WorkOrderListItemDto[];
 }
 
 /** Midnight today in the business time zone, as an instant. */

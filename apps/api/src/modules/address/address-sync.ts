@@ -48,6 +48,8 @@ function addressData(input: AddressWriteInput) {
     city: orNull(input.city),
     state: input.state.trim() === '' ? null : input.state.trim().toUpperCase(),
     reference: orNull(input.reference),
+    // The FSM's; a product that doesn't send it (the ERP) leaves the stored value as it is.
+    ...(input.serviceHours === undefined ? {} : { serviceHours: orNull(input.serviceHours) }),
   };
 }
 
@@ -98,6 +100,12 @@ export async function syncContacts(
   const existingIds = new Set(existing.map((row) => row.id));
   const keptIds = wanted.flatMap((item) => (item.id && existingIds.has(item.id) ? [item.id] : []));
 
+  // A removed contact stops being any work order's contact on site — the work
+  // order keeps everything else.
+  await tx.workOrder.updateMany({
+    where: { contact: { personId }, contactId: { notIn: keptIds } },
+    data: { contactId: null },
+  });
   await tx.contact.deleteMany({ where: { personId, id: { notIn: keptIds } } });
   await tx.contact.updateMany({ where: { personId }, data: { isPrimary: false } });
 
@@ -124,6 +132,7 @@ export function toAddressDto(row: Address): AddressDto {
     city: row.city,
     state: row.state,
     reference: row.reference,
+    serviceHours: row.serviceHours,
   };
 }
 
