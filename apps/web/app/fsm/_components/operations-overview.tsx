@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { AlarmClock, ArrowRight, CheckCircle2, ClipboardList, Plus, UserX } from 'lucide-react';
+import {
+  AlarmClock,
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Plus,
+  UserX,
+} from 'lucide-react';
 import {
   WORK_ORDER_PRIORITIES,
   formatWorkOrderNumber,
@@ -151,7 +159,7 @@ export function OperationsOverview({ dashboard, now, canCreate }: OperationsOver
         ) : (
           <Kpi
             href={`${list}?f_view=today`}
-            icon={ClipboardList}
+            icon={CalendarClock}
             label={t('fsmUi.common.today')}
             value={dashboard.scheduledToday}
             testId="fsm-stat-today"
@@ -204,7 +212,7 @@ export function OperationsOverview({ dashboard, now, canCreate }: OperationsOver
       <Dispatch dashboard={dashboard} now={now} />
       <NeedsAttention orders={dashboard.needsAttention} now={now} list={list} />
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className={cn('grid gap-5', !mine && 'xl:grid-cols-2')}>
         {!mine ? <TeamLoad dashboard={dashboard} /> : null}
         <ByPriority dashboard={dashboard} />
       </div>
@@ -240,7 +248,7 @@ function Kpi({
       className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-surface px-5 py-4 text-inherit shadow-fsm-card transition-colors hover:border-border-button focus-visible:ring-focus"
     >
       <span className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[13px] font-medium text-text-2">
+        <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium whitespace-nowrap text-text-2">
           <IconTile
             icon={icon}
             className={cn(tone === 'critical' && 'bg-fsm-critical-bg text-fsm-critical-fg')}
@@ -248,8 +256,8 @@ function Kpi({
           {label}
         </span>
         {go ? (
-          <span className="inline-flex items-center gap-1 text-[12.5px] text-text-3">
-            {go}
+          <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] text-text-3">
+            <span className="hidden whitespace-nowrap 2xl:inline">{go}</span>
             <ArrowRight aria-hidden="true" className="size-3.5" />
           </span>
         ) : null}
