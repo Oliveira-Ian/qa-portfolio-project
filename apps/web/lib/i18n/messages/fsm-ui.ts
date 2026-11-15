@@ -314,7 +314,8 @@ export const fsmUiEn = {
     unassignedRow: 'Unassigned',
     now: 'now',
     attention: 'Needs attention',
-    attentionBody: 'Overdue first, then on hold · {count, plural, one {# work order} other {# work orders}}',
+    attentionBody:
+      'Overdue first, then on hold · {count, plural, one {# work order} other {# work orders}}',
     attentionNone: 'Nothing overdue or on hold.',
     allOverdue: 'All overdue',
     why: 'Why',
@@ -865,7 +866,8 @@ export const fsmUiPtBR: DeepString<typeof fsmUiEn> = {
     unassignedRow: 'Sem técnico',
     now: 'agora',
     attention: 'Precisa de atenção',
-    attentionBody: 'Primeiro as atrasadas, depois as pausadas · {count, plural, one {# OS} other {# OS}}',
+    attentionBody:
+      'Primeiro as atrasadas, depois as pausadas · {count, plural, one {# OS} other {# OS}}',
     attentionNone: 'Nada atrasado ou pausado.',
     allOverdue: 'Todas as atrasadas',
     why: 'Motivo',
