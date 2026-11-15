@@ -1,7 +1,7 @@
 # Design — Layouts — The shell (global bar + sidebar)
 
 The frame every signed-in page lives in — the Platform's own pages (`/home`, `/company/*`), Oliveira ERP
-(`/erp/*`) and the Oliveira FSM placeholder (`/fsm`). One shell, three areas
+(`/erp/*`) and the Oliveira FSM (`/fsm`). One shell, three areas
 (`docs/adr/0019`); the file keeps its old name so existing links still resolve. Platform screens:
 `docs/design/layouts/platform.md`.
 
@@ -12,10 +12,19 @@ The frame every signed-in page lives in — the Platform's own pages (`/home`, `
   name in its accent's 300 step; the menu lists every product with its access state), the **global
   search** (`Ctrl+Shift+F`), the company name, and the **account menu** (name, e-mail, the language
   switch, sign out).
-- **Sidebar** (`components/shell/sidebar.tsx`, **product-owned**) — mono overlines for groups, 38px items;
-  the active item has a filled background, a 3px accent marker, the accent on its icon and
-  `aria-current="page"`. Items the account may not view are hidden; a direct link to one lands on the
-  in-product "You can't view …" page.
+- **Sidebar** (`components/shell/sidebar.tsx`) — **one structure for every product** (decided 2026-11-15,
+  canvas board F01): Overview stays a single item at the top; each **module** of the navigation catalog
+  is a **group card** — a 44px header with a 28px icon tile (the module's own icon), the module name and
+  a chevron that turns 90° when open; an open group is an inset card (1px shell border, radius 10) with
+  its routines indented on a 1px guide. The group holding the current page opens by itself and its icon
+  tile takes the **product's accent-300** (gold in the Platform, olive in the ERP, terracotta in the
+  FSM); the routine keeps the 3px accent marker and `aria-current="page"`. Several groups may be open at
+  once (remembered per product in `localStorage`). The footer has **Collapse menu** (`Ctrl+B`): the
+  sidebar becomes a 64px rail of module icons, and hover, focus or Enter on one opens a **flyout** with
+  its routines (Esc closes). Collapsed/expanded is a cookie read on the server, so the page never jumps
+  on load; the main area moves with the sidebar — nothing is covered. Each product keeps its identity —
+  module names, icons and accent — only the structure is shared. Items the account may not view are
+  hidden; a direct link to one lands on the in-product "You can't view …" page.
 - **Breadcrumbs** (`components/shell/breadcrumbs.tsx`) above the page, the product first and no repeated
   segment (the old ERP trail read "Records › People › Records › People").
 - **Page header** (`components/layout/page-header.tsx`): breadcrumb, H1, a mono meta line, and the
@@ -30,12 +39,14 @@ profile change an administrator makes mid-session on the very next render, and h
 
 | Width | Shell | Content |
 |---|---|---|
-| ≥ 1280 | global bar, 232px sidebar | gutter 48 |
-| 1024–1279 | sidebar becomes a 64px icon rail with tooltips | gutter 32 |
+| ≥ 1280 | global bar, 248px sidebar (or the rail, if the user collapsed it) | gutter 48 |
+| 1024–1279 | the 64px rail with flyouts by default; expanding pushes the content | gutter 32 |
 | 768–1023 | no sidebar — a drawer; search becomes an icon | gutter 32 |
 | < 768 | bar 56: menu · crest · product · search · account; the drawer (320px) holds company, products, navigation and language | gutter 16; tables become card lists; controls 44px |
 
-There is no manual sidebar toggle: the behaviour follows the width.
+Below 1024 the drawer holds the same group cards. The web app targets desktop and tablet; phone layouts
+are not being worked on (a dedicated mobile app is a future decision), so the < 768 row describes what
+exists, not something to extend.
 
 ## Navigation is data
 
@@ -46,7 +57,9 @@ sidebar, from:
 - the **ERP**: Overview, then the modules of `lib/navigation/catalog.ts` the account's permissions reach
   (`filterCatalogForAccount`) — the catalogue is the four-level Module → Group → Category → Routine
   structure of `docs/adr/0007`, and its URLs live under `/erp` (ADR 0019);
-- the **FSM**: nothing — it is a placeholder.
+- the **FSM**: Overview, then the FSM modules of `lib/navigation/catalog.ts` (Operations, Records,
+  Settings, Access) the account's FSM access profile reaches. Its redesigned sidebar (collapsible group
+  cards, board F01) is specified in `docs/design/fsm/HANDOFF-FSM.md` § 5.11 — not built yet.
 
 Icons are component references, so the navigation is built inside the client shell: only serializable
 data (`isCompanyAdmin`, `permissions`) crosses from the server. Every href is a typed value of
