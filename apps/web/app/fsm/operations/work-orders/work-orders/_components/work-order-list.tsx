@@ -3,12 +3,10 @@
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
-  WORK_ORDER_STATUSES,
   formatWorkOrderNumber,
   type GridColumnPreferenceDto,
   type WorkOrderListItemDto,
   type WorkOrderPriority,
-  type WorkOrderStatus,
 } from '@oliveira/schemas';
 import {
   DateCell,
@@ -20,18 +18,15 @@ import {
 import { filterableColumn } from '@/components/data-table/column-helpers';
 import { EntityList } from '@/components/data-table/entity-list';
 import type { ExportColumn } from '@/components/data-table/export-modal';
-import { useListNavigation } from '@/components/data-table/use-list-navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PersonChip } from '@/components/fsm/person-chip';
 import { formatDateMedium, formatDateTimeMedium } from '@/lib/format';
+import { dueSignal, formatShortDateTime } from '@/lib/fsm-format';
 import { useLocale, useT } from '@/lib/i18n/provider';
 import { ROUTES } from '@/lib/navigation/routes';
-import { cn } from '@/lib/utils';
 import { saveWorkOrderGridAction } from '../_actions/work-order-actions';
-import {
-  OverdueBadge,
-  PriorityBadge,
-  WorkOrderStatusBadge,
-} from '@/components/fsm/work-order-badges';
+import { AlarmClock } from 'lucide-react';
+import { PriorityBadge, WorkOrderStatusBadge } from '@/components/fsm/work-order-badges';
+import { WorkOrderViews, type WorkOrderListCounts, type WorkOrderView } from './work-order-views';
 import {
   WORK_ORDER_FILTERABLE_COLUMNS,
   WORK_ORDER_PRIORITY_OPTIONS,
@@ -44,23 +39,85 @@ const PREFIX = 'work-order-list';
 const header = (key: Parameters<typeof columnHeader>[0]) =>
   columnHeader<WorkOrderListItemDto>(key, PREFIX);
 
-function DateTimeCell({ value, isOverdue = false }: { value: string | null; isOverdue?: boolean }) {
+function ScheduledCell({ value }: { value: string | null }) {
   const locale = useLocale();
 
   return (
-    <span
-      className={cn(
-        'olv-data tabular whitespace-nowrap',
-        isOverdue ? 'text-destructive' : 'text-text-2',
-      )}
-    >
-      {formatDateTimeMedium(value, locale)}
+    <span className="whitespace-nowrap text-[13px] text-text-2 tabular-nums">
+      {value ? formatShortDateTime(value, locale) : '—'}
     </span>
   );
 }
 
+/** Due: the date, "Today 18:00", or the overdue signal in red — the only place "late" shows. */
+function DueCell({ row, now }: { row: WorkOrderListItemDto; now: string }) {
+  const t = useT();
+  const locale = useLocale();
+  const isFinished = row.status === 'COMPLETED' || row.status === 'CANCELLED';
+  const signal = dueSignal(row.dueAt, now, isFinished, t, locale);
+
+  if (!row.dueAt) {
+    return <span className="text-text-muted">—</span>;
+  }
+  if (signal?.tone === 'critical') {
+    return (
+      <span
+        data-testid="work-order-overdue"
+        className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold whitespace-nowrap text-fsm-overdue"
+      >
+        <AlarmClock aria-hidden="true" className="size-3.5" />
+        {signal.text}
+        <span className="sr-only">{t('fsm.workOrders.overdue')}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex flex-col">
+      <span className="text-[13px] whitespace-nowrap text-text-2 tabular-nums">
+        {formatShortDateTime(row.dueAt, locale)}
+      </span>
+      {signal && signal.tone === 'warning' ? (
+        <span className="text-[12px] text-fsm-warning-fg">{signal.text}</span>
+      ) : null}
+    </span>
+  );
+}
+
+/** `#1028` and the title on one line, the type and equipment under it (board FSM-04). */
+function WorkOrderTitleCell({ row }: { row: WorkOrderListItemDto }) {
+  return (
+    <span className="flex max-w-[26rem] min-w-0 flex-col gap-0.5">
+      <span className="truncate font-semibold text-foreground">
+        <span className="mr-1.5 font-mono text-[12.5px] font-medium text-text-3">
+          {formatWorkOrderNumber(row.number)}
+        </span>
+        {row.title}
+      </span>
+      <span className="truncate text-[12.5px] text-text-3">
+        {[row.type.name, row.equipment?.name].filter(Boolean).join(' · ')}
+      </span>
+    </span>
+  );
+}
+
+function AssigneeCell({ row }: { row: WorkOrderListItemDto }) {
+  const t = useT();
+
+  return (
+    <PersonChip
+      name={row.assignee?.name ?? null}
+      id={row.assignee?.membershipId ?? null}
+      unassignedLabel={t('fsmUi.common.unassigned')}
+    />
+  );
+}
+
 /** The columns — type, branch and technician filter by the company's own lists. */
-function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListItemDto>[] {
+function buildColumns(
+  choices: WorkOrderFilterChoices,
+  now: string,
+): ColumnDef<WorkOrderListItemDto>[] {
   return [
     {
       accessorKey: 'number',
@@ -70,13 +127,8 @@ function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListI
     },
     {
       accessorKey: 'title',
-      header: header('fsm.workOrders.columns.title'),
-      cell: ({ row }) => (
-        <NameCell
-          value={row.original.title}
-          sub={[row.original.type.name, row.original.equipment?.name].filter(Boolean).join(' · ')}
-        />
-      ),
+      header: header('fsmUi.workOrderList.workOrder'),
+      cell: ({ row }) => <WorkOrderTitleCell row={row.original} />,
       ...filterableColumn<WorkOrderListItemDto>('text', undefined, 'fsm.workOrders.columns.title'),
     },
     {
@@ -93,12 +145,7 @@ function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListI
     {
       accessorKey: 'status',
       header: header('fsm.workOrders.columns.status'),
-      cell: ({ row }) => (
-        <span className="flex flex-wrap gap-1">
-          <WorkOrderStatusBadge status={row.original.status} />
-          {row.original.isOverdue ? <OverdueBadge /> : null}
-        </span>
-      ),
+      cell: ({ row }) => <WorkOrderStatusBadge status={row.original.status} />,
       ...filterableColumn<WorkOrderListItemDto>(
         'enum',
         WORK_ORDER_STATUS_OPTIONS,
@@ -119,7 +166,7 @@ function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListI
       id: 'assignee',
       accessorFn: (workOrder) => workOrder.assignee?.name ?? null,
       header: header('fsm.workOrders.columns.assignee'),
-      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+      cell: ({ row }) => <AssigneeCell row={row.original} />,
       enableSorting: false,
       ...filterableColumn<WorkOrderListItemDto>(
         'enum',
@@ -130,7 +177,7 @@ function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListI
     {
       accessorKey: 'scheduledAt',
       header: header('fsm.workOrders.columns.scheduledAt'),
-      cell: ({ getValue }) => <DateTimeCell value={getValue<string | null>()} />,
+      cell: ({ getValue }) => <ScheduledCell value={getValue<string | null>()} />,
       ...filterableColumn<WorkOrderListItemDto>(
         'date',
         undefined,
@@ -140,9 +187,7 @@ function buildColumns(choices: WorkOrderFilterChoices): ColumnDef<WorkOrderListI
     {
       accessorKey: 'dueAt',
       header: header('fsm.workOrders.columns.dueAt'),
-      cell: ({ row }) => (
-        <DateTimeCell value={row.original.dueAt} isOverdue={row.original.isOverdue} />
-      ),
+      cell: ({ row }) => <DueCell row={row.original} now={now} />,
       ...filterableColumn<WorkOrderListItemDto>('date', undefined, 'fsm.workOrders.columns.dueAt'),
     },
     {
@@ -250,7 +295,6 @@ const exportColumns: ExportColumn<WorkOrderListItemDto>[] = [
 ];
 
 const CUSTOMIZABLE = customizableColumns(exportColumns, [
-  'number',
   'title',
   'customer',
   'status',
@@ -259,51 +303,6 @@ const CUSTOMIZABLE = customizableColumns(exportColumns, [
   'scheduledAt',
   'dueAt',
 ]);
-
-type StatusTab = 'all' | WorkOrderStatus | 'custom';
-
-/** All, and one tab per status: a shortcut to the Status filter, written into the URL. */
-function StatusTabs() {
-  const t = useT();
-  const { query, setQuery } = useListNavigation(WORK_ORDER_FILTERABLE_COLUMNS);
-  const statuses = query.filters.find((filter) => filter.id === 'status')?.value as
-    string[] | undefined;
-  const active: StatusTab =
-    !statuses || statuses.length === 0
-      ? 'all'
-      : statuses.length === 1 && (WORK_ORDER_STATUSES as readonly string[]).includes(statuses[0]!)
-        ? (statuses[0] as WorkOrderStatus)
-        : 'custom';
-
-  function handleChange(tab: string) {
-    const others = query.filters.filter((filter) => filter.id !== 'status');
-
-    setQuery({
-      filters: tab === 'all' ? others : [...others, { id: 'status', value: [tab] }],
-      page: 1,
-    });
-  }
-
-  return (
-    <Tabs value={active} onValueChange={handleChange} className="mb-5 max-w-full overflow-x-auto">
-      <TabsList aria-label={t('fsm.workOrders.list.tabs.label')} data-testid={`${PREFIX}-tabs`}>
-        <TabsTrigger value="all" aria-controls={undefined} data-testid={`${PREFIX}-tab-all`}>
-          {t('fsm.workOrders.list.tabs.all')}
-        </TabsTrigger>
-        {WORK_ORDER_STATUSES.map((status) => (
-          <TabsTrigger
-            key={status}
-            value={status}
-            aria-controls={undefined}
-            data-testid={`${PREFIX}-tab-${status.toLowerCase()}`}
-          >
-            {t(`fsm.workOrders.list.tabs.${status}`)}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
-  );
-}
 
 /** A no-op: work orders are cancelled, never deleted, so the list has no Delete. */
 async function noDelete() {
@@ -319,6 +318,12 @@ interface WorkOrderListProps {
   canEdit: boolean;
   gridPreference: GridColumnPreferenceDto | null;
   filterChoices: WorkOrderFilterChoices;
+  /** The views and status chips' counts (from the dashboard summary). */
+  counts?: WorkOrderListCounts | undefined;
+  /** Which views the segmented control offers — Mine only for a technician. */
+  views: WorkOrderView[];
+  /** The server's clock, for the Due column's relative text. */
+  now: string;
 }
 
 export function WorkOrderList({
@@ -329,8 +334,11 @@ export function WorkOrderList({
   canEdit,
   gridPreference,
   filterChoices,
+  counts,
+  views,
+  now,
 }: WorkOrderListProps) {
-  const columns = useMemo(() => buildColumns(filterChoices), [filterChoices]);
+  const columns = useMemo(() => buildColumns(filterChoices, now), [filterChoices, now]);
   const filterFields = useMemo(
     () => workOrderFilterFields(filterChoices, mode),
     [filterChoices, mode],
@@ -354,7 +362,7 @@ export function WorkOrderList({
       routes={ROUTES.fsm.workOrders}
       can={{ create: canCreate, edit: canEdit, delete: false }}
       getRowLabel={(row) => `${formatWorkOrderNumber(row.number)} ${row.title}`}
-      beforeToolbar={<StatusTabs />}
+      beforeToolbar={<WorkOrderViews counts={counts} views={views} />}
     />
   );
 }

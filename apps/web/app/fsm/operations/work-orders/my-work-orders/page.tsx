@@ -3,6 +3,7 @@ import { NoPermission } from '@/components/platform/no-permission';
 import { getTranslator } from '@/lib/i18n/server';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
+import { getFsmDashboard } from '../../../_data-access/get-dashboard';
 import { WorkOrderList } from '../work-orders/_components/work-order-list';
 import { WORK_ORDER_FILTERABLE_COLUMNS } from '../work-orders/_components/work-order-filters';
 import {
@@ -31,10 +32,11 @@ export default async function MyWorkOrdersPage({ searchParams }: MyWorkOrdersPag
     toURLSearchParams(await searchParams),
     WORK_ORDER_FILTERABLE_COLUMNS,
   );
-  const [result, gridPreference, filterChoices] = await Promise.all([
+  const [result, gridPreference, filterChoices, dashboard] = await Promise.all([
     listWorkOrders(query, { mine: 'true' }),
     workOrderGrid.getPreference(),
     getWorkOrderFilterChoices(),
+    getFsmDashboard(),
   ]);
 
   return (
@@ -46,6 +48,18 @@ export default async function MyWorkOrdersPage({ searchParams }: MyWorkOrdersPag
       canEdit={false}
       gridPreference={gridPreference}
       filterChoices={filterChoices}
+      // The summary counts the caller's own only for a technician; for a manager they would be everyone's.
+      {...(dashboard.scope === 'mine'
+        ? {
+            counts: {
+              all: Object.values(dashboard.byStatus).reduce((sum, count) => sum + count, 0),
+              views: { overdue: dashboard.overdue, today: dashboard.scheduledToday },
+              byStatus: dashboard.byStatus,
+            },
+          }
+        : {})}
+      views={['overdue', 'today']}
+      now={new Date().toISOString()}
     />
   );
 }

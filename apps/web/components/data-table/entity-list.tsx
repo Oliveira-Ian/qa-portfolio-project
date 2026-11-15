@@ -203,7 +203,13 @@ export function EntityList<TRow extends { id: string }>({
           onExport={openExport}
           onCustomize={() => setCustomizeOpen(true)}
           onOpenFilters={() => setFiltersOpen(true)}
-          activeFilterCount={table.getState().columnFilters.length}
+          activeFilterCount={
+            table
+              .getState()
+              .columnFilters.filter((filter) =>
+                table.getAllLeafColumns().some((column) => column.id === filter.id),
+              ).length
+          }
           filterFields={filterFields}
           searchPlaceholder={m('searchPlaceholder')}
         />

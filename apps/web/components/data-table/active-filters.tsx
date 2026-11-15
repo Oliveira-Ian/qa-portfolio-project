@@ -87,7 +87,10 @@ function formatFilterValue<TData>(
  */
 export function ActiveFilters<TData>({ table, fields, testIdPrefix }: ActiveFiltersProps<TData>) {
   const t = useT();
-  const columnFilters = table.getState().columnFilters;
+  // Only filters on a column: a screen may keep others in the URL (the FSM work orders' views),
+  // shown by their own control, which have no column to label them here.
+  const columnIds = new Set(table.getAllLeafColumns().map((column) => column.id));
+  const columnFilters = table.getState().columnFilters.filter((filter) => columnIds.has(filter.id));
 
   if (columnFilters.length === 0) {
     return null;

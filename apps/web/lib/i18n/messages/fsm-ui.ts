@@ -31,6 +31,19 @@ export const fsmUiEn = {
     HIGH: 'High criticality',
     short: { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' },
   },
+  workOrderList: {
+    views: {
+      label: 'Views',
+      all: 'All',
+      unassigned: 'Unassigned',
+      overdue: 'Overdue',
+      today: 'Today',
+      mine: 'Mine',
+    },
+    statusFilters: 'Filter by status',
+    clear: 'Clear filters',
+    workOrder: 'Work order',
+  },
   workOrder: {
     overline: '{number} · {type}',
     tabs: {
@@ -166,6 +179,19 @@ export const fsmUiPtBR: DeepString<typeof fsmUiEn> = {
     MEDIUM: 'Criticidade média',
     HIGH: 'Criticidade alta',
     short: { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta' },
+  },
+  workOrderList: {
+    views: {
+      label: 'Visões',
+      all: 'Todas',
+      unassigned: 'Sem técnico',
+      overdue: 'Atrasadas',
+      today: 'Hoje',
+      mine: 'Minhas',
+    },
+    statusFilters: 'Filtrar por status',
+    clear: 'Limpar filtros',
+    workOrder: 'Ordem de serviço',
   },
   workOrder: {
     overline: '{number} · {type}',
