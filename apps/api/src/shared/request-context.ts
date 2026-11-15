@@ -7,9 +7,11 @@ import type { SessionAccount } from '@oliveira/schemas';
  * `docs/especificacoes/request-context.md`; why it is built this way:
  * `docs/adr/0016-request-context.md`.
  *
- * Deliberately just the actor. The active company arrives with the tenancy
- * work (#60), added to `RequestContext` and set in the same place; nothing is
- * stored ahead of something that reads it.
+ * The actor, and the caller's active company. The company is set in the same
+ * place as the actor, after `requireAuth` has read the caller's membership from
+ * the database (docs/adr/0018) — the tenancy work (#60) is the consumer that
+ * turns it into a query filter; until then it scopes the company's own data
+ * (members, the accounts listing).
  */
 export interface Actor {
   accountId: SessionAccount['id'];
@@ -19,6 +21,8 @@ export interface Actor {
 
 export interface RequestContext {
   actor?: Actor;
+  /** Absent for an account with no active membership. */
+  companyId?: string;
 }
 
 const storage = new AsyncLocalStorage<RequestContext>();
@@ -66,4 +70,35 @@ export function setActor(actor: Actor): void {
   }
 
   context.actor = actor;
+}
+
+/** The caller's active company, or `undefined` — an account with no membership has none. */
+export function getCompanyId(): string | undefined {
+  return storage.getStore()?.companyId;
+}
+
+/**
+ * For code that only makes sense inside a company. A missing company here is a
+ * bug (a route that never checked the caller belongs to one), so like
+ * `requireActor` it throws a plain `Error` — a 500, never a fallback.
+ */
+export function requireCompanyId(): string {
+  const companyId = getCompanyId();
+
+  if (!companyId) {
+    throw new Error('No company in the request context');
+  }
+
+  return companyId;
+}
+
+/** Called by `requireAuth` alongside `setActor`, and only when the caller has a membership. */
+export function setCompanyId(companyId: string): void {
+  const context = storage.getStore();
+
+  if (!context) {
+    throw new Error('No request context to set the company on');
+  }
+
+  context.companyId = companyId;
 }

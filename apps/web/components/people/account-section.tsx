@@ -36,7 +36,7 @@ interface AccountSectionProps {
   personId: string;
   types: PersonTypeValue[];
   account: AccountDto | null;
-  isAdmin: boolean;
+  isCompanyAdmin: boolean;
   mode: 'view' | 'edit';
   /** Only needed in `edit` mode, when there is no account yet. */
   createAccount?: CreateAccount;
@@ -187,10 +187,9 @@ function CreateAccountForm({
 }
 
 /**
- * Only ever shown to an ADMIN: the account it manages carries a role and a
- * password, which is exactly the surface the API itself restricts to
- * `requireRole('ADMIN')` — a non-admin viewing this section would see a
- * feature they have no endpoint to actually use.
+ * Only ever shown to the company's administrator: giving a person a login is
+ * the surface the API itself restricts to `requireCompanyAdmin` — anyone else
+ * viewing this section would see a feature they have no endpoint to actually use.
  *
  * Role, active/inactive and profile links stay owned by the Access Control
  * screen (`/administration/access-control/users`, `ROUTES.accounts.list`)
@@ -201,11 +200,11 @@ export function AccountSection({
   personId,
   types,
   account,
-  isAdmin,
+  isCompanyAdmin,
   mode,
   createAccount,
 }: AccountSectionProps) {
-  if (!isAdmin || !types.includes('USER')) {
+  if (!isCompanyAdmin || !types.includes('USER')) {
     return null;
   }
 

@@ -6,6 +6,7 @@ import {
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../shared/prisma-errors.js';
+import { withProfileManagerGuard } from '../company/company-guards.js';
 
 export type AccountWithPerson = AccessAccount & { person: Person };
 export type AccountWithProfiles = AccountWithPerson & {
@@ -23,20 +24,13 @@ export interface CreateAccountForPersonData {
   personId: string;
   email: string;
   passwordHash: string;
+  /** The company the new login joins, as a plain member. */
+  companyId: string;
 }
 
 function targetIncludes(error: unknown, field: string): boolean {
   const target = (error as { meta?: { target?: unknown } }).meta?.target;
   return Array.isArray(target) && target.includes(field);
-}
-
-/** Links a newly-created account to the `isDefault` profile, if one is seeded. */
-async function linkDefaultProfile(tx: Prisma.TransactionClient, accountId: number) {
-  const defaultProfile = await tx.accessProfile.findFirst({ where: { isDefault: true } });
-
-  if (defaultProfile) {
-    await tx.accountProfile.create({ data: { accountId, profileId: defaultProfile.id } });
-  }
 }
 
 /**
@@ -90,11 +84,11 @@ export const accountRepository = {
     return prisma.accessAccount.count({ where });
   },
 
-  /** Active ADMIN accounts, optionally excluding one — see `account-guards.ts`. */
-  countActiveAdmins(excludingAccountId?: number): Promise<number> {
+  /** Active SUPER_ADMIN accounts, optionally excluding one — see `account-guards.ts`. */
+  countActiveSuperAdmins(excludingAccountId?: number): Promise<number> {
     return prisma.accessAccount.count({
       where: {
-        role: 'ADMIN',
+        role: 'SUPER_ADMIN',
         active: true,
         ...(excludingAccountId === undefined ? {} : { id: { not: excludingAccountId } }),
       },
@@ -102,10 +96,9 @@ export const accountRepository = {
   },
 
   /**
-   * Self-registration's path: creates the Person too (types: ["USER"]) and
-   * links the `isDefault` profile — a database that hasn't been seeded yet
-   * (so no profile is marked default) still lets registration succeed with
-   * no profile attached, rather than failing.
+   * Self-registration's path: creates the Person too (types: ["USER"]). The
+   * account starts with no membership, no seat and no profile — registering
+   * grants nothing (docs/adr/0018).
    */
   createWithPerson(data: CreateAccountData): Promise<AccountWithPerson> {
     return prisma.$transaction(async (tx) => {
@@ -122,8 +115,6 @@ export const accountRepository = {
         data: { personId: person.id, email: data.email, password: data.passwordHash },
       });
 
-      await linkDefaultProfile(tx, account.id);
-
       return { ...account, person };
     });
   },
@@ -131,8 +122,9 @@ export const accountRepository = {
   /**
    * The admin-initiated path: grants a login to a Person who already exists
    * in the registry, rather than creating a new one. Ensures `types`
-   * includes `USER` (a person with an account is a user by definition) and
-   * links the `isDefault` profile, same as self-registration.
+   * includes `USER` (a person with an account is a user by definition), and
+   * makes the account a plain member of the company — no seat and no profile:
+   * those are granted separately (docs/adr/0018).
    */
   async createForPerson(data: CreateAccountForPersonData): Promise<AccountWithPerson> {
     try {
@@ -147,10 +139,13 @@ export const accountRepository = {
         }
 
         const account = await tx.accessAccount.create({
-          data: { personId: data.personId, email: data.email, password: data.passwordHash },
+          data: {
+            personId: data.personId,
+            email: data.email,
+            password: data.passwordHash,
+            memberships: { create: { companyId: data.companyId } },
+          },
         });
-
-        await linkDefaultProfile(tx, account.id);
 
         return { ...account, person };
       });
@@ -204,7 +199,10 @@ export const accountRepository = {
     });
   },
 
+  /** Refused (409) if it would leave the company with no one able to manage profiles. */
   async unlinkProfile(accountId: number, profileId: number): Promise<void> {
-    await prisma.accountProfile.deleteMany({ where: { accountId, profileId } });
+    await withProfileManagerGuard((tx) =>
+      tx.accountProfile.deleteMany({ where: { accountId, profileId } }),
+    );
   },
 };

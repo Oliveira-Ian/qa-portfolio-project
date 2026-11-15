@@ -14,9 +14,10 @@ import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
 loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 /**
- * Bootstraps the access-control data every environment needs to be usable:
- * the permission catalog, a handful of starting profiles, a reserved SYSTEM
- * account, and — if the env vars are set — the first ADMIN.
+ * Bootstraps the access data every environment needs to be usable: the
+ * permission catalog, a handful of starting ERP profiles, a reserved SYSTEM
+ * account, the (single, until #60) company with its contracts, and — if the env
+ * vars are set — the first administrator.
  *
  * Safe to run repeatedly: every step upserts by a natural key (permission's
  * resource+action, profile's name, account's e-mail) rather than inserting
@@ -83,7 +84,7 @@ const PROFILE_SEEDS: ProfileSeed[] = [
   },
   {
     name: SEED_PROFILE_NAMES.DEFAULT_USER,
-    description: 'Assigned automatically to every self-registered account.',
+    description: 'Linked to a member the first time they are granted a seat in the ERP.',
     isSystem: true,
     isDefault: true,
     permissions: ['person:view'],
@@ -215,7 +216,84 @@ async function seedSystemAccount(): Promise<void> {
   console.log(`  system account: created (${SYSTEM_ACCOUNT_EMAIL})`);
 }
 
-async function seedAdmin(profileIdByName: Map<string, number>): Promise<void> {
+type ProductName = 'ERP' | 'FSM';
+type MembershipRoleName = 'ADMIN' | 'MEMBER';
+
+/**
+ * The contracts of the test company. `seatLimit` is deliberately small so the
+ * limit is easy to reach by hand — the real limits are the Oliveira team's to
+ * set (docs/adr/0018).
+ */
+const COMPANY_CONTRACTS: { product: ProductName; seatLimit: number }[] = [
+  { product: 'ERP', seatLimit: 20 },
+  { product: 'FSM', seatLimit: 10 },
+];
+
+const COMPANY_NAME = process.env.SEED_COMPANY_NAME ?? 'Oliveira Demo Company';
+
+/**
+ * Until company data is isolated (#60) there is exactly one company, so this
+ * reuses whichever one already exists rather than matching on a name that may
+ * have changed between runs. The contracts are created but never overwritten —
+ * a limit changed later is not the seed's to undo.
+ */
+async function seedCompany(): Promise<string> {
+  const existing = await prisma.company.findFirst({ orderBy: { createdAt: 'asc' } });
+  const company = existing ?? (await prisma.company.create({ data: { legalName: COMPANY_NAME } }));
+
+  for (const contract of COMPANY_CONTRACTS) {
+    await prisma.companyProduct.upsert({
+      where: { companyId_product: { companyId: company.id, product: contract.product } },
+      update: {},
+      create: {
+        companyId: company.id,
+        product: contract.product,
+        seatLimit: contract.seatLimit,
+      },
+    });
+  }
+
+  console.log(
+    `  company: ${existing ? 'already exists' : 'created'} (${company.legalName}), ${COMPANY_CONTRACTS.length} contracts`,
+  );
+  return company.id;
+}
+
+/** Makes the account an active member with exactly the seats given — seats it holds beyond them are left alone. */
+async function ensureMember(
+  companyId: string,
+  accountId: number,
+  role: MembershipRoleName,
+  seats: ProductName[],
+): Promise<void> {
+  const membership = await prisma.membership.upsert({
+    where: { accountId_companyId: { accountId, companyId } },
+    update: { role, status: 'ACTIVE' },
+    create: { accountId, companyId, role },
+  });
+
+  for (const product of seats) {
+    await prisma.productAccess.upsert({
+      where: { membershipId_product: { membershipId: membership.id, product } },
+      update: {},
+      create: { membershipId: membership.id, product },
+    });
+  }
+}
+
+async function linkProfile(accountId: number, profileId: number | undefined): Promise<void> {
+  if (!profileId) {
+    return;
+  }
+
+  await prisma.accountProfile.upsert({
+    where: { accountId_profileId: { accountId, profileId } },
+    update: {},
+    create: { accountId, profileId },
+  });
+}
+
+async function seedAdmin(companyId: string, profileIdByName: Map<string, number>): Promise<void> {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -227,93 +305,124 @@ async function seedAdmin(profileIdByName: Map<string, number>): Promise<void> {
   }
 
   const administratorProfileId = profileIdByName.get(SEED_PROFILE_NAMES.ADMINISTRATOR);
-
   const existing = await prisma.accessAccount.findUnique({ where: { email } });
 
+  let accountId: number;
+
   if (existing) {
-    // Role and profile link are self-healed on every run; the password is
-    // deliberately left alone once the account exists — a seed re-run should
-    // never silently undo a password the admin has since changed.
+    // Role and links are self-healed on every run; the password is deliberately
+    // left alone once the account exists — a seed re-run should never silently
+    // undo a password the admin has since changed.
     await prisma.accessAccount.update({
       where: { id: existing.id },
-      data: { role: 'ADMIN', active: true },
+      data: { role: 'SUPER_ADMIN', active: true },
     });
+    accountId = existing.id;
+  } else {
+    const created = await prisma.accessAccount.create({
+      data: {
+        email,
+        password: await bcrypt.hash(password, SALT_ROUNDS),
+        role: 'SUPER_ADMIN',
+        person: { create: { name: 'Administrator', email, types: ['USER'] } },
+      },
+    });
+    accountId = created.id;
+  }
 
-    if (administratorProfileId) {
-      await prisma.accountProfile.upsert({
-        where: {
-          accountId_profileId: { accountId: existing.id, profileId: administratorProfileId },
-        },
-        update: {},
-        create: { accountId: existing.id, profileId: administratorProfileId },
-      });
-    }
+  // The bootstrap account holds every layer explicitly — Platform role, company
+  // administrator, both seats and the ERP's Administrator profile — because none
+  // of them implies another (docs/adr/0018). A real deployment would split them.
+  await ensureMember(companyId, accountId, 'ADMIN', ['ERP', 'FSM']);
+  await linkProfile(accountId, administratorProfileId);
 
-    console.log(`  admin account: already exists, role/profile ensured (${email})`);
+  console.log(`  admin account: ${existing ? 'already exists, ensured' : 'created'} (${email})`);
+}
+
+interface TestAccountSeed {
+  email: string;
+  name: string;
+  role: 'SUPER_ADMIN' | 'USER';
+  /** `null`: no membership at all. */
+  membership: { role: MembershipRoleName; seats: ProductName[]; profile?: string } | null;
+}
+
+/**
+ * One account per row of the access matrix in
+ * docs/especificacoes/platform-access-model.md (the fifth, a freshly registered
+ * account, comes from `POST /api/auth/register`). Only with SEED_TEST_ACCOUNTS=true
+ * — these are for trying the model by hand, never for a real environment.
+ */
+const TEST_ACCOUNTS: TestAccountSeed[] = [
+  {
+    email: 'super.admin@oliveira.test',
+    name: 'Test Super Admin',
+    role: 'SUPER_ADMIN',
+    membership: null,
+  },
+  {
+    email: 'company.admin@oliveira.test',
+    name: 'Test Company Admin',
+    role: 'USER',
+    membership: { role: 'ADMIN', seats: [] },
+  },
+  {
+    email: 'erp.member@oliveira.test',
+    name: 'Test ERP Member',
+    role: 'USER',
+    membership: { role: 'MEMBER', seats: ['ERP'], profile: SEED_PROFILE_NAMES.DEFAULT_USER },
+  },
+  {
+    email: 'no.seat@oliveira.test',
+    name: 'Test Member Without Seat',
+    role: 'USER',
+    membership: { role: 'MEMBER', seats: [] },
+  },
+];
+
+async function seedTestAccounts(
+  companyId: string,
+  profileIdByName: Map<string, number>,
+): Promise<void> {
+  if (process.env.SEED_TEST_ACCOUNTS !== 'true') {
+    return;
+  }
+
+  const password = process.env.SEED_TEST_PASSWORD;
+
+  if (!password) {
+    console.warn(
+      '  test accounts: skipped — SEED_TEST_ACCOUNTS is on but SEED_TEST_PASSWORD is not set.',
+    );
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  const account = await prisma.accessAccount.create({
-    data: {
-      email,
-      password: passwordHash,
-      role: 'ADMIN',
-      person: {
-        create: {
-          name: 'Administrator',
-          email,
-          types: ['USER'],
+  for (const seed of TEST_ACCOUNTS) {
+    const existing = await prisma.accessAccount.findUnique({ where: { email: seed.email } });
+
+    const account =
+      existing ??
+      (await prisma.accessAccount.create({
+        data: {
+          email: seed.email,
+          password: passwordHash,
+          role: seed.role,
+          person: { create: { name: seed.name, email: seed.email, types: ['USER'] } },
         },
-      },
-    },
-  });
+      }));
 
-  if (administratorProfileId) {
-    await prisma.accountProfile.create({
-      data: { accountId: account.id, profileId: administratorProfileId },
-    });
+    if (seed.membership) {
+      await ensureMember(companyId, account.id, seed.membership.role, seed.membership.seats);
+      await linkProfile(
+        account.id,
+        seed.membership.profile ? profileIdByName.get(seed.membership.profile) : undefined,
+      );
+    }
   }
 
-  console.log(`  admin account: created (${email})`);
-}
-
-/**
- * Any USER-role account with zero AccessProfile links has zero effective
- * permissions — locked out of everything now that routes enforce them. Two
- * ways that happens: an account created before this seed ever ran (e.g. the
- * `User` rows migrated to `AccessAccount` in an earlier phase, before
- * profiles existed), or a fresh database seeded before the default profile
- * existed. Neither is a "real" account decision, so linking them to the
- * default profile here is a repair, not a business rule — ADMIN/SYSTEM
- * accounts are untouched, and any account that already has a profile
- * (including one deliberately left with none) is left alone.
- */
-async function backfillDefaultProfileForOrphanedAccounts(
-  profileIdByName: Map<string, number>,
-): Promise<void> {
-  const defaultProfileId = profileIdByName.get(SEED_PROFILE_NAMES.DEFAULT_USER);
-
-  if (!defaultProfileId) {
-    return;
-  }
-
-  const orphaned = await prisma.accessAccount.findMany({
-    where: { role: 'USER', profiles: { none: {} } },
-    select: { id: true, email: true },
-  });
-
-  for (const account of orphaned) {
-    await prisma.accountProfile.create({
-      data: { accountId: account.id, profileId: defaultProfileId },
-    });
-    console.log(`  backfilled default profile for orphaned account: ${account.email}`);
-  }
-
-  if (orphaned.length === 0) {
-    console.log('  no orphaned accounts to backfill');
-  }
+  console.log(`  test accounts: ${TEST_ACCOUNTS.length} ensured`);
 }
 
 async function main() {
@@ -322,8 +431,9 @@ async function main() {
   const permissionIdByKey = await seedPermissions();
   const profileIdByName = await seedProfiles(permissionIdByKey);
   await seedSystemAccount();
-  await seedAdmin(profileIdByName);
-  await backfillDefaultProfileForOrphanedAccounts(profileIdByName);
+  const companyId = await seedCompany();
+  await seedAdmin(companyId, profileIdByName);
+  await seedTestAccounts(companyId, profileIdByName);
 
   console.log('Done.');
 }

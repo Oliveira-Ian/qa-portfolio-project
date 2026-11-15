@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { isAdmin } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { EditProfileForm } from './_components/edit-profile-form';
 import { getProfile } from '../_data-access/get-profile';
 import { listPermissions } from '../../_data-access/list-permissions';
@@ -14,7 +14,7 @@ interface EditProfilePageProps {
 }
 
 export default async function EditProfilePage({ params }: EditProfilePageProps) {
-  if (!(await isAdmin())) {
+  if (!(await can('profile:manage'))) {
     redirect('/home');
   }
 

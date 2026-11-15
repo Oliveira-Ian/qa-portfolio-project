@@ -12,7 +12,6 @@ import { BreadcrumbTrail } from './breadcrumb-trail';
 interface DashboardShellProps {
   userName: string;
   userEmail: string;
-  isAdmin: boolean;
   permissions: readonly PermissionKey[];
   children: React.ReactNode;
 }
@@ -35,15 +34,11 @@ interface DashboardShellProps {
 export function DashboardShell({
   userName,
   userEmail,
-  isAdmin,
   permissions,
   children,
 }: DashboardShellProps) {
   const { mode, toggle, setMode } = useSidebarMode();
-  const navigationModules = useMemo(
-    () => filterCatalogForAccount({ isAdmin, permissions }),
-    [isAdmin, permissions],
-  );
+  const navigationModules = useMemo(() => filterCatalogForAccount({ permissions }), [permissions]);
   const searchRoutines = useMemo(() => flattenRoutines(navigationModules), [navigationModules]);
 
   return (

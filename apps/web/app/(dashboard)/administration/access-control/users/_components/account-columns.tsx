@@ -25,7 +25,7 @@ import { formatDate } from '@/lib/format';
  * a person's account. See `docs/product/access_control.md`.
  */
 export const ACCOUNT_ROLE_OPTIONS: { label: string; value: string }[] = [
-  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Super admin', value: 'SUPER_ADMIN' },
   { label: 'User', value: 'USER' },
 ];
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { isAdmin } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { CreateProfileForm } from './_components/create-profile-form';
 import { listPermissions } from '../_data-access/list-permissions';
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewProfilePage() {
-  if (!(await isAdmin())) {
+  if (!(await can('profile:manage'))) {
     redirect('/home');
   }
 

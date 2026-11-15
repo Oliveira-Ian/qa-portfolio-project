@@ -13,7 +13,7 @@ export const ACCOUNT_FILTER_FIELDS: FilterDrawerField[] = [
     label: 'Role',
     filterType: 'enum',
     options: [
-      { label: 'Admin', value: 'ADMIN' },
+      { label: 'Super admin', value: 'SUPER_ADMIN' },
       { label: 'User', value: 'USER' },
       { label: 'System', value: 'SYSTEM' },
     ],

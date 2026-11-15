@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { parseListQuery, toURLSearchParams } from '@/lib/list-query';
-import { isAdmin } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { ProfileList } from './_components/profile-list';
 import { PROFILE_FILTERABLE_COLUMNS } from './_components/profile-filter-fields';
 import { getProfileGridPreference } from './_data-access/get-grid-preferences';
@@ -16,7 +16,7 @@ interface ProfilesPageProps {
 }
 
 export default async function ProfilesPage({ searchParams }: ProfilesPageProps) {
-  if (!(await isAdmin())) {
+  if (!(await can('profile:manage'))) {
     redirect('/home');
   }
 

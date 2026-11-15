@@ -1,12 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/require-auth.js';
-import { requireRole } from '../auth/authorize.js';
+import { requirePermission, requireProductAccess } from '../auth/authorize.js';
 import { permissionController } from './permission.controller.js';
 
-/** The catalog itself — system administration, gated by role like the rest of it. */
+/** The catalog itself — read by whoever manages the ERP's profiles, like the rest of it. */
 export async function permissionRoutes(app: FastifyInstance) {
   app.addHook('preHandler', requireAuth);
-  app.addHook('preHandler', requireRole('ADMIN'));
+  app.addHook('preHandler', requireProductAccess('ERP'));
+  app.addHook('preHandler', requirePermission('profile:manage'));
 
   app.get(
     '/',

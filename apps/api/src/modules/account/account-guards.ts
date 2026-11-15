@@ -8,10 +8,10 @@ import { accountRepository } from './account.repository.js';
  * the system with no account able to manage accounts, profiles or
  * permissions — a state only fixable by direct database access:
  *
- * 1. An `ADMIN` account demoting **itself** away from `ADMIN` — blocked
+ * 1. A `SUPER_ADMIN` account demoting **itself** away from `SUPER_ADMIN` — blocked
  *    unconditionally, even if other active admins exist, since it's the
  *    single most common way to lock yourself out by mistake.
- * 2. The **last active** `ADMIN` account being deactivated or demoted, by
+ * 2. The **last active** `SUPER_ADMIN` account being deactivated or demoted, by
  *    anyone else.
  *
  * See `docs/product/access_control.md`'s "Lockout guards" for the product-level
@@ -26,20 +26,22 @@ export async function assertAdminChangeAllowed(params: {
   nextRole: AccountRole;
   nextActive: boolean;
 }): Promise<void> {
-  const wasActiveAdmin = params.currentRole === 'ADMIN' && params.currentActive;
-  const staysActiveAdmin = params.nextRole === 'ADMIN' && params.nextActive;
+  const wasActiveSuperAdmin = params.currentRole === 'SUPER_ADMIN' && params.currentActive;
+  const staysActiveSuperAdmin = params.nextRole === 'SUPER_ADMIN' && params.nextActive;
 
-  if (!wasActiveAdmin || staysActiveAdmin) {
+  if (!wasActiveSuperAdmin || staysActiveSuperAdmin) {
     return;
   }
 
   if (params.accountId === params.actorAccountId) {
-    throw new ConflictError('An admin cannot remove their own admin access');
+    throw new ConflictError('A super admin cannot remove their own access');
   }
 
-  const remainingActiveAdmins = await accountRepository.countActiveAdmins(params.accountId);
+  const remainingActiveSuperAdmins = await accountRepository.countActiveSuperAdmins(
+    params.accountId,
+  );
 
-  if (remainingActiveAdmins === 0) {
-    throw new ConflictError('Cannot remove the last active admin');
+  if (remainingActiveSuperAdmins === 0) {
+    throw new ConflictError('Cannot remove the last active super admin');
   }
 }

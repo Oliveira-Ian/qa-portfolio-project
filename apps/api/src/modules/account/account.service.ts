@@ -13,7 +13,9 @@ import {
   toSkipTake,
   type FilterFieldMap,
 } from '../../shared/list-query.js';
+import { requireCompanyId } from '../../shared/request-context.js';
 import { hashPassword } from '../auth/password.js';
+import { companyService } from '../company/company.service.js';
 import { accountRepository } from './account.repository.js';
 import { assertAdminChangeAllowed } from './account-guards.js';
 import { toAccountDto } from './account.mapper.js';
@@ -45,10 +47,17 @@ const ACCOUNT_SORT_FIELDS: Record<string, string> = {
   createdAt: 'createdAt',
 };
 
+/**
+ * The accounts listing is the company's own: only members of the caller's
+ * company, whatever the filters. Until the business tables are scoped (#60) this
+ * is the one place an account is looked up by company.
+ */
 function buildWhere(
   query: AccountListQuery,
   rawQuery: Record<string, unknown>,
+  companyId: string,
 ): Prisma.AccessAccountWhereInput {
+  const companyWhere: Prisma.AccessAccountWhereInput = { memberships: { some: { companyId } } };
   const scopeWhere: Prisma.AccessAccountWhereInput = query.personId
     ? { personId: query.personId }
     : {};
@@ -67,7 +76,7 @@ function buildWhere(
     ACCOUNT_FILTER_FIELDS,
   ) as Prisma.AccessAccountWhereInput;
 
-  return { AND: [scopeWhere, searchWhere, columnFiltersWhere] };
+  return { AND: [companyWhere, scopeWhere, searchWhere, columnFiltersWhere] };
 }
 
 function readNumberParam(rawQuery: Record<string, unknown>, key: string): number | undefined {
@@ -80,7 +89,7 @@ export const accountService = {
     query: AccountListQuery,
     rawQuery: Record<string, unknown>,
   ): Promise<PaginatedResult<AccountDto>> {
-    const where = buildWhere(query, rawQuery);
+    const where = buildWhere(query, rawQuery, requireCompanyId());
     const profileCountRange = {
       min: readNumberParam(rawQuery, 'f_profileCount_min'),
       max: readNumberParam(rawQuery, 'f_profileCount_max'),
@@ -147,14 +156,18 @@ export const accountService = {
   },
 
   async getById(id: number): Promise<AccountDto> {
+    await companyService.requireMember(id, requireCompanyId());
+
     return toAccountDto(await requireAccountWithProfiles(id));
   },
 
+  /** Gives the person a login and makes it a member of the caller's company — with no seat and no profile. */
   async create(input: AccountCreateInput): Promise<AccountDto> {
     const created = await accountRepository.createForPerson({
       personId: input.personId,
       email: input.email,
       passwordHash: await hashPassword(input.password),
+      companyId: requireCompanyId(),
     });
 
     // Re-read with the profile link included — createForPerson only returns
@@ -179,8 +192,10 @@ export const accountService = {
     return toAccountDto(await requireAccountWithProfiles(id));
   },
 
+  /** ERP profiles go only to a member of the caller's company who holds an ERP seat. */
   async linkProfile(accountId: number, profileId: number): Promise<AccountDto> {
     await requireAccountWithProfiles(accountId); // 404 before touching the join table
+    await companyService.requireMember(accountId, requireCompanyId(), 'ERP');
     await accountRepository.linkProfile(accountId, profileId);
 
     return toAccountDto(await requireAccountWithProfiles(accountId));
@@ -188,6 +203,7 @@ export const accountService = {
 
   async unlinkProfile(accountId: number, profileId: number): Promise<AccountDto> {
     await requireAccountWithProfiles(accountId);
+    await companyService.requireMember(accountId, requireCompanyId());
     await accountRepository.unlinkProfile(accountId, profileId);
 
     return toAccountDto(await requireAccountWithProfiles(accountId));

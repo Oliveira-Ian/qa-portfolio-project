@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { EMPTY_LIST_QUERY, parseListQuery, toURLSearchParams } from '@/lib/list-query';
-import { isAdmin } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { AccountList } from './_components/account-list';
 import { ACCOUNT_FILTERABLE_COLUMNS } from './_components/account-filter-fields';
 import { getAccountGridPreference } from './_data-access/get-grid-preferences';
@@ -17,7 +17,7 @@ interface UsersPageProps {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  if (!(await isAdmin())) {
+  if (!(await can('profile:manage'))) {
     redirect('/home');
   }
 

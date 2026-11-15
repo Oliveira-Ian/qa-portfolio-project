@@ -29,7 +29,7 @@ export const accountController = {
     return sendSuccess(reply, 201, await accountService.create(input));
   },
 
-  /** `requireRole('ADMIN')` (wired at the route) guarantees `request.account` here. */
+  /** `requireRole('SUPER_ADMIN')` (wired at the route) guarantees `request.account` here. */
   async update(request: FastifyRequest<WithId>, reply: FastifyReply) {
     const input = parseOrThrow(accountUpdateSchema, request.body);
     const account = await accountService.update(

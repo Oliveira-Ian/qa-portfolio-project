@@ -22,10 +22,8 @@ export interface RoutineDefinition {
   slug: string;
   label: string;
   icon: LucideIcon;
-  /** Business permission required, if any — checked against `MeResponse.permissions`. */
+  /** Permission required, if any — checked against `MeResponse.permissions`. */
   permission?: PermissionKey;
-  /** Technical-role gate — mirrors the API's `requireRole('ADMIN')` routes. */
-  adminOnly?: boolean;
 }
 
 export interface CategoryDefinition {
@@ -84,8 +82,8 @@ export const NAVIGATION_CATALOG = [
             slug: 'settings',
             label: 'Settings',
             routines: [
-              { slug: 'profiles', label: 'Profiles', icon: KeyRound, adminOnly: true },
-              { slug: 'users', label: 'Users', icon: Users, adminOnly: true },
+              { slug: 'profiles', label: 'Profiles', icon: KeyRound, permission: 'profile:manage' },
+              { slug: 'users', label: 'Users', icon: Users, permission: 'profile:manage' },
             ],
           },
         ],
@@ -148,20 +146,11 @@ export function flattenRoutines(
 
 /** Access the caller's session carries — the same shape `lib/permissions.ts#getMe()` resolves. */
 export interface AccessContext {
-  isAdmin: boolean;
   permissions: readonly PermissionKey[];
 }
 
 function canSeeRoutine(routine: RoutineDefinition, access: AccessContext): boolean {
-  if (routine.adminOnly && !access.isAdmin) {
-    return false;
-  }
-
-  if (routine.permission && !access.isAdmin && !access.permissions.includes(routine.permission)) {
-    return false;
-  }
-
-  return true;
+  return !routine.permission || access.permissions.includes(routine.permission);
 }
 
 /**
