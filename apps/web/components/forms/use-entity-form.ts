@@ -4,6 +4,8 @@ import { useTransition } from 'react';
 import { useForm, type DefaultValues, type FieldValues, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/lib/actions';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 
 type SubmitResult = ActionResult | void;
 
@@ -31,6 +33,7 @@ export function useEntityForm<TValues extends FieldValues>(
   defaultValues: TValues,
   submit: (values: TValues) => Promise<SubmitResult>,
 ) {
+  const t = useT();
   const [isPending, startTransition] = useTransition();
 
   // All three type args pinned explicitly: left to inference/defaults, a
@@ -54,12 +57,12 @@ export function useEntityForm<TValues extends FieldValues>(
         const result = await submit(values);
 
         if (result?.success === false) {
-          toast.error(result.message);
+          toast.error(translateApiMessage(result.message ?? '', t));
         }
       });
     },
     () => {
-      toast.error('Please fix the errors above');
+      toast.error(t('common.fixErrors'));
     },
   );
 

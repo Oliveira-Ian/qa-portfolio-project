@@ -1,24 +1,30 @@
+'use client';
+
+import { Briefcase, Building2, Truck, User, type LucideIcon } from 'lucide-react';
 import type { PersonTypeValue } from '@oliveira/schemas';
-import { Badge } from '@/components/ui/badge';
+import { Badge, StatusBadge } from '@/components/ui/badge';
+import { useT } from '@/lib/i18n/provider';
+import type { MessageKey } from '@/lib/i18n/translate';
 import { cn } from '@/lib/utils';
 
 /**
- * Type and status read as stamped marks rather than coloured pills — a record
- * in this system is a document, and the two badges are what a clerk would look
- * for first.
+ * A person's type is a **tag** (a category: Archivo, sentence case, a pill with
+ * an icon) and their status is a **state** (mono, uppercase, a dot) — the two
+ * marks the design keeps visibly apart (handoff § 4). Neither is a product
+ * colour: a type says nothing about access.
  */
-const TYPE_LABEL: Record<PersonTypeValue, string> = {
-  CLIENT: 'Client',
-  SUPPLIER: 'Supplier',
-  USER: 'User',
-  EMPLOYEE: 'Employee',
+const TYPE_LABEL: Record<PersonTypeValue, MessageKey> = {
+  CLIENT: 'erp.personType.client',
+  SUPPLIER: 'erp.personType.supplier',
+  USER: 'erp.personType.user',
+  EMPLOYEE: 'erp.personType.employee',
 };
 
-const TYPE_TONE: Record<PersonTypeValue, string> = {
-  CLIENT: 'border-primary/40 bg-primary-light text-primary',
-  SUPPLIER: 'border-signal/40 bg-signal-light text-signal-strong',
-  USER: 'border-foreground/25 bg-muted text-foreground',
-  EMPLOYEE: 'border-foreground/25 bg-muted text-foreground',
+const TYPE_ICON: Record<PersonTypeValue, LucideIcon> = {
+  CLIENT: Building2,
+  SUPPLIER: Truck,
+  USER: User,
+  EMPLOYEE: Briefcase,
 };
 
 export function PersonTypeBadge({
@@ -33,14 +39,19 @@ export function PersonTypeBadge({
   onRemove?: () => void;
   removeLabel?: string;
 }) {
+  const t = useT();
+  const Icon = TYPE_ICON[type];
+  const label = t(TYPE_LABEL[type]);
+
   return (
     <Badge
-      variant="outline"
-      className={cn('eyebrow rounded-sm border px-2 py-0.5', TYPE_TONE[type], className)}
-      removeLabel={removeLabel ?? `Remove ${TYPE_LABEL[type]}`}
+      variant="default"
+      className={className}
+      removeLabel={removeLabel ?? t('table.filters.remove', { label })}
       {...(onRemove ? { onRemove } : {})}
     >
-      {TYPE_LABEL[type]}
+      <Icon aria-hidden="true" />
+      {label}
     </Badge>
   );
 }
@@ -62,31 +73,12 @@ export function PersonTypeBadges({
   );
 }
 
-export function PersonStatusBadge({
-  active,
-  className,
-  onRemove,
-  removeLabel,
-}: {
-  active: boolean;
-  className?: string;
-  onRemove?: () => void;
-  removeLabel?: string;
-}) {
+export function PersonStatusBadge({ active, className }: { active: boolean; className?: string }) {
+  const t = useT();
+
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'eyebrow rounded-sm border px-2 py-0.5',
-        active
-          ? 'border-toast-success/40 bg-toast-success-light text-toast-success'
-          : 'border-border bg-muted text-muted-foreground',
-        className,
-      )}
-      removeLabel={removeLabel ?? `Remove ${active ? 'Active' : 'Inactive'}`}
-      {...(onRemove ? { onRemove } : {})}
-    >
-      {active ? 'Active' : 'Inactive'}
-    </Badge>
+    <StatusBadge tone={active ? 'success' : 'neutral'} className={className}>
+      {t(active ? 'erp.status.active' : 'erp.status.inactive')}
+    </StatusBadge>
   );
 }

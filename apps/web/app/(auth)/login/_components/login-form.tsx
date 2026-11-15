@@ -3,10 +3,10 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { authMessages, loginFormSchema, type LoginFormValues } from '@oliveira/schemas';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -17,20 +17,25 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
+import { ROUTES } from '@/lib/navigation/routes';
+import { PLATFORM_NAME } from '@/lib/products';
+import { EmailInput, PasswordInput } from '../../_components/auth-fields';
 import { loginAction } from '../_actions/login';
 
 const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
 interface LoginFormProps {
-  /** Where to land after signing in, supplied by `middleware.ts`. */
+  /** Where to land after signing in, supplied by `proxy.ts`. */
   next?: string | undefined;
 }
 
 export function LoginForm({ next }: LoginFormProps) {
+  const t = useT();
   const [isPending, startTransition] = useTransition();
-  const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [isRemembered, setRemembered] = useState(false);
+  const [hasFailed, setFailed] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -47,23 +52,32 @@ export function LoginForm({ next }: LoginFormProps) {
       // Hydrating from storage is the "sync with an external system" case the
       // rule exempts in prose; there is no render-time value to derive it from.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRemember(true);
+      setRemembered(true);
     }
   }, [form]);
 
   function handleValid(values: LoginFormValues) {
-    if (remember) {
+    if (isPending) {
+      return;
+    }
+
+    if (isRemembered) {
       window.localStorage.setItem(REMEMBERED_EMAIL_KEY, values.email);
     } else {
       window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
     }
+
+    setFailed(false);
 
     startTransition(async () => {
       // On success the action redirects, so nothing comes back to handle here.
       const result = await loginAction(values, next);
 
       if (result?.success === false) {
-        toast.error(result.message);
+        // The alert is the generic "it didn't work" (handoff S01: never say which
+        // of the two was wrong); the toast carries the API's own sentence.
+        setFailed(true);
+        toast.error(translateApiMessage(result.message ?? '', t));
       }
     });
   }
@@ -74,46 +88,44 @@ export function LoginForm({ next }: LoginFormProps) {
     const { email, password } = form.getValues();
 
     if (!email || !password) {
-      toast.error(authMessages.login.missingFields);
+      toast.error(translateApiMessage(authMessages.login.missingFields, t));
     }
   }
 
   return (
-    <div className="w-full max-w-[26rem]" data-testid="auth-login-card">
-      <p className="eyebrow text-primary">Oliveira ERP</p>
-      <h1
-        className="mt-2 text-[2rem] leading-[1.1] font-semibold text-foreground"
-        data-testid="auth-login-title"
-      >
-        Sign in
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Pick up where the site left off — records, contacts and suppliers.
+    <div className="w-full max-w-[25rem]" data-testid="auth-login-card">
+      <p className="olv-overline text-text-3" translate="no">
+        {PLATFORM_NAME}
       </p>
-      <div className="measured-rule mt-6" aria-hidden="true" />
+      <h1 className="olv-title-l mt-2 text-foreground" data-testid="auth-login-title">
+        {t('auth.signIn.title')}
+      </h1>
+      <p className="mt-2 text-[15px] leading-[22px] text-text-2">{t('auth.signIn.lead')}</p>
 
       <Form {...form}>
         <form
-          className="mt-6 flex flex-col gap-5"
+          className="mt-7 flex flex-col gap-5"
           data-testid="auth-login-form"
           onSubmit={form.handleSubmit(handleValid, handleInvalid)}
           noValidate
         >
+          {hasFailed ? (
+            <Alert variant="destructive" data-testid="auth-login-alert">
+              <AlertTitle>{t('auth.signIn.failedTitle')}</AlertTitle>
+              <AlertDescription>{t('auth.signIn.failedBody')}</AlertDescription>
+            </Alert>
+          ) : null}
+
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-login-label-email">Email</FormLabel>
+                <FormLabel data-testid="auth-login-label-email">{t('auth.fields.email')}</FormLabel>
                 <FormControl>
-                  <Input
+                  <EmailInput
                     {...field}
-                    type="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="you@example.com"
+                    placeholder={t('auth.fields.emailPlaceholder')}
                     data-testid="auth-login-input-email"
                   />
                 </FormControl>
@@ -127,81 +139,59 @@ export function LoginForm({ next }: LoginFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-login-label-password">Password</FormLabel>
-                <div className="relative flex items-center">
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      spellCheck={false}
-                      className="pr-11"
-                      data-testid="auth-login-input-password"
-                    />
-                  </FormControl>
+                <div className="flex items-baseline justify-between gap-4">
+                  <FormLabel data-testid="auth-login-label-password">
+                    {t('auth.fields.password')}
+                  </FormLabel>
                   <button
                     type="button"
-                    className="absolute right-1 grid size-9 place-items-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    data-testid="auth-login-button-toggle-password"
-                    onClick={() => setShowPassword((value) => !value)}
+                    className="rounded-xs text-[13px] font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
+                    data-testid="auth-login-link-forgot"
+                    onClick={() => toast.warning(t('auth.signIn.notImplemented'))}
                   >
-                    {showPassword ? (
-                      <EyeOff className="size-4" aria-hidden="true" />
-                    ) : (
-                      <Eye className="size-4" aria-hidden="true" />
-                    )}
+                    {t('auth.signIn.forgot')}
                   </button>
                 </div>
+                <FormControl>
+                  <PasswordInput
+                    {...field}
+                    autoComplete="current-password"
+                    toggleTestId="auth-login-button-toggle-password"
+                    data-testid="auth-login-input-password"
+                  />
+                </FormControl>
                 <FormMessage data-testid="auth-login-error-password" />
               </FormItem>
             )}
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox
-                checked={remember}
-                onCheckedChange={(checked) => setRemember(checked === true)}
-                data-testid="auth-login-checkbox-remember"
-              />
-              Remember me
-            </label>
-            <button
-              type="button"
-              className="rounded-sm text-sm text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-              data-testid="auth-login-link-forgot"
-              onClick={() => toast.warning('Not implemented')}
-            >
-              Forgot password
-            </button>
-          </div>
+          <label className="flex w-fit cursor-pointer items-center gap-2.5 text-sm text-text-2">
+            <Checkbox
+              checked={isRemembered}
+              onCheckedChange={(checked) => setRemembered(checked === true)}
+              data-testid="auth-login-checkbox-remember"
+            />
+            {t('auth.signIn.remember')}
+          </label>
 
           <Button
             type="submit"
             size="lg"
             className="w-full"
             data-testid="auth-login-button-submit"
-            disabled={isPending}
+            loading={isPending}
           >
-            {isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Signing in…
-              </>
-            ) : (
-              'Sign in'
-            )}
+            {t('auth.signIn.submit')}
           </Button>
 
-          <p className="text-sm text-muted-foreground">
-            Don&rsquo;t have an account?{' '}
+          <p className="border-t border-border pt-5 text-sm text-text-2">
+            {t('auth.signIn.newHere')}{' '}
             <Link
-              href="/register"
-              className="rounded-sm text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+              href={ROUTES.register}
+              className="rounded-xs font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
               data-testid="auth-login-link-register"
             >
-              Create one
+              {t('auth.signIn.createAccount')}
             </Link>
           </p>
         </form>

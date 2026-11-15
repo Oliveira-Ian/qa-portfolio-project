@@ -40,10 +40,9 @@ explicitly — a red run that mentions either is a missing CI step, not a broken
 - **A seeded database (no longer needed by `auth.spec.ts`).** It used to be: the spec registers a
   user and lands on `/home`, which called `GET /api/persons/summary` and needed `person:view` from the
   seeded `isDefault` profile. Since the Platform access model (`docs/adr/0018`) a self-registered user
-  has no company, no ERP seat and no profile, so `/home` renders the "no access" notice instead of the
-  dashboard. The notice sits inside a `data-testid="home-page"` wrapper (`app/(dashboard)/layout.tsx`)
-  precisely so this spec keeps passing until the Platform home (Epic #66, Phase 3) carries that testid
-  itself; the seed is irrelevant to it.
+  has no company, no ERP seat and no profile, so `/home` renders the Platform Home's "no company" state
+  (`app/(platform)/home/page.tsx`, which carries `data-testid="home-page"` itself) rather than a
+  dashboard; the seed is irrelevant to it.
   `tests/api` does not need the seed either: it only calls the public `/api/auth/*` routes.
 
 ## Disabled (`test.fixme` / `test.describe.fixme`)

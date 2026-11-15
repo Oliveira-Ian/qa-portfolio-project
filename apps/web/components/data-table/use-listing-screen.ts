@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { GridColumnPreferenceDto, GridColumnPreferenceItem } from '@oliveira/schemas';
 import type { ActionResult } from '@/lib/actions';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import type { CustomizableColumn } from './grid-customization-modal';
 
 export interface UseListingScreenOptions {
@@ -31,6 +33,7 @@ export function useListingScreen({
   saveGridPreferenceAction,
   extraColumnOrder = ['actions'],
 }: UseListingScreenOptions) {
+  const t = useT();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -63,11 +66,13 @@ export function useListingScreen({
     const result = await saveGridPreferenceAction(columns);
 
     if (!result.success) {
-      toast.error(result.message ?? 'Could not save your column preferences');
+      toast.error(
+        result.message ? translateApiMessage(result.message, t) : t('table.customize.saveFailed'),
+      );
       return;
     }
 
-    toast.success('Column preferences saved');
+    toast.success(t('table.customize.saved'));
   }
 
   return {

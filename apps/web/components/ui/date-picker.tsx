@@ -5,7 +5,8 @@ import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { formatDate, parseIsoDate, toIsoDate } from '@/lib/format';
+import { formatDateMedium, parseIsoDate, toIsoDate } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
 interface DatePickerProps {
@@ -22,16 +23,18 @@ interface DatePickerProps {
  * A `Popover` + `Calendar` bound to the same `yyyy-MM-dd` string an
  * `<input type="date">` produces — a drop-in replacement wherever a form
  * field already stores a date that way (e.g. `PersonFormValues.birthdate`),
- * with a consistent-with-the-rest-of-the-app display via `formatDate`.
+ * with a display in the interface language via `formatDateMedium`.
  */
 export function DatePicker({
   value,
   onChange,
-  placeholder = 'Select a date…',
+  placeholder,
   disabled,
   className,
   ...props
 }: DatePickerProps) {
+  const t = useT();
+  const locale = useLocale();
   const [open, setOpen] = React.useState(false);
   const selected = value ? parseIsoDate(value) : undefined;
 
@@ -50,7 +53,7 @@ export function DatePicker({
           {...props}
         >
           <CalendarIcon aria-hidden="true" />
-          {selected ? formatDate(value) : placeholder}
+          {selected ? formatDateMedium(value, locale) : (placeholder ?? t('common.pickDate'))}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">

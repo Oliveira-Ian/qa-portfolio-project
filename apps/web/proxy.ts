@@ -8,7 +8,7 @@ import { SESSION_COOKIE } from '@/lib/session';
  * the signature would mean shipping a JWT library to the edge runtime for no
  * real gain, because the API validates the token on every request anyway.
  * What this buys is the user experience: an expired session lands on `/login`
- * instead of flashing an empty dashboard that then errors.
+ * instead of flashing an empty page that then errors.
  *
  * The shape check (not just presence) matters: a cookie left over from a
  * previous session-shape (e.g. set before a schema change) must NOT count as
@@ -16,9 +16,13 @@ import { SESSION_COOKIE } from '@/lib/session';
  * parse the same cookie and bounces back to `/login` — an infinite loop that
  * never gives the user a chance to sign in and overwrite the stale cookie.
  *
+ * The prefixes are the areas (docs/adr/0019): the Platform's `/home` and
+ * `/company`, and the products `/erp` and `/fsm`. Which of them a session may
+ * *enter* is the areas' own layouts' and the API's business, not this file's.
+ *
  * `proxy.ts` is Next 16's name for what used to be `middleware.ts`.
  */
-const PROTECTED_PREFIXES = ['/home', '/records', '/administration'];
+const PROTECTED_PREFIXES = ['/home', '/company', '/erp', '/fsm'];
 const AUTH_ROUTES = ['/login', '/register'];
 
 function looksLikeSession(raw: string | undefined): boolean {
@@ -60,5 +64,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/home/:path*', '/records/:path*', '/administration/:path*', '/login', '/register'],
+  matcher: ['/home/:path*', '/company/:path*', '/erp/:path*', '/fsm/:path*', '/login', '/register'],
 };

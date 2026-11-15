@@ -11,7 +11,7 @@ drives the sidebar, breadcrumb and global search — nothing renders a nav item 
 The migration's first pass built each routine's URL from all four levels
 (`/records/people/records/people`, for People: module=`records`, group=`people`,
 category=`records`, routine=`people`) and put the matching four-level folder nesting under
-`apps/web/app/(dashboard)/`. For a catalog this shallow (one category per group, today), that
+`apps/web/app/(dashboard)/` (the route group that ADR 0019 later turned into `apps/web/app/erp/`). For a catalog this shallow (one category per group, today), that
 produced URLs with a visibly repeated segment and a page-file 9 directories deep — a cost that
 multiplies with every routine added, not a one-time nuisance.
 

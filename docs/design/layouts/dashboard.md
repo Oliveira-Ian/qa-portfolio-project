@@ -1,62 +1,77 @@
-# Design — Layouts — Dashboard
+# Design — Layouts — The shell (global bar + sidebar)
 
-Structure shared by every authenticated page (Home, People, Profiles, Users, ...).
+The frame every signed-in page lives in — the Platform's own pages (`/home`, `/company/*`), Oliveira ERP
+(`/erp/*`) and the Oliveira FSM placeholder (`/fsm`). One shell, three areas
+(`docs/adr/0019`); the file keeps its old name so existing links still resolve. Platform screens:
+`docs/design/layouts/platform.md`.
 
 ## Structure
 
-- Fixed header (56px): wordmark (links to Home), a centered global search field, theme toggle and user avatar + dropdown on the right. The sidebar's own toggle lives in the sidebar now, not here.
-- Sidebar, below the header, **never fully hides** on any viewport — it's always at least the icon-only "compact" rail, which is what keeps its own toggle button reachable. Two widths: `compact` (64px, icons only) and `expanded` (240px, icon + label), persisted across visits.
-- Main content: pushed right by the sidebar's current width on desktop; on mobile the sidebar's `expanded` state is a modal-like overlay (a backdrop dims the content) instead, since 240px would eat too much of a phone screen to push instead of cover.
-- A breadcrumb trail sits above every page's own content, inside `main` — see "Breadcrumb" below.
+- **Global bar** (`components/shell/global-bar.tsx`, 52px; 56px on mobile) — **Platform-owned and
+  identical in every product**: the compact crest and "Oliveira", the **product switcher** (the product's
+  name in its accent's 300 step; the menu lists every product with its access state), the **global
+  search** (`Ctrl+Shift+F`), the company name, and the **account menu** (name, e-mail, the language
+  switch, sign out).
+- **Sidebar** (`components/shell/sidebar.tsx`, **product-owned**) — mono overlines for groups, 38px items;
+  the active item has a filled background, a 3px accent marker, the accent on its icon and
+  `aria-current="page"`. Items the account may not view are hidden; a direct link to one lands on the
+  in-product "You can't view …" page.
+- **Breadcrumbs** (`components/shell/breadcrumbs.tsx`) above the page, the product first and no repeated
+  segment (the old ERP trail read "Records › People › Records › People").
+- **Page header** (`components/layout/page-header.tsx`): breadcrumb, H1, a mono meta line, and the
+  actions on the right (destructive-soft · secondary · primary, the primary rightmost).
 
-The sidebar carries the product's mark — an oversized, barely-visible (5–7% opacity) olive tree bleeding off its bottom edge — as its one piece of brand signature, since "Oliveira" is Portuguese for olive tree.
+`AppShell` (`components/shell/app-shell.tsx`) puts them together and sets `data-product` on the root, which
+is what scopes the accent tokens. `ShellFor` is the bridge from a layout's Server Component: it reads
+`GET /api/auth/me` (never the session cookie's copy), so the bar and the sidebar reflect a seat or a
+profile change an administrator makes mid-session on the very next render, and hands over only plain data.
 
-## Sidebar: Módulo → Grupo → Categoria → Rotina
+## Responsive (handoff § 6)
 
-The sidebar's content is driven entirely by `apps/web/lib/navigation/catalog.ts` — a sealed, four-level catalog (same "const array + grouping helper" shape as `packages/schemas/src/permissions.ts`, one level deeper). Nothing renders a nav item, a URL, or a breadcrumb segment from anywhere else.
+| Width | Shell | Content |
+|---|---|---|
+| ≥ 1280 | global bar, 232px sidebar | gutter 48 |
+| 1024–1279 | sidebar becomes a 64px icon rail with tooltips | gutter 32 |
+| 768–1023 | no sidebar — a drawer; search becomes an icon | gutter 32 |
+| < 768 | bar 56: menu · crest · product · search · account; the drawer (320px) holds company, products, navigation and language | gutter 16; tables become card lists; controls 44px |
 
-1. **Módulos** — the sidebar's primary column: one row per module (icon always, label when `expanded`).
-2. **Grupos** — clicking a module swaps the column's own content to that module's groups (a "← Módulos" row at the top goes back). This is an in-place swap, not a flyout — the module context stays visible as you drill in.
-3. **Categorias** — each Grupo row is the trigger for a flyout (`DropdownMenu`, opening to the right) listing its categories.
-4. **Rotinas** — each Categoria is a `DropdownMenuSub` nested inside that same flyout, cascading further right with the final routine links. Clicking one navigates and closes the whole cascade.
+There is no manual sidebar toggle: the behaviour follows the width.
 
-Reusing `dropdown-menu.tsx`'s existing `DropdownMenuSub`/`DropdownMenuSubContent` for steps 3–4 means the flyout cascade needed zero new UI primitives — positioning, collision handling and keyboard navigation all come from Radix.
+## Navigation is data
 
-Every module/group/category/routine the account can't reach is pruned before it ever renders (`filterCatalogForAccount()`, run client-side inside `dashboard-shell.tsx` — see "Why client-side" below) — a group with zero visible routines underneath doesn't show up as an empty shell.
+`apps/web/lib/navigation/nav.ts#buildNavigation(area, access)` returns the sections of each area's
+sidebar, from:
 
-**Auto-collapse**: navigating to a new routine collapses the sidebar to `compact` automatically (a `pathname`-watching effect in `app-sidebar.tsx`, skipped on the very first render to avoid fighting the mode `localStorage` already restored). Re-expanding is manual, via the sidebar's own toggle.
+- the **Platform**: Home, and — for a company admin only — Company, Members and Product access;
+- the **ERP**: Overview, then the modules of `lib/navigation/catalog.ts` the account's permissions reach
+  (`filterCatalogForAccount`) — the catalogue is the four-level Module → Group → Category → Routine
+  structure of `docs/adr/0007`, and its URLs live under `/erp` (ADR 0019);
+- the **FSM**: nothing — it is a placeholder.
 
-**Why client-side**: `filterCatalogForAccount()` and `flattenRoutines()` run inside `dashboard-shell.tsx` (`'use client'`), not the server `layout.tsx` — each `RoutineDefinition.icon` is a `LucideIcon` component reference, and functions can't cross the Server→Client props boundary the way plain data can. The server layout hands down only serializable data (`isAdmin`, `permissions`); the client tree does the filtering itself.
+Icons are component references, so the navigation is built inside the client shell: only serializable
+data (`isCompanyAdmin`, `permissions`) crosses from the server. Every href is a typed value of
+`lib/navigation/routes.ts#ROUTES`; nothing hand-types a URL.
 
-## Breadcrumb
+## Guard states
 
-`apps/web/components/layout/breadcrumb-trail.tsx`, built on the new `components/ui/breadcrumb.tsx` primitive, renders "Início > Módulo > Grupo > Categoria > Rotina" above every page's content. Only "Início" (→ `/home`) and the current Rotina are real links — a Módulo/Grupo/Categoria isn't a route of its own, just a grouping the sidebar drills through, so those render as plain text. Renders nothing outside the catalog (e.g. on `/home` itself).
+- **No access to a product** (design S07/S08): `erp/layout.tsx` renders `NoProductAccess` with the global
+  bar and **no** product sidebar. It never renders the page, so a URL typed straight in never shows the
+  product; the API's `requireProductAccess` is the boundary.
+- **No permission** (S09): inside the product shell, `NoPermission` explains that the ERP access profile
+  doesn't include the View permission for the screen, and that this differs from product access.
+- **Not a company admin**: `CompanyAdminGate` shows why `/company/*` isn't theirs.
 
-## Global search
+## Global search and favorites
 
-`apps/web/components/layout/global-search.tsx`, opened by clicking the header's search field or `Ctrl+Shift+F` (a `keydown` listener, `event.preventDefault()`'d so it doesn't fight the browser's own shortcuts). Built on `cmdk`'s headless `Command` primitive (its own filtering disabled — `shouldFilter={false}` — in favor of a simple case-insensitive substring match over the already-access-filtered routine list, so results and highlighting stay predictable) inside the existing `Dialog`. Searches only the navigation catalog (screen titles), not application data — there's no full-text index of records.
+`components/shell/global-search.tsx` searches the screens of the **current area** (the navigation
+above), not records. Each result can be opened in a new tab or favorited; favorites are
+`localStorage`-only (`lib/navigation/favorites.ts`, a `useSyncExternalStore` over storage — keyed by
+href, migrating the old unprefixed paths to `/erp/...`).
 
-Each result row: the routine's module icon, its label with the matched substring highlighted, a "Screen" type badge (the only type that exists today — the shape allows "Report"/"Action" later), an "open in new tab" button (`window.open`), and a favorite toggle. Both trailing buttons `stopPropagation()` so they don't also trigger the row's own select-and-navigate.
+## Language
 
-## Favorites
+The `EN | PT` switch lives on the auth screens and in the account menu and the mobile drawer
+(`components/shell/language-switch.tsx`). See `docs/design/i18n.md`.
 
-`apps/web/lib/navigation/favorites.ts` — `useFavorites()`, built on `useSyncExternalStore` over `localStorage` (not a `useEffect` racing to correct a default after mount, which is what a naive "read `localStorage` on mount" implementation looks like and is exactly what `useSyncExternalStore` exists to replace). `localStorage`-only for now, keyed by a routine's full `href` — per-account persistence would need a table and an API, not built yet. Used today from the global search's result rows.
-
-## Sidebar mode persistence
-
-`apps/web/lib/navigation/sidebar-preference.ts` — `useSidebarMode()`, the same `useSyncExternalStore`-over-`localStorage` shape as favorites. Defaults to `expanded` during SSR (no `localStorage` to read yet) and corrects on the client after hydration — a `useSyncExternalStore` server/client snapshot split, not a hydration-mismatch-prone `useState` default.
-
-## User dropdown
-
-Avatar shows the first letter of the signed-in user's name, from the session (`apps/web/lib/session.ts`) — not `localStorage`. Dropdown: "Notifications" (a placeholder — no feed exists yet, but the icon + counter badge affordance is there for when one does, always reading 0), "About" (no action, closes the menu like any other item), "Sign out" (a Server Action that clears the session cookie and redirects to `/login`).
-
-## Responsive
-
-- `< 768px`: the sidebar stays as the compact rail by default; toggling to `expanded` becomes a modal-like overlay (a dismissible backdrop covers the content) instead of pushing it, since `main`'s padding only grows to accommodate the wider sidebar at the `md` breakpoint and up.
-
-## apps/web (Next.js)
-
-`app/(dashboard)/layout.tsx` is a Server Component that calls `requireSession()` (the actual auth check — `proxy.ts` only checks that a cookie exists) and passes serializable session data (name, e-mail, `isAdmin`, `permissions`) into `components/layout/dashboard-shell.tsx` (`'use client'`, owns the sidebar's expanded/compact mode and derives the filtered catalog from those props). The shell composes `app-header.tsx` (→ `global-search.tsx`, `theme-toggle.tsx`, `user-menu.tsx`), `app-sidebar.tsx` (→ `sidebar-toggle.tsx`), and `breadcrumb-trail.tsx`.
-
-`data-testid`s for this shell are listed in `docs/qa/testids.md` (the single source of truth for
-test selectors — not duplicated here).
+`data-testid`s for this shell are listed in `docs/qa/testids.md` (the single source of truth for test
+selectors — not duplicated here).

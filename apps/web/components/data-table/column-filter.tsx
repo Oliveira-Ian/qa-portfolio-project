@@ -4,6 +4,7 @@ import type { Column } from '@tanstack/react-table';
 import { Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 import { FilterField } from './filter-field';
 
@@ -24,6 +25,7 @@ export function ColumnFilter<TData, TValue>({
   label,
   testIdPrefix,
 }: ColumnFilterProps<TData, TValue>) {
+  const t = useT();
   const filterType = column.columnDef.meta?.filterType;
 
   if (!filterType) {
@@ -39,8 +41,8 @@ export function ColumnFilter<TData, TValue>({
           type="button"
           variant="ghost"
           size="icon-xs"
-          className={cn(isActive ? 'text-primary' : 'text-muted-foreground')}
-          aria-label={`Filter ${label}`}
+          className={cn(isActive ? 'text-accent-600' : 'text-text-3')}
+          aria-label={t('table.filters.column', { label })}
           data-testid={`${testIdPrefix}-column-filter-${column.id}`}
         >
           <Filter aria-hidden="true" />

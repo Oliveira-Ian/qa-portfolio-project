@@ -4,10 +4,10 @@ import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { authMessages, registerFormSchema, type RegisterFormValues } from '@oliveira/schemas';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,16 +18,22 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
+import { ROUTES } from '@/lib/navigation/routes';
+import { PLATFORM_NAME } from '@/lib/products';
+import { EmailInput, PasswordInput } from '../../_components/auth-fields';
 import { registerAction } from '../_actions/register';
 
 /** Long enough to read the confirmation, short enough not to feel stuck. */
 const REDIRECT_DELAY_MS = 1_500;
 
 export function RegisterForm() {
+  const t = useT();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [showPassword, setShowPassword] = useState(false);
   const [isRegistered, setRegistered] = useState(false);
+  const [isEmailTaken, setEmailTaken] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -42,21 +48,31 @@ export function RegisterForm() {
       return;
     }
 
-    const timer = setTimeout(() => router.push('/login'), REDIRECT_DELAY_MS);
+    const timer = setTimeout(() => router.push(ROUTES.login), REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
   }, [isRegistered, router]);
 
   function handleValid(values: RegisterFormValues) {
+    if (isPending || isRegistered) {
+      return;
+    }
+
+    setEmailTaken(false);
+
     startTransition(async () => {
       const result = await registerAction(values);
+      const message = translateApiMessage(result.message ?? '', t);
 
       if (!result.success) {
-        toast.error(result.message);
+        // "Email already exists" also gets an in-page alert with the way out
+        // (handoff S02); everything else is a toast only.
+        setEmailTaken(result.message === authMessages.register.emailTaken);
+        toast.error(message);
         return;
       }
 
-      toast.success(result.message);
+      toast.success(message);
       setRegistered(true);
     });
   }
@@ -65,41 +81,52 @@ export function RegisterForm() {
     const values = form.getValues();
 
     if (!values.fullName || !values.email || !values.password || !values.birthDate) {
-      toast.error(authMessages.register.missingFields);
+      toast.error(translateApiMessage(authMessages.register.missingFields, t));
     }
   }
 
   return (
     <div className="w-full max-w-[26rem]" data-testid="auth-register-card">
-      <p className="eyebrow text-primary">Oliveira ERP</p>
-      <h1
-        className="mt-2 text-[2rem] leading-[1.1] font-semibold text-foreground"
-        data-testid="auth-register-title"
-      >
-        Create your account
+      <p className="olv-overline text-text-3" translate="no">
+        {PLATFORM_NAME}
+      </p>
+      <h1 className="olv-title-l mt-2 text-foreground" data-testid="auth-register-title">
+        {t('auth.register.title')}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">One account covers the whole registry.</p>
-      <div className="measured-rule mt-6" aria-hidden="true" />
+      <p className="mt-2 text-[15px] leading-[22px] text-text-2">{t('auth.register.lead')}</p>
 
       <Form {...form}>
         <form
-          className="mt-6 flex flex-col gap-5"
+          className="mt-7 flex flex-col gap-5"
           data-testid="auth-register-form"
           onSubmit={form.handleSubmit(handleValid, handleInvalid)}
           noValidate
         >
+          {isEmailTaken ? (
+            <Alert variant="destructive" data-testid="auth-register-alert-email-taken">
+              <AlertTitle>{t('auth.register.takenTitle')}</AlertTitle>
+              <AlertDescription>
+                {t('auth.register.takenBody')}{' '}
+                <Link href={ROUTES.login}>{t('auth.register.signIn')}</Link>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <FormField
             control={form.control}
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-register-label-fullname">Full name</FormLabel>
+                <FormLabel data-testid="auth-register-label-fullname">
+                  {t('auth.fields.fullName')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="text"
                     autoComplete="name"
-                    placeholder="Ana Oliveira"
+                    placeholder={t('auth.fields.fullNamePlaceholder')}
+                    className="h-11"
                     data-testid="auth-register-input-fullname"
                   />
                 </FormControl>
@@ -113,16 +140,13 @@ export function RegisterForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-register-label-email">Email</FormLabel>
+                <FormLabel data-testid="auth-register-label-email">
+                  {t('auth.fields.workEmail')}
+                </FormLabel>
                 <FormControl>
-                  <Input
+                  <EmailInput
                     {...field}
-                    type="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="you@example.com"
+                    placeholder={t('auth.fields.emailPlaceholder')}
                     data-testid="auth-register-input-email"
                   />
                 </FormControl>
@@ -136,32 +160,17 @@ export function RegisterForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-register-label-password">Password</FormLabel>
-                <div className="relative flex items-center">
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      spellCheck={false}
-                      className="pr-11"
-                      data-testid="auth-register-input-password"
-                    />
-                  </FormControl>
-                  <button
-                    type="button"
-                    className="absolute right-1 grid size-9 place-items-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    data-testid="auth-register-button-toggle-password"
-                    onClick={() => setShowPassword((value) => !value)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="size-4" aria-hidden="true" />
-                    ) : (
-                      <Eye className="size-4" aria-hidden="true" />
-                    )}
-                  </button>
-                </div>
+                <FormLabel data-testid="auth-register-label-password">
+                  {t('auth.fields.password')}
+                </FormLabel>
+                <FormControl>
+                  <PasswordInput
+                    {...field}
+                    autoComplete="new-password"
+                    toggleTestId="auth-register-button-toggle-password"
+                    data-testid="auth-register-input-password"
+                  />
+                </FormControl>
                 <FormMessage data-testid="auth-register-error-password" />
               </FormItem>
             )}
@@ -172,13 +181,15 @@ export function RegisterForm() {
             name="birthDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel data-testid="auth-register-label-birthdate">Birth date</FormLabel>
+                <FormLabel data-testid="auth-register-label-birthdate">
+                  {t('auth.fields.birthDate')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="date"
                     autoComplete="bday"
-                    className="tabular"
+                    className="h-11 tabular"
                     data-testid="auth-register-input-birthdate"
                   />
                 </FormControl>
@@ -192,26 +203,19 @@ export function RegisterForm() {
             size="lg"
             className="w-full"
             data-testid="auth-register-button-submit"
-            disabled={isPending}
+            loading={isPending}
           >
-            {isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Creating account…
-              </>
-            ) : (
-              'Create account'
-            )}
+            {t('auth.register.submit')}
           </Button>
 
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
+          <p className="border-t border-border pt-5 text-sm text-text-2">
+            {t('auth.register.haveAccount')}{' '}
             <Link
-              href="/login"
-              className="rounded-sm text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+              href={ROUTES.login}
+              className="rounded-xs font-semibold text-foreground underline decoration-transparent underline-offset-3 hover:decoration-current focus-visible:ring-focus"
               data-testid="auth-register-link-login"
             >
-              Sign in
+              {t('auth.register.signIn')}
             </Link>
           </p>
         </form>

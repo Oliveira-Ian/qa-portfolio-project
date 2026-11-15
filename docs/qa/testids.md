@@ -43,17 +43,25 @@ Rules:
 
 ---
 
-## Examples (dashboard shell — Topbar, sidebar, breadcrumb, search)
+## Examples (the shell — global bar, sidebar, breadcrumb, search)
 
-- `dashboard-header`, `dashboard-sidebar`, `dashboard-main`
-- `dashboard-sidebar-toggle` (now lives at the top of the sidebar itself, not the header)
-- `dashboard-nav-module`, `dashboard-nav-group` (per-row — repeated by design, one per Módulo/Grupo; scope with the row's own locator, e.g. by its visible label)
-- `sidebar-back-to-modules` (the "← Módulos" row shown while a module's groups are drilled into)
-- `sidebar-flyout-categories`, `sidebar-flyout-category`, `sidebar-flyout-routines`, `sidebar-flyout-routine` (the cascading Categoria → Rotina flyout off a Grupo row)
-- `breadcrumb-trail`, `breadcrumb-home`, `breadcrumb-current` (Início > Módulo > Grupo > Categoria > Rotina — only the first and last segments are links)
-- `global-search-input` (the header box itself is the real search input — no separate trigger element), `global-search-dialog`, `global-search-results`
+One shell for the Platform, Oliveira ERP and the FSM placeholder (`docs/design/layouts/dashboard.md`).
+
+- `dashboard-header` (the global bar), `dashboard-header-logo`, `dashboard-sidebar`, `dashboard-main`
+- `shell-menu-button`, `shell-drawer` (below 1024px the sidebar is a drawer, opened from the bar)
+- `product-switcher`, `product-switcher-menu`, `product-switcher-{platform|erp|fsm}` (one entry per product, with its access state)
+- `header-company` (the company's name in the bar)
+- `nav-home`, `nav-company`, `nav-members`, `nav-product-access` (Platform sidebar); `nav-erp-overview`, `nav-erp-{module}-{routine}` (e.g. `nav-erp-records-people`, `nav-erp-administration-users` — keyed by the catalogue's own slugs, so they follow `lib/navigation/catalog.ts`)
+- `breadcrumb-trail`, `breadcrumb-current` (the product first, no repeated segment — only the pages in the trail are links)
+- `global-search-open`, `global-search-dialog`, `global-search-input`, `global-search-results`
 - `global-search-result` (per-row, repeated), `global-search-result-open-new-tab`, `global-search-result-favorite`
-- `header-user-menu`, `header-user-avatar`, `header-user-dropdown`, `header-dropdown-notifications`, `header-dropdown-about`, `header-dropdown-signout`
+- `header-user-menu`, `header-user-name`, `header-user-dropdown`, `header-dropdown-signout`
+- `language-switch`, `language-switch-{en|pt-BR}` (the switch in the account menu, the mobile drawer and the auth top bar); the auth header's compact copy is `auth-mobile-language-switch`, `auth-mobile-language-switch-{en|pt-BR}`
+
+The old shell's `dashboard-sidebar-toggle`, `dashboard-nav-*`, `sidebar-flyout-*`, `header-user-avatar`,
+`header-dropdown-notifications`, `header-dropdown-about` and `header-button-theme` are gone — there is no manual
+sidebar toggle, no flyout, no About/Notifications item and no theme toggle in the new design; the specs that used them
+(`dashboard.spec.ts`, `people.spec.ts`) are the disabled ones (`docs/qa/testing-status.md`).
 
 ---
 
@@ -72,7 +80,8 @@ never a generic one. People's instance (`testIdPrefix="person-list"`) is the ref
 - `person-list-column-filter-{columnId}`, `person-list-column-filter-{columnId}-input`
 - `person-list-row-actions-trigger` (the "⋮" button — static, repeated per row; right-click opens the same menu with no id of its own)
 - `person-list-row-action-view`, `person-list-row-action-edit`, `person-list-row-action-delete` (also static/repeated — scope by row)
-- `person-list-pagination`, `person-list-pagination-first`, `person-list-pagination-prev`, `person-list-pagination-info`, `person-list-pagination-next`, `person-list-pagination-last`, `person-list-pagination-page-size`, `person-list-pagination-range` (the "Showing X–Y of Z" text), `person-list-pagination-selection`/`person-list-pagination-clear-selection` (replaces `-range` once at least one row is selected)
+- `person-list-pagination`, `person-list-pagination-prev`, `person-list-pagination-next`, `person-list-pagination-page-size`, `person-list-pagination-range` (the "Showing X–Y of Z" text), `person-list-pagination-selection`/`person-list-pagination-clear-selection` (replaces the range text once at least one row is selected). The page numbers have no ids — they are buttons named "Page N" (`aria-current="page"` on the current one); there are no first/last/info elements any more
+- `person-list-active-filters`, `person-list-active-filter-{columnId}`, `person-list-active-filter-remove-{columnId}`, `person-list-active-filters-clear-all` (the removable tags next to the Filters button)
 - `person-list-filter-drawer`, `person-list-filter-drawer-{fieldKey}`, `person-list-filter-drawer-clear`, `person-list-filter-drawer-close`
 - `person-list-customize-modal`, `person-list-customize-checkbox-{key}`, `person-list-customize-move-up-{key}`, `person-list-customize-move-down-{key}`, `person-list-customize-restore`, `person-list-customize-save`
 - `person-list-export-modal`, `person-list-export-checkbox-{key}`, `person-list-export-move-up-{key}`, `person-list-export-move-down-{key}`, `person-list-export-confirm`
@@ -81,20 +90,26 @@ never a generic one. People's instance (`testIdPrefix="person-list"`) is the ref
 
 - `person-list-container`, `person-list-title`, `person-list-table-card`
 - `person-list-button-add`, `person-list-button-edit`, `person-list-button-delete`
+- `person-list-tabs`, `person-list-tab-all`, `person-list-tab-clients`, `person-list-tab-suppliers` (the type tabs — a shortcut to the `Type` filter, with the registry's counts)
 - `person-list-empty-button-add` (the "Add the first person" action inside the empty state)
 - `person-list-delete-dialog`, `person-list-delete-confirm`, `person-list-delete-cancel` (the delete `AlertDialog` — same dialog for a single row or a multi-select batch, title/description pluralize accordingly)
-- `person-form-container`, `person-form-title`, `person-form`
+- `person-form-container`, `person-form-title`, `person-form`, `person-form-error-summary` (the "Check N fields" alert, after a failed submit)
+- `person-form-tab-{identification|contact|address|notes}`
 - `person-form-label-{field}`, `person-form-input-{field}`, `person-form-error-{field}` — **now present on all 12 fields**, not only `name`/`document`/`email` (a gap the React Hook Form rewrite closed; a field with no validation rule simply never populates its `-error-` slot)
 - `person-form-multiselect-types` (a person can hold more than one type at once — a searchable multi-select, `components/ui/multi-select.tsx`, with a chip per selected type; replaced the standalone checkbox group), `person-form-error-types`
 - `person-form-input-document-type` (select — only rendered when `types` includes `CLIENT` or `SUPPLIER`), `person-form-error-document-type`, `person-form-checkbox-active`
 - `person-form-button-save`, `person-form-button-cancel`
 - `person-record-button-edit`, `person-record-link-back` (the read-only view route)
 
-## Examples (auth layout, landing)
+## Examples (auth — sign in, create account)
 
-- `auth-layout`, `auth-banner` (the `(auth)` split-screen shell)
-- `landing-page`, `landing-button-signin`, `landing-button-start`, `landing-button-register`, `landing-link-styleguide`
-- `header-button-theme` (the light/dark toggle)
+- `auth-layout`, `auth-panel` (the dark brand panel, ≥ 900px), `auth-mobile-header` (its compact form below 900px)
+- `auth-login-card`, `auth-login-title`, `auth-login-form`, `auth-login-label-{email|password}`, `auth-login-input-{email|password}`, `auth-login-error-{email|password}`, `auth-login-button-toggle-password`, `auth-login-checkbox-remember`, `auth-login-link-forgot`, `auth-login-button-submit`, `auth-login-link-register`
+- `auth-login-alert` (the generic "We couldn't sign you in" alert — the API's sentence is in the toast)
+- `auth-register-card`, `auth-register-title`, `auth-register-form`, `auth-register-label-{fullname|email|password|birthdate}`, `auth-register-input-{fullname|email|password|birthdate}`, `auth-register-error-{fullname|email|password|birthdate}`, `auth-register-button-toggle-password`, `auth-register-button-submit`, `auth-register-link-login`
+- `auth-register-alert-email-taken` (with the link to Sign in)
+
+The public landing page and its `landing-*` ids no longer exist: `/` redirects to `/home` or `/login`.
 
 ---
 
@@ -115,9 +130,10 @@ profile's name), not an id.
 - `profile-button-add`, `profile-button-edit`, `profile-button-delete` (the page-header actions — same free multi-select model as People: Edit needs exactly one row, Delete needs one or more)
 - `profile-empty-button-add`
 - `profile-delete-dialog`, `profile-delete-confirm`, `profile-delete-cancel` (same dialog for one row or a multi-select batch, title/description pluralize accordingly)
-- `profile-form-container`, `profile-form-title`, `profile-form`
+- `profile-form-container`, `profile-form-title`, `profile-form`, `profile-form-error-summary`, `profile-form-scope-note` (the "Permissions inside {product}" info alert)
+- `profile-form-input-code` (read-only), `profile-form-permission-matrix` (the screen × action table)
 - `profile-form-label-{name|description|permissions}`, `profile-form-input-{name|description}`, `profile-form-error-{name|description|permissions}`
-- `profile-form-checkbox-permission-{resource}-{action}` (e.g. `profile-form-checkbox-permission-person-view` — keyed by the catalog's stable resource/action pair, not a database id, so it doesn't shift between seeds)
+- `profile-form-checkbox-permission-{resource}-{action}` (a cell of the matrix, or an "other permission" such as `profile-form-checkbox-permission-profile-manage`; e.g. `profile-form-checkbox-permission-person-view` — keyed by the catalog's stable resource/action pair, not a database id, so it doesn't shift between seeds)
 - `profile-form-button-save`, `profile-form-button-cancel`
 
 ### Usuários (`testIdPrefix="account-list"`)
@@ -135,6 +151,45 @@ No `profile-list-checkbox-*` equivalent here — this screen passes `enableSelec
 - `account-section` (the conditional block on the Person view/edit pages, shown only to an ADMIN when `types` includes `USER`)
 - `account-section-none`, `account-section-email`, `account-section-link-manage`
 - `account-section-create-form`, `account-section-label-{email|password}`, `account-section-input-{email|password}`, `account-section-error-{email|password}`, `account-section-button-create`
+
+---
+
+## Examples (the Platform — Home, company administration, guards)
+
+`docs/design/layouts/platform.md`. A row of a list is addressed by the membership's id in the id itself
+(`company-member-row-{id}`) — those ids come from the API, so a test reads them from the page, it does not
+invent them.
+
+### Home
+
+- `home-page`, `home-page-title`, `home-overline`
+- `product-card-{erp|fsm}` (the whole card), `product-card-{erp|fsm}-chip` (its access chip)
+- `home-company-strip`, `home-strip-members`, `home-strip-erp-seats`, `home-strip-admin` (admins only)
+- `home-account-email` (the no-company state)
+
+### Company, members, product access (`/company/*`)
+
+- `company-overview-page`, `company-overview-title`, `company-overview-name`, `company-overview-members`, `company-overview-access`
+- `company-contracts-table`, `company-contract-{erp|fsm}`
+- `company-members-page`, `company-members-title`, `company-members-add`, `company-members-search`, `company-members-filter-role`(`-{all|ADMIN|MEMBER}`), `company-members-filter-status`(`-{all|ACTIVE|INACTIVE}`), `company-members-sort-{name|joined}`, `company-members-table`, `company-members-empty`
+- `company-member-row-{id}`, `company-member-open-{id}` (the name link that opens the drawer), `company-member-actions-{id}`
+- `company-members-pagination`, `-pagination-range`, `-pagination-page-size`, `-pagination-prev`, `-pagination-next`
+- `company-member-drawer`, `company-member-role`, `company-member-role-{admin|member}`, `company-member-seat-{erp|fsm}`, `company-member-manage-link`, `company-member-inactive-note`, `company-member-over-limit`
+- `company-member-save`, `company-member-cancel`, `company-member-deactivate`, `company-member-reactivate`
+- `company-member-deactivate-dialog`, `company-member-deactivate-confirm`, `company-member-deactivate-cancel`
+- `company-add-member-dialog`, `company-add-member-form`, `company-add-member-email`, `company-add-member-email-error`, `company-add-member-submit`, `company-add-member-cancel`
+- `company-product-access-page`, `company-product-access-title`, `company-access-tab-{erp|fsm}`, `company-access-search`, `company-access-licenses`, `company-access-unsaved`, `company-access-table`
+- `company-access-row-{id}`, `company-access-switch-{id}`
+- `company-access-save`, `company-access-discard`, `company-access-over-limit`, `company-access-suspended`
+
+### Guards, errors, the FSM placeholder
+
+- `no-product-access`, `no-product-access-title`, `no-product-access-home` (a product URL without a seat)
+- `no-permission`, `no-permission-title`, `no-permission-back` (an ERP screen without the View permission)
+- `no-company-admin`, `no-company-admin-title`, `no-company-admin-back` (`/company/*` for a non-admin)
+- `{testIdPrefix}-boundary`, `-boundary-title`, `-boundary-button-retry` (the error boundaries; `dashboard-error` inside a product)
+- `not-found-title`, `not-found-button-home`
+- `fsm-placeholder`, `fsm-back-home`
 
 ---
 

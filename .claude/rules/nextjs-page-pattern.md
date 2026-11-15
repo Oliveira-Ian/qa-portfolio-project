@@ -7,7 +7,7 @@ paths:
 
 # Page Structure Pattern
 
-The layered pattern every `apps/web` page under `app/(dashboard)/` follows. This is specifically
+The layered pattern every `apps/web` page under `app/erp/` (and, with the same shape, the Platform's `app/(platform)/`) follows. This is specifically
 about `apps/web` — inside `apps/api`, a repository talks to Prisma directly (see "Data Access
 Layer" in `.claude/rules/rules-global.md`); `apps/web` never imports `@prisma/client` at all. Its
 `_data-access`/`_actions` call the separate API through `lib/api/*.ts` (a `fetch` wrapper), never a
@@ -15,7 +15,7 @@ database directly.
 
 For the exact file tree, per-file responsibilities, and a real worked example, see
 `docs/templates/new-routine.md` — People
-(`apps/web/app/(dashboard)/records/people/people/`) is the reference implementation; read its files
+(`apps/web/app/erp/records/people/people/`) is the reference implementation; read its files
 over any prose description when the two disagree.
 
 ## What each layer does
@@ -120,3 +120,4 @@ Server Component and refactor to Client only if required.
 - Use Shadcn UI for consistent, accessible component design.
 - Integrate Radix UI primitives for customizable, accessible UI elements.
 - Apply composition patterns to create modular, reusable components.
+- User-facing text is never a literal: it is a key of the message catalogues, read with `useT()` in a Client Component and `getTranslator()` in a Server Component, Server Action or `generateMetadata` (`docs/design/i18n.md`). Product names are passed in, not translated.

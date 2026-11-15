@@ -10,13 +10,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { useT } from '@/lib/i18n/provider';
+import type { MessageKey } from '@/lib/i18n/translate';
 import { FilterField } from './filter-field';
 import type { FilterOption, FilterType } from './types';
 
 export interface FilterDrawerField {
   /** Column id — must match a column declared in the routine's `columns` array. */
   key: string;
-  label: string;
+  /** The field's name, as a catalogue key. */
+  labelKey: MessageKey;
   filterType: FilterType;
   options?: FilterOption[];
 }
@@ -43,6 +46,8 @@ export function FilterDrawer<TData>({
   onOpenChange,
   testIdPrefix,
 }: FilterDrawerProps<TData>) {
+  const t = useT();
+
   function clearAll() {
     // `table.resetColumnFilters()`, not a loop over `fields` — `fields` is
     // only the curated subset this drawer shows; a filter set from a
@@ -56,7 +61,7 @@ export function FilterDrawer<TData>({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent data-testid={`${testIdPrefix}-filter-drawer`}>
         <SheetHeader>
-          <SheetTitle>Filters</SheetTitle>
+          <SheetTitle>{t('table.filters.title')}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4">
           {fields.map((field) => {
@@ -70,7 +75,7 @@ export function FilterDrawer<TData>({
               <FilterField
                 key={field.key}
                 filterType={field.filterType}
-                label={field.label}
+                label={t(field.labelKey)}
                 options={field.options}
                 value={column.getFilterValue()}
                 onChange={(value) => column.setFilterValue(value)}
@@ -82,15 +87,15 @@ export function FilterDrawer<TData>({
         <SheetFooter className="flex-row justify-end">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={clearAll}
             data-testid={`${testIdPrefix}-filter-drawer-clear`}
           >
-            Clear all
+            {t('table.filters.clearAll')}
           </Button>
           <SheetClose asChild>
             <Button type="button" data-testid={`${testIdPrefix}-filter-drawer-close`}>
-              Close
+              {t('table.filters.close')}
             </Button>
           </SheetClose>
         </SheetFooter>

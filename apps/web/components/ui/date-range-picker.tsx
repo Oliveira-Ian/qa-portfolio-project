@@ -6,7 +6,8 @@ import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { formatDate, parseIsoDate, toIsoDate } from '@/lib/format';
+import { formatDateMedium, parseIsoDate, toIsoDate } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n/provider';
 import { cn } from '@/lib/utils';
 
 export interface DateRangeValue {
@@ -42,19 +43,21 @@ function toSelected(value: DateRangeValue): DateRange | undefined {
 export function DateRangePicker({
   value,
   onChange,
-  placeholder = 'Select a date range…',
+  placeholder,
   disabled,
   className,
   ...props
 }: DateRangePickerProps) {
+  const t = useT();
+  const locale = useLocale();
   const [open, setOpen] = React.useState(false);
   const selected = toSelected(value);
 
   const label = selected
     ? selected.to
-      ? `${formatDate(value.from)} – ${formatDate(value.to)}`
-      : formatDate(value.from)
-    : placeholder;
+      ? `${formatDateMedium(value.from, locale)} – ${formatDateMedium(value.to, locale)}`
+      : formatDateMedium(value.from, locale)
+    : (placeholder ?? t('common.pickRange'));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

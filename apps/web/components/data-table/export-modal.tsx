@@ -12,11 +12,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { Locale } from '@/lib/i18n/config';
+import { useLocale, useT } from '@/lib/i18n/provider';
+import type { MessageKey, Translator } from '@/lib/i18n/translate';
+
+/** What a column's `getValue` needs to write a value in the interface language: its words and its dates. */
+export interface ExportContext {
+  t: Translator;
+  locale: Locale;
+}
 
 export interface ExportColumn<TData> {
   key: string;
-  label: string;
-  getValue: (row: TData) => string;
+  /** The column's name, as a catalogue key — it becomes the CSV header. */
+  labelKey: MessageKey;
+  getValue: (row: TData, context: ExportContext) => string;
 }
 
 interface ExportModalProps<TData> {
@@ -71,6 +81,8 @@ export function ExportModal<TData>({
   fileName,
   testIdPrefix,
 }: ExportModalProps<TData>) {
+  const t = useT();
+  const locale = useLocale();
   const [working, setWorking] = useState<WorkingColumn[]>(() => {
     const order = table.getState().columnOrder;
     const visibility = table.getState().columnVisibility;
@@ -83,7 +95,9 @@ export function ExportModal<TData>({
   });
 
   function labelFor(key: string): string {
-    return columns.find((column) => column.key === key)?.label ?? key;
+    const column = columns.find((candidate) => candidate.key === key);
+
+    return column ? t(column.labelKey) : key;
   }
 
   function move(index: number, direction: -1 | 1) {
@@ -117,9 +131,9 @@ export function ExportModal<TData>({
       .filter((column): column is ExportColumn<TData> => column !== undefined);
 
     const rows = table.getSortedRowModel().rows.map((row) => row.original);
-    const header = exportColumns.map((column) => csvEscape(column.label)).join(',');
+    const header = exportColumns.map((column) => csvEscape(t(column.labelKey))).join(',');
     const lines = rows.map((row) =>
-      exportColumns.map((column) => csvEscape(column.getValue(row))).join(','),
+      exportColumns.map((column) => csvEscape(column.getValue(row, { t, locale }))).join(','),
     );
 
     downloadCsv([header, ...lines].join('\n'), fileName);
@@ -130,7 +144,7 @@ export function ExportModal<TData>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid={`${testIdPrefix}-export-modal`} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export</DialogTitle>
+          <DialogTitle>{t('table.export.title')}</DialogTitle>
         </DialogHeader>
 
         <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
@@ -139,7 +153,7 @@ export function ExportModal<TData>({
               <Checkbox
                 checked={item.included}
                 onCheckedChange={() => toggle(item.key)}
-                aria-label={`Include ${labelFor(item.key)}`}
+                aria-label={t('table.export.include', { label: labelFor(item.key) })}
                 data-testid={`${testIdPrefix}-export-checkbox-${item.key}`}
               />
               <span className="flex-1 text-sm text-foreground">{labelFor(item.key)}</span>
@@ -149,7 +163,7 @@ export function ExportModal<TData>({
                 size="icon-xs"
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
-                aria-label={`Move ${labelFor(item.key)} up`}
+                aria-label={t('table.export.moveUp', { label: labelFor(item.key) })}
                 data-testid={`${testIdPrefix}-export-move-up-${item.key}`}
               >
                 <ArrowUp aria-hidden="true" />
@@ -160,7 +174,7 @@ export function ExportModal<TData>({
                 size="icon-xs"
                 disabled={index === working.length - 1}
                 onClick={() => move(index, 1)}
-                aria-label={`Move ${labelFor(item.key)} down`}
+                aria-label={t('table.export.moveDown', { label: labelFor(item.key) })}
                 data-testid={`${testIdPrefix}-export-move-down-${item.key}`}
               >
                 <ArrowDown aria-hidden="true" />
@@ -177,7 +191,7 @@ export function ExportModal<TData>({
             data-testid={`${testIdPrefix}-export-confirm`}
           >
             <Download aria-hidden="true" />
-            Export CSV
+            {t('table.export.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

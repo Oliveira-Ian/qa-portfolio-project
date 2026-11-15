@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/lib/i18n/provider';
 import type { DateRangeFilterValue, NumberRangeFilterValue } from './filter-fns';
 import type { FilterOption, FilterType } from './types';
 
@@ -36,6 +37,8 @@ export function FilterField({
   options,
   testId,
 }: FilterFieldProps) {
+  const t = useT();
+
   if (filterType === 'text') {
     return (
       <div className="space-y-1.5">
@@ -59,13 +62,13 @@ export function FilterField({
           value={current}
           onValueChange={(next) => onChange(next === 'any' ? undefined : next)}
         >
-          <SelectTrigger className="w-full" data-testid={testId}>
+          <SelectTrigger className="w-full" aria-label={label} data-testid={testId}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="any">Any</SelectItem>
-            <SelectItem value="true">Yes</SelectItem>
-            <SelectItem value="false">No</SelectItem>
+            <SelectItem value="any">{t('table.filters.any')}</SelectItem>
+            <SelectItem value="true">{t('table.filters.yes')}</SelectItem>
+            <SelectItem value="false">{t('table.filters.no')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -91,7 +94,7 @@ export function FilterField({
                   onChange(next.length > 0 ? next : undefined);
                 }}
               />
-              {option.label}
+              {t(option.labelKey)}
             </label>
           ))}
         </div>
@@ -112,18 +115,18 @@ export function FilterField({
         <div className="flex items-center gap-2" data-testid={testId}>
           <Input
             type="date"
-            aria-label={`${label} from`}
+            aria-label={t('table.filters.from', { label })}
             value={current.from ?? ''}
             onChange={(event) =>
               emitDateRange({ ...current, from: event.target.value || undefined })
             }
           />
-          <span aria-hidden="true" className="text-muted-foreground">
+          <span aria-hidden="true" className="text-text-3">
             –
           </span>
           <Input
             type="date"
-            aria-label={`${label} to`}
+            aria-label={t('table.filters.to', { label })}
             value={current.to ?? ''}
             onChange={(event) => emitDateRange({ ...current, to: event.target.value || undefined })}
           />
@@ -144,8 +147,8 @@ export function FilterField({
       <div className="flex items-center gap-2" data-testid={testId}>
         <Input
           type="number"
-          placeholder="Min"
-          aria-label={`${label} minimum`}
+          placeholder={t('table.filters.min')}
+          aria-label={t('table.filters.minimum', { label })}
           value={current.min ?? ''}
           onChange={(event) =>
             emitNumberRange({
@@ -154,13 +157,13 @@ export function FilterField({
             })
           }
         />
-        <span aria-hidden="true" className="text-muted-foreground">
+        <span aria-hidden="true" className="text-text-3">
           –
         </span>
         <Input
           type="number"
-          placeholder="Max"
-          aria-label={`${label} maximum`}
+          placeholder={t('table.filters.max')}
+          aria-label={t('table.filters.maximum', { label })}
           value={current.max ?? ''}
           onChange={(event) =>
             emitNumberRange({

@@ -12,7 +12,11 @@ import {
   type FieldValues,
 } from 'react-hook-form';
 
+import { CircleAlert } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
+import { translateApiMessage } from '@/lib/i18n/api-messages';
+import { useT } from '@/lib/i18n/provider';
 import { Label } from '@/components/ui/label';
 
 const Form = FormProvider;
@@ -105,15 +109,20 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot.Root>) {
     <Slot.Root
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId}
+      aria-describedby={error ? formMessageId : formDescriptionId}
       aria-invalid={!!error}
       {...props}
     />
   );
 }
 
+/** Help text. While the field is failing, its error takes this place (handoff § 4). */
 function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
-  const { formDescriptionId } = useFormField();
+  const { error, formDescriptionId } = useFormField();
+
+  if (error) {
+    return null;
+  }
 
   return (
     <p
@@ -127,11 +136,15 @@ function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
 
 /**
  * Renders nothing until the field actually fails — but the live region is on
- * the element itself, so the message is announced the moment it appears.
+ * the element itself, so the message is announced the moment it appears. The
+ * schemas validate in English; the text is translated here, so a rule's wording
+ * never depends on the language the form was built in. An error always carries
+ * an icon: colour alone never says "this failed".
  */
 function FormMessage({ className, children, ...props }: React.ComponentProps<'p'>) {
+  const t = useT();
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error.message ?? '') : children;
+  const body = error ? translateApiMessage(String(error.message ?? ''), t) : children;
 
   if (!body) {
     return null;
@@ -142,10 +155,15 @@ function FormMessage({ className, children, ...props }: React.ComponentProps<'p'
       data-slot="form-message"
       id={formMessageId}
       aria-live="polite"
-      className={cn('text-sm text-destructive', className)}
+      className={cn(
+        'text-[13px] leading-[18px]',
+        error ? 'flex items-start gap-1.5 text-destructive' : 'text-text-3',
+        className,
+      )}
       {...props}
     >
-      {body}
+      {error ? <CircleAlert className="mt-px size-4 shrink-0" aria-hidden="true" /> : null}
+      <span>{body}</span>
     </p>
   );
 }

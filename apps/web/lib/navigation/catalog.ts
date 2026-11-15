@@ -1,26 +1,25 @@
-import {
-  Contact,
-  Database,
-  KeyRound,
-  Settings,
-  ShieldCheck,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { Contact, Database, KeyRound, Settings, Users, type LucideIcon } from 'lucide-react';
 import type { PermissionKey } from '@oliveira/schemas';
+import type { MessageKey } from '@/lib/i18n/translate';
 
 /**
- * The navigation catalog — sealed, like `PERMISSION_CATALOG`
- * (`packages/schemas/src/permissions.ts`), but four levels deep instead of
- * one. Nothing renders a menu item, a URL, or a breadcrumb from anywhere
- * else — every screen the sidebar, the search, and the routing layer know
- * about is a `RoutineDefinition` somewhere in this tree. Growing the system
- * means adding an entry here (and the matching route folder); the sidebar,
- * search index, and breadcrumb resolver need no changes.
+ * The Oliveira ERP's navigation catalog — sealed, like `PERMISSION_CATALOG`
+ * (`packages/schemas/src/permissions.ts`), but four levels deep instead of one.
+ * Every screen the ERP's sidebar, search and breadcrumb know about is a
+ * `RoutineDefinition` somewhere in this tree. Growing the ERP means adding an
+ * entry here (and the matching route folder); the sidebar, search index and
+ * breadcrumb resolver need no changes.
+ *
+ * There is one catalogue per area (docs/adr/0019): this one is the ERP's, under
+ * `/erp`. The Platform's few screens and the FSM's placeholder are described in
+ * `nav.ts`. Labels are translation keys, never text — the language is a runtime
+ * choice (docs/adr/0018's frontend, handoff § 7).
  */
+export const ERP_BASE_PATH = '/erp';
+
 export interface RoutineDefinition {
   slug: string;
-  label: string;
+  labelKey: MessageKey;
   icon: LucideIcon;
   /** Permission required, if any — checked against `MeResponse.permissions`. */
   permission?: PermissionKey;
@@ -28,20 +27,20 @@ export interface RoutineDefinition {
 
 export interface CategoryDefinition {
   slug: string;
-  label: string;
+  labelKey: MessageKey;
   routines: readonly RoutineDefinition[];
 }
 
 export interface GroupDefinition {
   slug: string;
-  label: string;
+  labelKey: MessageKey;
   icon: LucideIcon;
   categories: readonly CategoryDefinition[];
 }
 
 export interface ModuleDefinition {
   slug: string;
-  label: string;
+  labelKey: MessageKey;
   icon: LucideIcon;
   groups: readonly GroupDefinition[];
 }
@@ -49,19 +48,24 @@ export interface ModuleDefinition {
 export const NAVIGATION_CATALOG = [
   {
     slug: 'records',
-    label: 'Records',
+    labelKey: 'nav.erp.records',
     icon: Database,
     groups: [
       {
         slug: 'people',
-        label: 'People',
+        labelKey: 'nav.erp.people',
         icon: Contact,
         categories: [
           {
             slug: 'records',
-            label: 'Records',
+            labelKey: 'nav.erp.records',
             routines: [
-              { slug: 'people', label: 'People', icon: Contact, permission: 'person:view' },
+              {
+                slug: 'people',
+                labelKey: 'nav.erp.people',
+                icon: Contact,
+                permission: 'person:view',
+              },
             ],
           },
         ],
@@ -70,20 +74,30 @@ export const NAVIGATION_CATALOG = [
   },
   {
     slug: 'administration',
-    label: 'Administration',
+    labelKey: 'nav.erp.access',
     icon: Settings,
     groups: [
       {
         slug: 'access-control',
-        label: 'Access Control',
-        icon: ShieldCheck,
+        labelKey: 'nav.erp.accessControl',
+        icon: KeyRound,
         categories: [
           {
             slug: 'settings',
-            label: 'Settings',
+            labelKey: 'nav.erp.settings',
             routines: [
-              { slug: 'profiles', label: 'Profiles', icon: KeyRound, permission: 'profile:manage' },
-              { slug: 'users', label: 'Users', icon: Users, permission: 'profile:manage' },
+              {
+                slug: 'profiles',
+                labelKey: 'nav.erp.accessProfiles',
+                icon: KeyRound,
+                permission: 'profile:manage',
+              },
+              {
+                slug: 'users',
+                labelKey: 'nav.erp.users',
+                icon: Users,
+                permission: 'profile:manage',
+              },
             ],
           },
         ],
@@ -112,13 +126,10 @@ export function buildHref(...slugs: string[]): string {
  * catalog; pass the result of `filterCatalogForAccount()` to flatten only
  * what the caller can actually see.
  *
- * `href` is built from (module, group, routine) only — category stays part of
- * the ancestry (sidebar flyout, breadcrumb segment) but deliberately isn't a
- * URL segment, so a routine's path doesn't repeat itself the way
- * `/records/people/records/people` used to. This means `(module.slug,
- * group.slug, routine.slug)` must be unique across the whole catalog — two
- * routines with the same slug in the same group, even under different
- * categories, would collide on one URL.
+ * `href` is built from the area, then (module, group, routine) only — category
+ * stays part of the ancestry but deliberately isn't a URL segment (ADR 0007), so
+ * a routine's path doesn't repeat itself. This means `(module.slug, group.slug,
+ * routine.slug)` must be unique across the whole catalog.
  */
 export function flattenRoutines(
   modules: readonly ModuleDefinition[] = NAVIGATION_CATALOG,
@@ -134,7 +145,7 @@ export function flattenRoutines(
             group,
             category,
             routine,
-            href: buildHref(catalogModule.slug, group.slug, routine.slug),
+            href: buildHref(ERP_BASE_PATH.slice(1), catalogModule.slug, group.slug, routine.slug),
           });
         }
       }
@@ -188,7 +199,7 @@ export function filterCatalogForAccount(access: AccessContext): ModuleDefinition
   return modules;
 }
 
-/** The Module→Group→Category→Routine chain for the current URL, or `null` outside the catalog (e.g. `/home`). */
+/** The Module→Group→Category→Routine chain for the current URL, or `null` outside the ERP catalog (e.g. `/erp`). */
 export function resolveBreadcrumb(pathname: string): RoutinePath | null {
   return (
     flattenRoutines().find(

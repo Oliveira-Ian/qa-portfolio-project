@@ -1,7 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { MoreVertical } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useT } from '@/lib/i18n/provider';
 
 export interface RowAction {
   key: string;
@@ -36,6 +37,8 @@ interface RowActionsMenuProps {
  * cell does it.
  */
 export function RowActionsMenu({ actions, testId }: RowActionsMenuProps) {
+  const t = useT();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,11 +46,11 @@ export function RowActionsMenu({ actions, testId }: RowActionsMenuProps) {
           type="button"
           variant="ghost"
           size="icon-xs"
-          aria-label="Row actions"
+          aria-label={t('table.rowActions')}
           data-testid={testId}
           onClick={(event) => event.stopPropagation()}
         >
-          <MoreVertical aria-hidden="true" />
+          <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

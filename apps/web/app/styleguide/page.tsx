@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { ButtonsActionsSection } from './_components/buttons-actions-section';
 import { DataDisplaySection } from './_components/data-display-section';
@@ -30,18 +29,17 @@ export default function StyleguidePage() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl flex-wrap items-start justify-between gap-4 px-6 py-8">
           <div>
-            <p className="eyebrow text-primary">Olival</p>
+            <p className="olv-overline text-text-3">Oliveira Platform</p>
             <h1 className="mt-1.5 font-display text-3xl font-semibold text-foreground">
               Design system
             </h1>
-            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-              Every token and component the app is built from, in one place — palette taken from the
-              mark and the site photograph: olive foliage, ink, and the amber of a safety vest on
-              limestone.
+            <p className="mt-2 max-w-prose text-sm text-text-3">
+              Every token and component the app is built from, in one place — the Oliveira Platform
+              palette (navy and gold, with olive for the ERP and terracotta for the FSM), Archivo
+              and JetBrains Mono, and the real components the product ships.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <Button asChild variant="outline" data-testid="styleguide-link-home">
               <Link href="/">
                 <ArrowLeft aria-hidden="true" />

@@ -6,7 +6,7 @@ filtering, column personalization, export and row selection, on top of the share
 `apps/web/components/data-table/` (see `docs/design/patterns/listing_pages.md` for what that
 infrastructure does and doesn't own).
 
-People (`apps/web/app/(dashboard)/records/people/people/`) is the reference implementation —
+People (`apps/web/app/erp/records/people/people/`) is the reference implementation —
 when in doubt, read its files instead of this document's prose.
 
 ## 0. Before writing any code
@@ -22,11 +22,15 @@ when in doubt, read its files instead of this document's prose.
    `packages/schemas/src/permissions.ts` and re-seed
    (`docs/product/access_control.md#adding-a-new-permission`). Its API routes sit behind the product's
    `requireProductAccess(...)` first — a routine of the ERP needs an ERP seat before any permission.
+4. Write the screen's words in the catalogue — `apps/web/lib/i18n/messages/erp.ts` (or a domain file of
+   its own): English first, then pt-BR, which TypeScript will not let you skip. Components read them with
+   `useT()`, Server Components and pages with `getTranslator()`; columns, filters and exports name
+   themselves by **key** (`labelKey`), never by string. `docs/design/i18n.md`.
 
 ## 1. File tree
 
 ```
-apps/web/app/(dashboard)/<module>/<group>/<routine>/
+apps/web/app/erp/<module>/<group>/<routine>/
 ├── page.tsx                          # list — Server Component
 ├── loading.tsx                       # optional — LoadingState skeleton
 ├── _components/
@@ -64,7 +68,8 @@ apps/web/app/(dashboard)/<module>/<group>/<routine>/
 
 ### `page.tsx` (list)
 
-Server Component. Fetches the row set, the account's grid preference, and (if the routine has
+Server Component. Checks the View permission first — without it the page renders
+`<NoPermission screen="…" />` (design S09), it does not redirect or throw. Fetches the row set, the account's grid preference, and (if the routine has
 per-action business permissions like People's `person:view`/`create`/`edit`/`delete`) the `can()`
 flags — all in one `Promise.all`. Passes plain data down; never passes a function or a component
 reference as a prop into the client list component.
@@ -72,8 +77,8 @@ reference as a prop into the client list component.
 ### `_components/<entity>-list.tsx`
 
 The thin composition — `useDataTable` + `DataTable` + `ToolbarList` + `FilterDrawer` +
-`GridCustomizationModal` + `ExportModal` + `Pagination`, plus `PageHeader` for the title/eyebrow/
-Add-Edit-Delete actions/record-count `meta`. Copy People's or Profiles' file and adapt: entity type,
+`GridCustomizationModal` + `ExportModal` + `Pagination`, plus `PageHeader` for the title,
+the record-count `meta` and the Delete · Edit · Add actions (destructive-soft, secondary, primary). Copy People's or Profiles' file and adapt: entity type,
 `gridKey`, header copy, row-action list, delete confirmation copy.
 
 If most cells are directly interactive (a `<Select>`, a toggle button — like Users' Role/Status/
@@ -84,9 +89,11 @@ and skip the AlertDialog/selection-tracking code entirely.
 
 ### `_components/<entity>-columns.tsx`
 
-One `ColumnDef` per field, each header built via the `renderHeader(label)` closure pattern
-(`ColumnHeader` + `ColumnFilter`), each filterable field spread with
-`...filterableColumn<Entity>(filterType, options?)`. Also exports:
+One `ColumnDef` per field, each header built via the `renderHeader(labelKey)` closure pattern
+(`ColumnHeader` + `ColumnFilter`; the header calls `useT()` itself), each filterable field spread with
+`...filterableColumn<Entity>(filterType, options?, labelKey)` — the `labelKey` is what names the column in
+an active-filter tag and in the table's stacked mobile cards. A cell that needs the interface language (a
+date, a count) is a small named component, not an inline arrow — hooks are only valid in components. Also exports:
 - `<ENTITY>_DEFAULT_VISIBLE_KEYS` — a `Set<string>` of which columns ship visible.
 - `<ENTITY>_EXPORT_COLUMNS` — `ExportColumn<Entity>[]`, the base `GridCustomizationModal` and
   `ExportModal` both read from.

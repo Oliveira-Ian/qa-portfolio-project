@@ -1,25 +1,22 @@
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
-  /** The section this page belongs to — the drawing-label above the title. */
-  eyebrow: string;
   title: string;
   description?: string;
-  /** Primary actions, aligned to the trailing edge. */
+  /** Destructive-soft · secondary · primary, aligned to the trailing edge (handoff § 5). */
   actions?: React.ReactNode;
   titleTestId?: string;
   className?: string;
-  /** Rendered below the measured rule — e.g. a listing screen's record count. */
+  /** The mono line under the title — a count, a selection, a state ("12 members · 2 pending"). */
   meta?: React.ReactNode;
 }
 
 /**
- * Every page opens the same way: section label, title, then the measured rule
- * that closes the header. Repeating the device is what makes it read as
- * structure rather than decoration — it always marks the same boundary.
+ * Every page opens the same way (handoff § 5): the H1, its mono meta line, and
+ * the actions on the right. The breadcrumb above it is the shell's, not the
+ * page's. On a narrow screen the actions wrap under the title.
  */
 export function PageHeader({
-  eyebrow,
   title,
   description,
   actions,
@@ -29,26 +26,21 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className={cn('mb-6', className)}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <p className="eyebrow text-primary">{eyebrow}</p>
-          <h1
-            className="mt-1.5 truncate font-display text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
-            data-testid={titleTestId}
-          >
+          <h1 className="truncate text-foreground" data-testid={titleTestId}>
             {title}
           </h1>
+          {meta ? <div className="olv-overline mt-1.5 text-text-3">{meta}</div> : null}
           {description ? (
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-prose text-sm text-text-3">{description}</p>
           ) : null}
         </div>
 
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex max-w-full flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
-
-      <div className="measured-rule mt-5" aria-hidden="true" />
-
-      {meta}
     </header>
   );
 }

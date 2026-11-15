@@ -5,17 +5,32 @@ import { Slot } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * The design has three small marks that must never be mistaken for each other
+ * (handoff § 4):
+ *
+ * - `Badge` — a **tag**: a category. Archivo, sentence case, pill, 24px. Role
+ *   Admin / Member, person type, a removable filter.
+ * - `StatusBadge` — a **state**: mono, uppercase, a dot and text, radius 4.
+ * - `AccessBadge` — the Platform's own answer to "can this member open the
+ *   product", in `components/platform/`.
+ *
+ * Colour is never the only carrier: every one has text, and most an icon.
+ */
 const badgeVariants = cva(
-  'group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!',
+  'group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full border border-transparent px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors focus-visible:ring-focus aria-invalid:border-destructive has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-2 [&>svg]:pointer-events-none [&>svg]:size-3.5!',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
-        secondary: 'bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80',
-        destructive:
-          'bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20',
-        outline: 'border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground',
-        ghost: 'hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50',
+        default: 'bg-[#f1eee8] text-text-2 shadow-[inset_0_0_0_1px_rgba(18,21,27,.07)]',
+        secondary: 'bg-subtle text-text-2 shadow-[inset_0_0_0_1px_rgba(18,21,27,.07)]',
+        /** A filter or a chip the reader can remove. */
+        outline:
+          'border-border-button bg-surface text-text-2 [a]:hover:bg-surface-2 [button]:hover:bg-surface-2',
+        /** The company administrator — navy tint, in every product. */
+        admin: 'bg-[#e9ecf3] text-[#1e2c47] shadow-[inset_0_0_0_1px_rgba(30,44,71,.16)]',
+        destructive: 'bg-danger-light text-danger-on',
+        ghost: 'hover:bg-foreground/5',
         link: 'text-primary underline-offset-4 hover:underline',
       },
     },
@@ -59,7 +74,7 @@ function Badge({
         <button
           type="button"
           aria-label={removeLabel}
-          className="-mr-0.5 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-current/10"
+          className="-mr-0.5 ml-0.5 grid size-5 place-items-center rounded-full transition-colors hover:bg-current/10 focus-visible:ring-focus"
           onClick={(event) => {
             event.stopPropagation();
             onRemove();
@@ -73,4 +88,39 @@ function Badge({
   );
 }
 
-export { Badge, badgeVariants };
+const statusBadgeVariants = cva(
+  'inline-flex h-[22px] w-fit shrink-0 items-center gap-1.5 rounded-xs px-2 font-mono text-[11px] font-medium tracking-[0.08em] whitespace-nowrap uppercase',
+  {
+    variants: {
+      tone: {
+        success: 'bg-success-light text-success-on',
+        warning: 'bg-warning-light text-warning-on',
+        danger: 'bg-danger-light text-danger-on',
+        info: 'bg-info-light text-info-on',
+        neutral: 'bg-neutral-light text-neutral-on',
+      },
+    },
+    defaultVariants: { tone: 'neutral' },
+  },
+);
+
+/** A state (active, inactive, pending…) — a dot and text, never colour alone. */
+function StatusBadge({
+  className,
+  tone,
+  children,
+  ...props
+}: React.ComponentProps<'span'> & VariantProps<typeof statusBadgeVariants>) {
+  return (
+    <span
+      data-slot="status-badge"
+      className={cn(statusBadgeVariants({ tone }), className)}
+      {...props}
+    >
+      <i aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-90" />
+      {children}
+    </span>
+  );
+}
+
+export { Badge, badgeVariants, StatusBadge, statusBadgeVariants };
