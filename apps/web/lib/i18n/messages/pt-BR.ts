@@ -56,6 +56,8 @@ export const ptBR: Messages = {
       labelPlaceholder: 'Matriz, Unidade 2, Residência…',
       reference: 'Ponto de referência',
       referencePlaceholder: 'Ao lado da padaria, portão 3…',
+      serviceHours: 'Recebe técnicos',
+      serviceHoursPlaceholder: 'Seg–Sex 08:00–17:00',
       types: {
         COMMERCIAL: 'Comercial',
         RESIDENTIAL: 'Residencial',

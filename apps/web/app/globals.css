@@ -581,3 +581,46 @@ body:has([data-sticky-actions]) [data-sonner-toaster] {
     letter-spacing: 0.06em;
   }
 }
+
+/*
+ * Oliveira FSM — view mode (HANDOFF-FSM § 5.2): the form's fields read as
+ * values on a hairline — full contrast, no box, no placeholder, no chevron —
+ * instead of greyed-out inputs. Unlayered on purpose, so it outranks the
+ * controls' own `disabled:` utilities; scoped to the FSM's view mode only.
+ */
+[data-product='fsm'] [data-record-mode='view'] :is(input, textarea):disabled,
+[data-product='fsm'] [data-record-mode='view'] button[aria-haspopup='dialog']:disabled {
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--olv-border);
+  border-radius: 0;
+  padding-left: 0;
+  box-shadow: none;
+  opacity: 1;
+  color: var(--olv-text);
+  -webkit-text-fill-color: var(--olv-text);
+  font-weight: 500;
+  cursor: default;
+}
+
+[data-product='fsm'] [data-record-mode='view'] :is(input, textarea):disabled::placeholder {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-product='fsm'] [data-record-mode='view'] button[aria-haspopup='dialog']:disabled svg {
+  display: none;
+}
+
+[data-product='fsm'] [data-record-mode='view'] button[aria-haspopup='dialog']:disabled span {
+  color: var(--olv-text);
+}
+
+[data-product='fsm'] [data-record-mode='view'] [role='checkbox']:disabled {
+  opacity: 1;
+}
+
+[data-product='fsm'] [data-record-mode='view'] [role='checkbox'][data-state='checked']:disabled {
+  border-color: var(--olv-accent-600);
+  background: var(--olv-accent-600);
+}

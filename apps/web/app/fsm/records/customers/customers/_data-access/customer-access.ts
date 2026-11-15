@@ -3,7 +3,12 @@ import 'server-only';
 import { customerFormSchema, customerFormValuesToPayload } from '@oliveira/schemas';
 import type { FilterOption } from '@/components/data-table/types';
 import { unwrap } from '@/lib/api/client';
-import { customersApi, requestCustomerCities, requestCustomerOptions } from '@/lib/api/fsm';
+import {
+  customersApi,
+  requestBranchOptions,
+  requestCustomerCities,
+  requestCustomerOptions,
+} from '@/lib/api/fsm';
 import { createRecordAccess } from '@/lib/fsm-records';
 import { createGridPreferenceAccess } from '@/lib/grid-preferences';
 import { ROUTES } from '@/lib/navigation/routes';
@@ -44,4 +49,15 @@ export async function getCustomerFilterChoices(
   ]);
 
   return { chosen, cities: unwrap(cities).map((city) => ({ value: city, label: city })) };
+}
+
+/** The company's active branches — the customer's default branch is one of them. */
+export async function getBranchChoices(): Promise<{ id: string; code: string; name: string }[]> {
+  const { token } = await requireSession();
+
+  return unwrap(await requestBranchOptions(token)).map(({ id, code, name }) => ({
+    id,
+    code,
+    name,
+  }));
 }

@@ -107,7 +107,10 @@ export function RecordForm<TValues extends FieldValues>({
       }
       after={after}
     >
-      {children}
+      {/* The mode, for product styling (the FSM shows view mode as read-only values); no box of its own. */}
+      <div data-record-mode={mode} className="contents">
+        {children}
+      </div>
     </FormCard>
   );
 }

@@ -436,7 +436,7 @@ cannot fit, the tabs switch to scroll, never to truncation.
 |---|---|---|
 | D1 | **F01 sidebar scope.** | **Decided 2026-11-15: F01 is the navigation standard of every Oliveira product** (Platform, ERP, FSM), each with its own module names, icons and accent. Updated in the Foundation docs directly — not a new version. |
 | D2 | Steps for **editing** a work order replace the V1 rule "single form, never steps" — for the FSM work order only. | Approved in round 3; recorded in `docs/design/components/forms.md`. |
-| D3 | Widths 1024/768 are specified in § 6, not drawn. | Verify in the browser during implementation. |
+| D3 | Widths 1024/768 are specified in § 6, not drawn. | Verified at 1024: record tabs fill the width from 1280 and scroll below it; header actions wrap under the title. |
 | D4 | **Phones (390 px, M06–M08) are out of scope for the web app** (decided 2026-11-15): the web targets desktop and tablet; a dedicated mobile app is a future decision. The phone boards stay as reference for it. | Do not build phone layouts; do not break what exists below 768. |
 | — | Dark theme, page transitions, a pseudo-locale, high-contrast mode | Not designed (as V1). |
 | — | Boards are rendered with the canvas runtime and fallback fonts in captures | They are references, not production code. |

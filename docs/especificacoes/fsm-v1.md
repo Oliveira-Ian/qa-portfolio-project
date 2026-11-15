@@ -71,9 +71,35 @@ components as the ERP's.
   (no ERP type, no member linked).
 - **No delete for work orders** — they are cancelled and stay in the history.
 
+## The redesign's fields and rules (2026-11-15)
+
+The FSM redesign (`docs/design/fsm/`) added nullable columns to existing tables — no new table, so
+the company policies already cover them (migration `20261115182319_fsm_redesign_fields`):
+
+| Record | Field | What it does |
+|---|---|---|
+| Customer | `serviceInstructions` | What every technician must know before arriving; shown on every work order |
+| Customer | `defaultBranchId` | The branch that usually serves it; fills a new work order's branch |
+| Address | `serviceHours` | When the site receives technicians; the ERP's writes leave it untouched |
+| Equipment | `criticality` (LOW/MEDIUM/HIGH), `maintenanceIntervalDays` | How much a failure hurts; the preventive interval |
+| CatalogItem | `estimatedMinutes` | A service's usual duration |
+| WorkOrderType | `defaultPriority`, `estimatedMinutes`, `slaHours` | Suggested to a new work order of the type, only for fields not changed by hand |
+| WorkOrderType | `requiresEquipment` | **Rule**: a work order of the type cannot be saved without equipment (API, 400) |
+| WorkOrderType | `countsAsPreventive` | **Rule**: its completed work orders are the equipment's preventives |
+| WorkOrder | `estimatedMinutes`, `contactId`, `externalReference` | Time on site; the customer's contact who receives the technician; the customer's ticket |
+
+Derived, never stored: an equipment's last preventive (its last completed work order of a type that
+counts as preventive), next preventive (that date — or the installation — plus the interval) and last
+service; a customer's open and overdue work orders. A contact removed from a customer stops being any
+work order's contact on site. The reference types get their defaults in the migration.
+
+The work order list answers `f_view` (unassigned, overdue, today, mine); the dashboard returns, besides
+the counts by status, completed per week, the next seven days, the mix by type, open by priority, each
+technician's load, today's dispatch and what needs attention.
+
 ## Out of the V1
 
-Mobile/offline app, GPS, routes and maps, a dispatch board, checklists, photos, signatures, a PDF
+Mobile/offline app (the web targets desktop and tablet — a dedicated app is a future decision), GPS, routes and maps, a drag-and-drop dispatch board, checklists, photos, signatures, a PDF
 report for the customer, customer portal and tickets, contracts/SLA/recurring work, quotes, billing,
 stock balance, notifications and e-mail, invitations and password reset, branch-restricted access,
 per-company time zone.

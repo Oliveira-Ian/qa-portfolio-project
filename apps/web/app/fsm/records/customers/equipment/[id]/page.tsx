@@ -3,12 +3,15 @@ import { NoPermission } from '@/components/platform/no-permission';
 import { EMPTY_LIST_QUERY } from '@/lib/list-query';
 import { can } from '@/lib/permissions';
 import { listWorkOrders } from '../../../../operations/work-orders/work-orders/_data-access/work-order-access';
-import { EquipmentForm } from '../_components/equipment-form';
+import { EquipmentRecord, type EquipmentTab } from '../_components/equipment-record';
 import { equipmentAccess } from '../_data-access/equipment-access';
 
 interface EquipmentRecordPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
+
+const TABS: readonly EquipmentTab[] = ['overview', 'details', 'history'];
 
 export async function generateMetadata({ params }: EquipmentRecordPageProps): Promise<Metadata> {
   if (!(await can('FSM', 'equipment:view'))) {
@@ -18,39 +21,36 @@ export async function generateMetadata({ params }: EquipmentRecordPageProps): Pr
   return { title: (await equipmentAccess.get((await params).id)).name };
 }
 
-export default async function EquipmentRecordPage({ params }: EquipmentRecordPageProps) {
+/** The equipment, on the tab the URL names (`?tab=`), with its work orders. */
+export default async function EquipmentRecordPage({
+  params,
+  searchParams,
+}: EquipmentRecordPageProps) {
   if (!(await can('FSM', 'equipment:view'))) {
     return <NoPermission product="FSM" screen="nav.fsm.equipment" />;
   }
 
   const { id } = await params;
-  const [equipment, canEdit, canViewWorkOrders] = await Promise.all([
+  const requested = (await searchParams).tab;
+  const [equipment, canEdit, canViewWorkOrders, canCreateWorkOrder] = await Promise.all([
     equipmentAccess.get(id),
     can('FSM', 'equipment:edit'),
     can('FSM', 'work-order:view'),
+    can('FSM', 'work-order:create'),
   ]);
   const workOrders = canViewWorkOrders
-    ? (await listWorkOrders({ ...EMPTY_LIST_QUERY, pageSize: 20 }, { equipmentId: id })).items
+    ? (await listWorkOrders({ ...EMPTY_LIST_QUERY, pageSize: 100 }, { equipmentId: id })).items
     : null;
-  // The view needs only the address the equipment is at, not the customer's others.
-  const customer = {
-    id: equipment.customer.id,
-    name: equipment.customer.name,
-    document: null,
-    addresses: equipment.address ? [equipment.address] : [],
-    contacts: [],
-    serviceInstructions: null,
-    defaultBranchId: null,
-    openWorkOrderCount: equipment.openWorkOrderCount,
-  };
+  const tab =
+    TABS.find((value) => value === requested && (value !== 'history' || workOrders)) ?? 'overview';
 
   return (
-    <EquipmentForm
-      mode="view"
+    <EquipmentRecord
       equipment={equipment}
-      customer={customer}
-      canEdit={canEdit}
       workOrders={workOrders}
+      tab={tab}
+      now={new Date().toISOString()}
+      can={{ edit: canEdit, createWorkOrder: canCreateWorkOrder }}
     />
   );
 }

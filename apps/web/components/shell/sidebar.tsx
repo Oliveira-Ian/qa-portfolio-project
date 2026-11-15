@@ -169,6 +169,9 @@ export function ShellNav({
     section?.items.some((item) => isActive(pathname, item)),
   );
   const { isOpen, toggle } = useOpenGroups(area, currentGroup?.id ?? null);
+  // Groups animate only when the person opens or closes one — not when the saved
+  // choice is applied after the first paint.
+  const [hasToggled, setHasToggled] = useState(false);
 
   const nav = (
     <nav aria-label={t('shell.nav.label')} className="flex flex-col gap-1.5">
@@ -190,7 +193,11 @@ export function ShellNav({
             isCurrent={section.id === currentGroup?.id}
             isRail={isRail}
             pathname={pathname}
-            onToggle={() => toggle(section.id)}
+            animate={hasToggled}
+            onToggle={() => {
+              setHasToggled(true);
+              toggle(section.id);
+            }}
             onNavigate={onNavigate}
           />
         ) : null,
@@ -303,6 +310,7 @@ function NavGroup({
   isCurrent,
   isRail,
   pathname,
+  animate,
   onToggle,
   onNavigate,
 }: {
@@ -310,6 +318,7 @@ function NavGroup({
   isOpen: boolean;
   isCurrent: boolean;
   isRail: boolean;
+  animate: boolean;
   pathname: string;
   onToggle: () => void;
   onNavigate?: (() => void) | undefined;
@@ -398,7 +407,8 @@ function NavGroup({
             <ChevronRight
               aria-hidden="true"
               className={cn(
-                'size-4 shrink-0 text-shell-text-muted transition-transform duration-150 motion-reduce:transition-none',
+                'size-4 shrink-0 text-shell-text-muted',
+                animate && 'transition-transform duration-150 motion-reduce:transition-none',
                 isOpen && 'rotate-90',
                 HIDE_ON_RAIL,
               )}
@@ -408,7 +418,8 @@ function NavGroup({
 
         <div
           className={cn(
-            'grid transition-[grid-template-rows] duration-150 motion-reduce:transition-none',
+            'grid',
+            animate && 'transition-[grid-template-rows] duration-150 motion-reduce:transition-none',
             isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
             HIDE_ON_RAIL,
           )}

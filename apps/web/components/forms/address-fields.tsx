@@ -21,6 +21,8 @@ interface AddressFieldsProps {
    * and a reference point at the bottom. A single address (the company's) has none.
    */
   withDetails?: boolean;
+  /** Oliveira FSM: when the site receives technicians (`serviceHours`), after the reference point. */
+  withServiceHours?: boolean;
 }
 
 export const ADDRESS_TYPE_LABEL: Record<AddressType, `common.address.types.${AddressType}`> = {
@@ -43,6 +45,7 @@ export function AddressFields<TValues extends FieldValues>({
   disabled = false,
   testIdPrefix,
   withDetails = false,
+  withServiceHours = false,
 }: AddressFieldsProps) {
   const t = useT();
   const form = useFormContext<TValues>();
@@ -248,6 +251,27 @@ export function AddressFields<TValues extends FieldValues>({
                   placeholder={t('common.address.referencePlaceholder')}
                   disabled={disabled}
                   data-testid={`${testIdPrefix}-reference`}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
+      {withServiceHours ? (
+        <FormField
+          control={form.control}
+          name={name('serviceHours')}
+          render={({ field }) => (
+            <FormItem className="sm:col-span-6">
+              <FormLabel>{t('common.address.serviceHours')}</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={String(field.value ?? '')}
+                  placeholder={t('common.address.serviceHoursPlaceholder')}
+                  disabled={disabled}
+                  data-testid={`${testIdPrefix}-service-hours`}
                 />
               </FormControl>
               <FormMessage />

@@ -45,7 +45,7 @@ Rules:
 
 ## Examples (the shell — global bar, sidebar, breadcrumb, search)
 
-One shell for the Platform, Oliveira ERP and the FSM placeholder (`docs/design/layouts/dashboard.md`).
+One shell for the Platform, Oliveira ERP and Oliveira FSM (`docs/design/layouts/dashboard.md`).
 
 - `dashboard-header` (the global bar), `dashboard-header-logo`, `dashboard-sidebar`, `dashboard-main`
 - `shell-menu-button`, `shell-drawer` (below 1024px the sidebar is a drawer, opened from the bar)
@@ -183,6 +183,15 @@ invent them.
 - `company-product-access-page`, `company-product-access-title`, `company-access-tab-{erp|fsm}`, `company-access-search`, `company-access-licenses`, `company-access-unsaved`, `company-access-table`
 - `company-access-row-{id}`, `company-access-switch-{id}`
 - `company-access-save`, `company-access-discard`, `company-access-over-limit`, `company-access-suspended`
+
+### Oliveira FSM (Design System V2)
+
+- Work orders — list: `work-order-list-views`, `work-order-view-{all|unassigned|overdue|today|mine}`, `work-order-list-tab-{status}` (the status chips); record: `work-order-header`, `work-order-lifecycle`, `work-order-tab-{overview|execution|history}`, `work-order-aside`, `work-order-job`, `work-order-instructions`, `work-order-items`, `work-order-notes`, `work-order-history`, `work-order-action-{in-progress|on-hold|completed|cancelled}`, `work-order-status-dialog`
+- Work orders — steps: `work-order-form`, `work-order-step-{customer|service|schedule|review}`, `work-order-form-{customer|address|equipment|contact|type|priority|branch|duration|scheduledAt|dueAt}`, `work-order-form-priority-{low|normal|high|urgent}`, `work-order-form-assignee-{membershipId|none}`, `work-order-form-continue`, `work-order-form-back`, `work-order-form-submit`, `work-order-form-save`, `work-order-form-summary`
+- Customer: `customer-record`, `customer-header`, `customer-tab-{overview|details|sites|contacts|equipment|work-orders}`, `customer-site-{id}`, `customer-contact-{id}`, `customer-equipment`, `customer-work-orders`, `customer-new-work-order`; form: `customer-form`, `customer-form-tab-{details|sites|contacts}`, `customer-form-input-instructions`, `customer-form-branch`, `customer-form-button-save`
+- Equipment: `equipment-record`, `equipment-header`, `equipment-tab-{overview|details|history}`, `equipment-preventive`, `equipment-work-orders`, `equipment-form-criticality`, `equipment-form-input-interval`
+- Marks: `work-order-status`, `work-order-priority`, `work-order-overdue`, `equipment-status`, `equipment-criticality`
+- Dashboard: `fsm-dashboard`, `fsm-stat-{open|overdue|unassigned|today|completed}`, `fsm-dispatch`, `fsm-needs-attention`
 
 ### Guards, errors, the FSM placeholder
 

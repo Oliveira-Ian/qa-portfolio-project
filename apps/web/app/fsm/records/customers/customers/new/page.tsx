@@ -4,6 +4,7 @@ import { getTranslator } from '@/lib/i18n/server';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
 import { CustomerForm } from '../_components/customer-form';
+import { getBranchChoices } from '../_data-access/customer-access';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslator();
@@ -16,5 +17,5 @@ export default async function NewCustomerPage() {
     redirect(ROUTES.fsm.customers.list);
   }
 
-  return <CustomerForm mode="create" />;
+  return <CustomerForm mode="create" branches={await getBranchChoices()} />;
 }

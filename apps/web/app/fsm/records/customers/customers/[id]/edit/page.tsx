@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { ROUTES } from '@/lib/navigation/routes';
 import { can } from '@/lib/permissions';
 import { CustomerForm } from '../../_components/customer-form';
-import { customerAccess } from '../../_data-access/customer-access';
+import { customerAccess, getBranchChoices } from '../../_data-access/customer-access';
 
 interface EditCustomerPageProps {
   params: Promise<{ id: string }>;
@@ -24,5 +24,7 @@ export default async function EditCustomerPage({ params }: EditCustomerPageProps
     redirect(ROUTES.fsm.customers.view(id));
   }
 
-  return <CustomerForm mode="edit" customer={await customerAccess.get(id)} />;
+  const [customer, branches] = await Promise.all([customerAccess.get(id), getBranchChoices()]);
+
+  return <CustomerForm mode="edit" customer={customer} branches={branches} />;
 }
