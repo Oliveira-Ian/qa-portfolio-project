@@ -234,6 +234,8 @@
   --color-shell-active: var(--olv-shell-active);
   --color-shell-text: var(--olv-shell-text);
   --color-shell-text-muted: var(--olv-shell-text-muted);
+  --color-shell-inset: var(--olv-shell-inset);
+  --color-shell-guide: var(--olv-shell-guide);
   --color-shell-focus: var(--olv-shell-focus);
 
   --color-accent-300: var(--olv-accent-300);

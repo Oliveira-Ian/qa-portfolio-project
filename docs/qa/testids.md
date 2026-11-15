@@ -52,6 +52,7 @@ One shell for the Platform, Oliveira ERP and the FSM placeholder (`docs/design/l
 - `product-switcher`, `product-switcher-menu`, `product-switcher-{platform|erp|fsm}` (one entry per product, with its access state)
 - `header-company` (the company's name in the bar)
 - `nav-home`, `nav-company`, `nav-members`, `nav-product-access` (Platform sidebar); `nav-erp-overview`, `nav-erp-{module}-{routine}` (e.g. `nav-erp-records-people`, `nav-erp-administration-users` — keyed by the catalogue's own slugs, so they follow `lib/navigation/catalog.ts`)
+- `nav-group-{section}` (a sidebar group card, e.g. `nav-group-fsm-records`, `nav-group-company-admin`), `nav-flyout-{section}` (its flyout on the 64px rail), `sidebar-collapse` / `sidebar-expand` (the footer toggle; Ctrl+B does the same)
 - `breadcrumb-trail`, `breadcrumb-current` (the product first, no repeated segment — only the pages in the trail are links)
 - `global-search-open`, `global-search-dialog`, `global-search-input`, `global-search-results`
 - `global-search-result` (per-row, repeated), `global-search-result-open-new-tab`, `global-search-result-favorite`

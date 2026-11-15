@@ -79,7 +79,7 @@
   --olv-row-h-head: 40px;
   --olv-globalbar-h: 52px;
   --olv-globalbar-h-mobile: 56px;
-  --olv-sidebar-w: 232px;
+  --olv-sidebar-w: 248px; /* board F01: collapsible module groups, every product */
   --olv-rail-w: 64px;
   --olv-drawer-w: 480px;
   --olv-modal-w: 520px;
@@ -150,6 +150,8 @@
   --olv-shell-active: #262a31;
   --olv-shell-text: #c9ccd3;
   --olv-shell-text-muted: #9ca0a8;
+  --olv-shell-inset: #151920; /* an open sidebar group card (F01) */
+  --olv-shell-guide: #2f3541; /* the guide line under a group, the flyout border */
   --olv-shell-focus: var(--olv-gold-300);
 
   /* semantic tones: 600 = icon/border/dot, 50 = fill, on = text on fill */

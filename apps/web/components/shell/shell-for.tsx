@@ -1,4 +1,6 @@
+import { cookies } from 'next/headers';
 import type { MeResponse } from '@oliveira/schemas';
+import { SIDEBAR_COOKIE, parseSidebarMode } from '@/lib/navigation/sidebar-preference';
 import type { AreaKey } from '@/lib/navigation/nav';
 import { AppShell } from './app-shell';
 
@@ -16,7 +18,8 @@ interface ShellForProps {
  * (rather than trusting the cookie) means the bar and the sidebar reflect a seat
  * or profile change an administrator makes mid-session on the very next render.
  */
-export function ShellFor({ area, me, hideNavigation = false, children }: ShellForProps) {
+export async function ShellFor({ area, me, hideNavigation = false, children }: ShellForProps) {
+  const sidebarMode = parseSidebarMode((await cookies()).get(SIDEBAR_COOKIE)?.value);
   return (
     <AppShell
       area={area}
@@ -27,6 +30,7 @@ export function ShellFor({ area, me, hideNavigation = false, children }: ShellFo
       products={me.products}
       permissions={me.permissions}
       hideNavigation={hideNavigation}
+      sidebarMode={sidebarMode}
     >
       {children}
     </AppShell>

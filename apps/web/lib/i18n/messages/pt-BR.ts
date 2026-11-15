@@ -719,7 +719,12 @@ export const ptBR: Messages = {
   table: tablePtBR,
 
   shell: {
-    nav: { label: 'Principal' },
+    nav: {
+      label: 'Principal',
+      collapse: 'Recolher menu',
+      expand: 'Expandir menu',
+      shortcut: 'Ctrl B',
+    },
     products: {
       heading: 'Produtos',
       switch: 'Trocar de produto. Atual: {product}',
