@@ -23,13 +23,23 @@ review — you never edit files.
 - **Session content** — the JWT must only ever carry `{ sub, personId, name, email, role }`; flag
   any change that puts permissions or other derived data into the token instead of resolving them
   at read time (`GET /api/auth/me`).
-- **Route protection** — routes use `requireAuth`, `requireRole('ADMIN')`, or
-  `requirePermission('resource:action')` (`apps/api/src/modules/auth/authorize.ts`) correctly for
-  what they do; system-administration routes (`/api/accounts`, `/api/profiles`, `/api/permissions`)
-  check role, business-data routes check permission.
-- **ADMIN bypass** — `requirePermission()` letting `ADMIN` through unconditionally is intentional;
-  don't flag it as a bug, but do flag any change that could break the bypass or leak it to other
-  roles.
+- **Route protection** — the four layers of `docs/adr/0018` (`apps/api/src/modules/auth/authorize.ts`):
+  `requireAuth`, then the layer the route is about — `requireRole('SUPER_ADMIN')` (the Platform),
+  `requireCompanyAdmin` (the caller's own company), `requireProductAccess('ERP')` (a seat in a
+  product, which **every** ERP route must have, before its permission) and
+  `requirePermission('resource:action')` (the product's own permissions). Flag a product route that
+  lacks `requireProductAccess`, a route guarded by the wrong layer, and any check done only in
+  `apps/web` (Server Actions are public endpoints).
+- **No bypass** — no role is exempt from `requirePermission()` or from `requireProductAccess()`;
+  `SUPER_ADMIN` and a company `ADMIN` get nothing in a product by being administrators. Flag any change
+  that reintroduces an exemption (in the API or in the web's `can()`), or that lets a role imply a seat.
+- **Company scope** — what belongs to a company (its members, seats, the accounts listing) must be
+  scoped by the request context's company (`requireCompanyId()`), never by an id from the URL or body;
+  a member of another company must answer `404`. Business tables are not company-scoped until #60 —
+  flag new code that assumes they are.
+- **Seats and lockouts** — a seat is granted inside the company-row lock and never past `seatLimit`;
+  the last `SUPER_ADMIN`, the last company `ADMIN` and the last member able to manage profiles must
+  not be removable (`company-guards.ts`).
 - **SYSTEM role** — must never be reachable from a user-facing role picker or the interactive login
   path; flag anything that exposes it.
 - **Client-side checks** — `apps/web/lib/permissions.ts`'s `can()` must always mirror a real

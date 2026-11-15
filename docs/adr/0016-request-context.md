@@ -26,8 +26,12 @@ is defensive, not a fix, and free: `preValidation` still runs before `preHandler
 runs and calls `setActor`. The hook uses the callback style because `run()` has to wrap the
 continuation of the hook chain.
 
-**It holds only the actor.** The active company is added by #60 to the same object, in the same place,
-after validating the caller's membership in the database. Nothing is stored ahead of a consumer.
+**It holds the actor, and the active company.** The company was added with the Platform access model
+([0018](0018-authorization-layers-and-product-access.md)), in the same place as the actor and after
+validating the caller's membership in the database: `requireAuth` calls `setCompanyId` when the account
+has an active membership. Its consumers are the company's own data (members, the accounts listing) and
+the lockout guards; #60 makes it the filter on every business query. Nothing is stored ahead of a
+consumer.
 
 **A Prisma extension can read it.** Prisma batches concurrent `findUnique` calls into one query, which
 suggested that an extension callback might run under another request's context — the cross-company leak

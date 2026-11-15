@@ -7,8 +7,9 @@ import { prisma } from '../../config/prisma.js';
  * seeded, or an account nobody has assigned a profile to yet) simply has no
  * permissions — not an error, just an empty set.
  *
- * Doesn't special-case ADMIN — that bypass lives in `authorize.ts`, next to
- * the check it exempts, not buried inside the resolution query.
+ * Doesn't special-case any role — none is exempt (docs/adr/0018) — and doesn't
+ * look at seats either: whether the account may enter the product at all is
+ * `requireProductAccess`'s question, asked before this one.
  */
 export async function getEffectivePermissions(accountId: number): Promise<Set<PermissionKey>> {
   const links = await prisma.accountProfile.findMany({

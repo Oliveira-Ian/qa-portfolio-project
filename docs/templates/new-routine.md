@@ -18,9 +18,10 @@ when in doubt, read its files instead of this document's prose.
 2. Add the backend module first if it doesn't exist yet (`apps/api/src/modules/<entity>/` —
    `route → controller → service → repository`, see `docs/product/domain.md` and
    `docs/api/http_responses.md`) and the Zod schema in `packages/schemas/src/<entity>.ts`.
-3. If the routine is gated by a business permission (not just the technical `ADMIN` role), add its
-   catalog entries to `packages/schemas/src/permissions.ts` and re-seed
-   (`docs/product/access_control.md#adding-a-new-permission`).
+3. If the routine is gated by a permission of its own, add its catalog entries to
+   `packages/schemas/src/permissions.ts` and re-seed
+   (`docs/product/access_control.md#adding-a-new-permission`). Its API routes sit behind the product's
+   `requireProductAccess(...)` first — a routine of the ERP needs an ERP seat before any permission.
 
 ## 1. File tree
 

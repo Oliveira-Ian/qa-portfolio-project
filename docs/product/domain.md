@@ -63,12 +63,14 @@ every profile it's linked to here. Both cascade-delete with their parent row.
 
 ## Authorization at a glance
 
-Every business-data route requires a specific permission (`requirePermission('person:view')`, …),
-resolved from the caller's `AccessProfile` links at request time — never baked into the session token.
-System-administration routes (`/api/accounts`, `/api/profiles`, `/api/permissions`) instead require the
-technical role `ADMIN` (`requireRole('ADMIN')`), which also bypasses every permission check. The full
-model — role vs. profile, the two account-creation paths, lockout guards, what would change for
-multi-tenant — is `docs/product/access_control.md`.
+Authorization has four layers, none granting the next (`docs/adr/0018`): the account's role on the
+Platform, its membership in a company (`Company`, `Membership`), a seat in a product its company
+contracted (`CompanyProduct`, `ProductAccess`), and the product's own permissions. Every ERP route
+requires a seat (`requireProductAccess('ERP')`) and then a specific permission
+(`requirePermission('person:view')`, …), resolved from the caller's `AccessProfile` links at request
+time — never baked into the session token. No role bypasses a permission check. The full model — the
+layers, joining a company, seats and limits, lockout guards, what is still pending — is
+`docs/product/access_control.md`.
 
 ## Roadmap
 

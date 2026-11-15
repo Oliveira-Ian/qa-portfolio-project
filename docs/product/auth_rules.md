@@ -77,6 +77,9 @@ Provide a realistic, testable authentication flow.
 
 #### Success
 - Redirect to: `/login`
+- Registering grants **nothing**: the new account has no company, no product seat and no profile. It
+  can sign in and reach `/home`, where an ERP page shows that it has no access yet, until a company
+  administrator adds it and grants it a seat (`docs/adr/0018`).
 
 ---
 

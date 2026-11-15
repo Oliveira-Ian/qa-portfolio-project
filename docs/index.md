@@ -29,7 +29,8 @@ This index exists to reduce context cost (tokens) and help you find the right ru
   - Project rules: `docs/product/business_rules.md`
   - Auth functional rules: `docs/product/auth_rules.md`
   - Domain: `docs/product/domain.md`
-  - Access control (roles, profiles, permissions): `docs/product/access_control.md`
+  - Access control (roles, companies, product seats, profiles, permissions): `docs/product/access_control.md`
+  - Platform access model (data, API, access matrix): `docs/especificacoes/platform-access-model.md`
 - **Why something is built the way it is** (not what to change, but the reasoning behind a past
   decision): `docs/adr/` — short Architecture Decision Records, e.g. why the session token never
   reaches the browser, why OpenAPI documents the API without validating it, why the navigation
@@ -51,7 +52,7 @@ This index exists to reduce context cost (tokens) and help you find the right ru
 
 Sessions are JWTs (`jose`, 8h expiry) issued by `POST /api/auth/login`, stored in an **httpOnly** cookie by a Server Action — never in `localStorage`, never read by client JavaScript. `apps/web/proxy.ts` (Next 16's renamed convention for `middleware.ts`) redirects unauthenticated visits to `(dashboard)` routes to `/login`; `apps/web/lib/session.ts#requireSession()` in each `layout.tsx` is the actual check. A well-formed cookie whose token the API no longer honors (expired, or the account was deactivated) is routed through `apps/web/app/api/session/expire/route.ts` — the one place outside sign-out that clears the cookie — rather than surfacing a raw "Unauthorized" error.
 
-Every `/api/*` route except `/api/auth/*` requires `Authorization: Bearer <token>`. Business-data routes (`/api/persons/*`) require a specific business permission (`requirePermission('person:view')`, …); system-administration routes (`/api/profiles`, `/api/permissions`, `/api/accounts`) require the technical role `ADMIN` (`requireRole('ADMIN')`), which also bypasses permission checks. The token proves identity only: `requireAuth` reads the account's existence, `active` flag and `role` from the database on every request, so a deactivation or a demotion applies immediately. Passwords are bcrypt-hashed (`apps/api/src/modules/auth/password.ts`). Full model: `docs/product/access_control.md`.
+Every `/api/*` route except `/api/auth/login`, `/api/auth/register` and `/health` requires `Authorization: Bearer <token>`. Authorization has four layers, none of which grants anything in the next (`docs/adr/0018`): the account's role on the Platform (`SUPER_ADMIN`, `requireRole`), its membership in a company (`requireCompanyAdmin`), a seat in a product its company contracted (`requireProductAccess('ERP')`, before every ERP route), and the product's own permissions (`requirePermission('person:view')`, …, granted by profiles — no role is exempt). The token proves identity only: `requireAuth` reads the account's existence, `active` flag and `role`, and its company, contracts and seats, from the database on every request, so a deactivation, a demotion or a revoked seat applies immediately. Passwords are bcrypt-hashed (`apps/api/src/modules/auth/password.ts`). Full model: `docs/product/access_control.md`; specification: `docs/especificacoes/platform-access-model.md`.
 
 `apps/web` has: the auth pages (`/login`, `/register`), a public landing page (`/`) and the design-system reference (`/styleguide`), and the dashboard — `/home` (always accessible) plus every business screen nested under a Module/Group/Category/Routine path from `apps/web/lib/navigation/catalog.ts`:
 
@@ -67,7 +68,7 @@ The old flat paths (`/people`, `/profiles`, `/users`) still work, as do the firs
 
 ## Quick Start (apps/api)
 
-Requires Node 22.18 or newer (Prisma 7) and a local PostgreSQL instance (e.g. `docker run -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=oliveira_erp -p 5432:5432 postgres:16-alpine`). Copy `prisma/.env.example` to `prisma/.env` and `apps/api/.env.example` to `apps/api/.env`, adjusting `DATABASE_URL` if needed. Set `JWT_SECRET` in `apps/api/.env` for anything beyond local dev (a dev-only default is used otherwise, and boot fails if that default is still set with `NODE_ENV=production`). Set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `prisma/.env` to bootstrap the first admin account — without them, `db:seed` still seeds the permission catalog and default profiles, just no admin.
+Requires Node 22.18 or newer (Prisma 7) and a local PostgreSQL instance (e.g. `docker run -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=oliveira_erp -p 5432:5432 postgres:16-alpine`). Copy `prisma/.env.example` to `prisma/.env` and `apps/api/.env.example` to `apps/api/.env`, adjusting `DATABASE_URL` if needed. Set `JWT_SECRET` in `apps/api/.env` for anything beyond local dev (a dev-only default is used otherwise, and boot fails if that default is still set with `NODE_ENV=production`). Set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `prisma/.env` to bootstrap the first administrator — a `SUPER_ADMIN` that is also the test company's administrator, with seats in both products and the ERP's Administrator profile (each layer granted explicitly; none implies another). Without them, `db:seed` still seeds the permission catalog, the default profiles and the test company with its contracts, just no administrator. `SEED_TEST_ACCOUNTS=true` with `SEED_TEST_PASSWORD` also creates one account per row of the access matrix (`docs/especificacoes/platform-access-model.md`) — for trying the model by hand only.
 
 ```bash
 npm install

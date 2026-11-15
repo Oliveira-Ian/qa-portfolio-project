@@ -146,8 +146,9 @@ reaches `/api/profiles` (200); revoking the seat removes it on the next request.
 
 ## Testing impact (no tests written in this specification's phases)
 
-- `tests/e2e/auth.spec.ts` (active): register → sign in → `/home` with `home-page` visible. It stays valid.
-  It no longer needs the seeded database.
+- `tests/e2e/auth.spec.ts` (active): register → sign in → `/home` with `home-page` visible. It stays valid:
+  until Phase 3 the notice for a user without a seat is wrapped in that testid, afterwards the Platform
+  home carries it. It no longer needs the seeded database.
 - `tests/unit/request-context.test.ts` uses the literal role `'ADMIN'`; with the rename it no longer
   type-checks. Report, do not edit, unless asked.
 - The access matrix above, seat-limit concurrency, the lockout guards, revocation on the next request and

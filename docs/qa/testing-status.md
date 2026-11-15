@@ -37,11 +37,14 @@ explicitly — a red run that mentions either is a missing CI step, not a broken
 
 - **A built `packages/schemas`** (`unit-tests`, `api-tests`, `e2e-tests`). `@oliveira/schemas`
   resolves to `dist/`, so `tests/unit/email.test.ts` fails to import it on a clean checkout.
-- **A seeded database** (`e2e-tests`). `tests/e2e/auth.spec.ts` registers a user and lands on
-  `/home`, which calls `GET /api/persons/summary` and needs `person:view`. A self-registered user
-  only gets it from the seeded `isDefault` profile (`docs/product/access_control.md`), so without
-  `npm run db:seed` the API answers `403` and the home page never renders. `tests/api` does not
-  need the seed: it only calls the public `/api/auth/*` routes.
+- **A seeded database (no longer needed by `auth.spec.ts`).** It used to be: the spec registers a
+  user and lands on `/home`, which called `GET /api/persons/summary` and needed `person:view` from the
+  seeded `isDefault` profile. Since the Platform access model (`docs/adr/0018`) a self-registered user
+  has no company, no ERP seat and no profile, so `/home` renders the "no access" notice instead of the
+  dashboard. The notice sits inside a `data-testid="home-page"` wrapper (`app/(dashboard)/layout.tsx`)
+  precisely so this spec keeps passing until the Platform home (Epic #66, Phase 3) carries that testid
+  itself; the seed is irrelevant to it.
+  `tests/api` does not need the seed either: it only calls the public `/api/auth/*` routes.
 
 ## Disabled (`test.fixme` / `test.describe.fixme`)
 
