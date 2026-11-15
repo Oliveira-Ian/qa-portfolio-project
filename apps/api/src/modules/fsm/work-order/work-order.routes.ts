@@ -91,6 +91,16 @@ export async function workOrderRoutes(app: FastifyInstance) {
     async (_request, reply) => sendSuccess(reply, 200, await workOrderService.technicians()),
   );
 
+  app.get(
+    '/filter-options',
+    {
+      preHandler: read,
+      schema: { tags, security },
+      config: { errorMessage: 'Failed to list the work order filters' },
+    },
+    async (_request, reply) => sendSuccess(reply, 200, await workOrderService.filterOptions()),
+  );
+
   app.get<WithId>(
     '/:id',
     {

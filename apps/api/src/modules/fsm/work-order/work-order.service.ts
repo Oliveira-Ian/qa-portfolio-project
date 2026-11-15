@@ -10,6 +10,7 @@ import {
   type PaginatedResult,
   type TechnicianDto,
   type WorkOrderDto,
+  type WorkOrderFilterOptionsDto,
   type WorkOrderItemWriteInput,
   type WorkOrderListItemDto,
   type WorkOrderStatusChange,
@@ -56,9 +57,10 @@ const FILTERS: FilterFieldMap = {
   title: { field: 'title', kind: 'text' },
   customer: { field: 'customer.person.name', kind: 'text' },
   equipment: { field: 'equipment.name', kind: 'text' },
-  type: { field: 'type.name', kind: 'text' },
-  branch: { field: 'branch.name', kind: 'text' },
-  assignee: { field: 'assignee.account.name', kind: 'text' },
+  // Picked from a list (several at once), so by id rather than by a typed name.
+  type: { field: 'typeId', kind: 'enumScalar' },
+  branch: { field: 'branchId', kind: 'enumScalar' },
+  assignee: { field: 'assigneeMembershipId', kind: 'enumScalar' },
   scheduledAt: { field: 'scheduledAt', kind: 'date' },
   dueAt: { field: 'dueAt', kind: 'date' },
   createdAt: { field: 'createdAt', kind: 'date' },
@@ -443,6 +445,19 @@ export const workOrderService = {
     });
 
     return rows.map((row) => ({ membershipId: row.id, name: row.account.name }));
+  },
+
+  async filterOptions(): Promise<WorkOrderFilterOptionsDto> {
+    const [types, branches, technicians] = await Promise.all([
+      prisma.workOrderType.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      prisma.branch.findMany({
+        select: { id: true, code: true, name: true },
+        orderBy: { code: 'asc' },
+      }),
+      workOrderService.technicians(),
+    ]);
+
+    return { types, branches, technicians };
   },
 
   async create(

@@ -29,6 +29,16 @@ export async function fsmBranchRoutes(app: FastifyInstance) {
     async (_request, reply) => sendSuccess(reply, 200, await branchService.options()),
   );
 
+  app.get(
+    '/cities',
+    {
+      preHandler: requirePermission('FSM', 'branch:view'),
+      schema: { tags: ['branches'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to list the branches’ cities' },
+    },
+    async (_request, reply) => sendSuccess(reply, 200, await branchService.cities()),
+  );
+
   registerCrudRoutes(app, {
     tag: 'branches',
     service: branchService,

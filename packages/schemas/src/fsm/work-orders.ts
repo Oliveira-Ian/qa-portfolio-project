@@ -280,6 +280,17 @@ export interface TechnicianDto {
 }
 
 /**
+ * What the work order list can be filtered by, for whoever may read work
+ * orders: every type and branch (inactive ones too — old work orders carry
+ * them) and the technicians.
+ */
+export interface WorkOrderFilterOptionsDto {
+  types: { id: string; name: string }[];
+  branches: { id: string; code: string; name: string }[];
+  technicians: TechnicianDto[];
+}
+
+/**
  * The time zone work orders are scheduled in. One for the V1 — the product
  * serves Brazilian companies — so the server and the browser render the same
  * time (no hydration mismatch) and nobody's laptop clock changes a schedule.

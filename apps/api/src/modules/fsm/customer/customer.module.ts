@@ -12,6 +12,7 @@ import { ConflictError, NotFoundError } from '../../../shared/errors.js';
 import { sendSuccess } from '../../../shared/http.js';
 import {
   buildFiltersWhere,
+  readListParam,
   resolveSort,
   toSkipTake,
   type FilterFieldMap,
@@ -43,7 +44,8 @@ import { fsmPlugin, registerCrudRoutes, type CrudService } from '../crud-routes.
  */
 
 const FILTERS: FilterFieldMap = {
-  name: { field: 'person.name', kind: 'text' },
+  // Picked in a searchable multi-select: the customers themselves, by id.
+  name: { field: 'id', kind: 'enumScalar' },
   tradeName: { field: 'person.tradeName', kind: 'text' },
   document: { field: 'person.document', kind: 'text' },
   email: { field: 'person.email', kind: 'text' },
@@ -95,16 +97,20 @@ function personData(input: CustomerPersonWriteInput) {
   return data as Omit<ReturnType<typeof toPersonWriteData>, 'types'>;
 }
 
-/** City and state of the primary address, matched in the address table (`f_city`, `f_state`). */
+/**
+ * City and state of the primary address, matched in the address table: the
+ * cities picked in a multi-select (`f_city=Campinas,São Paulo`), the state typed.
+ */
 function primaryAddressWhere(raw: Record<string, unknown>): Prisma.CustomerWhereInput {
   const conditions: Prisma.AddressWhereInput[] = [];
+  const cities = readListParam(raw, 'f_city');
+  const state = raw.f_state;
 
-  for (const field of ['city', 'state'] as const) {
-    const value = raw[`f_${field}`];
-
-    if (typeof value === 'string' && value.trim() !== '') {
-      conditions.push({ [field]: { contains: value.trim(), mode: 'insensitive' } });
-    }
+  if (cities) {
+    conditions.push({ city: { in: cities } });
+  }
+  if (typeof state === 'string' && state.trim() !== '') {
+    conditions.push({ state: { contains: state.trim(), mode: 'insensitive' } });
   }
 
   return conditions.length > 0
@@ -130,8 +136,19 @@ function translate(error: unknown, operation: 'write' | 'delete' = 'delete'): un
   return error;
 }
 
+/** What `/options` is asked for: a search, one chosen customer, or several by id. */
+interface CustomerOptionsQuery {
+  search?: string | undefined;
+  id?: string | undefined;
+  /** Several by id, active or not — the labels of a filter's chosen customers. */
+  ids?: string[] | undefined;
+  /** A filter searches every customer, not only the active ones a form may pick. */
+  includeInactive?: boolean;
+}
+
 export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto> & {
-  options(search: string | undefined, id?: string): Promise<CustomerOptionDto[]>;
+  options(query?: CustomerOptionsQuery): Promise<CustomerOptionDto[]>;
+  cities(): Promise<string[]>;
 } = {
   async list(query, raw): Promise<PaginatedResult<CustomerDto>> {
     const where: Prisma.CustomerWhereInput = {
@@ -254,14 +271,16 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
 
   /**
    * Active customers matching `search`, with their addresses — what another
-   * record's form offers; or, by `id`, the one already chosen (active or not).
+   * record's form offers; or, by `id`/`ids`, the ones already chosen (active or not).
    */
-  async options(search, id) {
+  async options({ search, id, ids, includeInactive = false } = {}) {
+    const byId = id !== undefined || ids !== undefined;
     const rows = await prisma.customer.findMany({
       where: {
         ...(id ? { id } : {}),
+        ...(ids ? { id: { in: ids } } : {}),
         person: {
-          ...(id ? {} : { active: true }),
+          ...(byId || includeInactive ? {} : { active: true }),
           ...(search
             ? {
                 OR: [
@@ -274,7 +293,7 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
         },
       },
       orderBy: [{ person: { name: 'asc' } }, { id: 'asc' }],
-      take: 20,
+      take: ids ? ids.length : 20,
       include: { person: { include: { addresses: { orderBy: ADDRESS_ORDER } } } },
     });
 
@@ -284,6 +303,18 @@ export const customerService: CrudService<CustomerPersonWriteInput, CustomerDto>
       document: row.person.document,
       addresses: row.person.addresses.map(toAddressDto),
     }));
+  },
+
+  /** The cities of the customers' primary addresses, to filter the list by. */
+  async cities() {
+    const rows = await prisma.address.findMany({
+      where: { isPrimary: true, city: { not: null }, person: { customer: { isNot: null } } },
+      distinct: ['city'],
+      select: { city: true },
+      orderBy: { city: 'asc' },
+    });
+
+    return rows.flatMap((row) => (row.city ? [row.city] : []));
   },
 };
 
@@ -307,13 +338,32 @@ export async function customerRoutes(app: FastifyInstance) {
       config: { errorMessage: 'Failed to list customers' },
     },
     async (request: FastifyRequest, reply) => {
-      const query = request.query as { search?: unknown; id?: unknown };
+      const query = request.query as Record<string, unknown>;
       const search =
         typeof query.search === 'string' && query.search.trim() ? query.search.trim() : undefined;
       const id = typeof query.id === 'string' && query.id ? query.id : undefined;
 
-      return sendSuccess(reply, 200, await customerService.options(search, id));
+      return sendSuccess(
+        reply,
+        200,
+        await customerService.options({
+          search,
+          id,
+          ids: readListParam(query, 'ids'),
+          includeInactive: query.all === 'true',
+        }),
+      );
     },
+  );
+
+  app.get(
+    '/cities',
+    {
+      preHandler: view,
+      schema: { tags: ['customers'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to list the customers’ cities' },
+    },
+    async (_request, reply) => sendSuccess(reply, 200, await customerService.cities()),
   );
 
   registerCrudRoutes(app, {

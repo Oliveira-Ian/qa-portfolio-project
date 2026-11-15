@@ -3,6 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { NotFoundError } from '../../shared/errors.js';
 import {
   buildFiltersWhere,
+  readListParam,
   resolveSort,
   toSkipTake,
   type FilterFieldMap,
@@ -28,16 +29,17 @@ const SORTS: Record<string, string> = {
   createdAt: 'createdAt',
 };
 
-/** City and state come from the branch's address (`f_city`, `f_state`). */
+/** City (picked in a multi-select, `f_city=A,B`) and state (typed) come from the branch's address. */
 function addressWhere(raw: Record<string, unknown>): Prisma.BranchWhereInput {
   const conditions: Prisma.AddressWhereInput[] = [];
+  const cities = readListParam(raw, 'f_city');
+  const state = raw.f_state;
 
-  for (const field of ['city', 'state'] as const) {
-    const value = raw[`f_${field}`];
-
-    if (typeof value === 'string' && value.trim() !== '') {
-      conditions.push({ [field]: { contains: value.trim(), mode: 'insensitive' } });
-    }
+  if (cities) {
+    conditions.push({ city: { in: cities } });
+  }
+  if (typeof state === 'string' && state.trim() !== '') {
+    conditions.push({ state: { contains: state.trim(), mode: 'insensitive' } });
   }
 
   return conditions.length > 0 ? { addresses: { some: { AND: conditions } } } : {};
@@ -81,6 +83,11 @@ export const branchService = {
   },
 
   /** Every active branch — what a work order's form offers. */
+  /** The cities the branches are in, to filter the list by. */
+  cities(): Promise<string[]> {
+    return branchRepository.cities();
+  },
+
   async options(): Promise<BranchDto[]> {
     return (await branchRepository.findMany({ activeOnly: true })).map(toBranchDto);
   },

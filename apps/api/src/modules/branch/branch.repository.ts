@@ -48,6 +48,17 @@ function translateWriteError(error: unknown): unknown {
  * A branch keeps one address (`Address`, the registry's shared table).
  */
 export const branchRepository = {
+  async cities(): Promise<string[]> {
+    const rows = await prisma.address.findMany({
+      where: { branchId: { not: null }, city: { not: null } },
+      distinct: ['city'],
+      select: { city: true },
+      orderBy: { city: 'asc' },
+    });
+
+    return rows.flatMap((row) => (row.city ? [row.city] : []));
+  },
+
   findMany(options: { search?: string; activeOnly?: boolean } = {}): Promise<BranchRow[]> {
     const { search, activeOnly = false } = options;
 

@@ -20,6 +20,7 @@ import {
   UNIQUE_CONSTRAINT_VIOLATION,
   isPrismaCode,
 } from '../../../shared/prisma-errors.js';
+import { sendSuccess } from '../../../shared/http.js';
 import { requireCompanyId } from '../../../shared/request-context.js';
 import { requireAnyOf, requirePermission } from '../../auth/authorize.js';
 import { toAddressDto } from '../../address/address-sync.js';
@@ -42,8 +43,9 @@ import {
 const FILTERS: FilterFieldMap = {
   name: { field: 'name', kind: 'text' },
   tag: { field: 'tag', kind: 'text' },
-  customer: { field: 'customer.person.name', kind: 'text' },
-  category: { field: 'category', kind: 'text' },
+  // Both picked in multi-selects: the customers by id, the categories in use.
+  customer: { field: 'customerId', kind: 'enumScalar' },
+  category: { field: 'category', kind: 'enumScalar' },
   manufacturer: { field: 'manufacturer', kind: 'text' },
   model: { field: 'model', kind: 'text' },
   serialNumber: { field: 'serialNumber', kind: 'text' },
@@ -143,7 +145,21 @@ function translate(error: unknown): unknown {
   return error;
 }
 
-export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> = {
+export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> & {
+  categories(): Promise<string[]>;
+} = {
+  /** The categories the company's equipment uses, to filter the list by. */
+  async categories() {
+    const rows = await prisma.equipment.findMany({
+      where: { category: { not: null } },
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+
+    return rows.flatMap((row) => (row.category ? [row.category] : []));
+  },
+
   async list(query, raw): Promise<PaginatedResult<EquipmentDto>> {
     const customerId = typeof raw.customerId === 'string' ? raw.customerId : undefined;
     const where: Prisma.EquipmentWhereInput = {
@@ -237,6 +253,17 @@ export const equipmentService: CrudService<EquipmentWriteInput, EquipmentDto> = 
 
 export async function equipmentRoutes(app: FastifyInstance) {
   fsmPlugin(app);
+
+  // Before `/:id`.
+  app.get(
+    '/categories',
+    {
+      preHandler: requirePermission('FSM', 'equipment:view'),
+      schema: { tags: ['equipment'], security: [{ bearerAuth: [] }] },
+      config: { errorMessage: 'Failed to list the equipment categories' },
+    },
+    async (_request, reply) => sendSuccess(reply, 200, await equipmentService.categories()),
+  );
 
   registerCrudRoutes(app, {
     tag: 'equipment',

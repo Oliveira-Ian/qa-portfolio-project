@@ -10,6 +10,7 @@ import type {
 import { NotFoundError } from '../../shared/errors.js';
 import {
   buildFiltersWhere,
+  readListParam,
   resolveSort,
   toSkipTake,
   type FilterFieldMap,
@@ -88,11 +89,6 @@ function buildWhere(
   return { AND: [companyWhere, scopeWhere, searchWhere, columnFiltersWhere] };
 }
 
-function readTextParam(rawQuery: Record<string, unknown>, key: string): string | undefined {
-  const value = rawQuery[key];
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-}
-
 export const accountService = {
   async list(
     product: Product,
@@ -100,11 +96,12 @@ export const accountService = {
     rawQuery: Record<string, unknown>,
   ): Promise<PaginatedResult<AccountDto>> {
     const companyId = requireCompanyId();
-    const profileFilter = readTextParam(rawQuery, 'f_profile');
+    // The profiles picked in a multi-select, by id (`f_profile=3,7`).
+    const profileIds = readListParam(rawQuery, 'f_profile')?.map(Number).filter(Number.isInteger);
     const where: Prisma.AccessAccountWhereInput = {
       AND: [
         buildWhere(product, query, rawQuery, companyId),
-        profileFilter
+        profileIds && profileIds.length > 0
           ? {
               memberships: {
                 some: {
@@ -112,7 +109,7 @@ export const accountService = {
                   profiles: {
                     some: {
                       product,
-                      profile: { name: { contains: profileFilter, mode: 'insensitive' } },
+                      profileId: { in: profileIds },
                     },
                   },
                 },
